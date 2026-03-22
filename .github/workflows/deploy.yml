@@ -46,7 +46,7 @@ jobs:
     - name: Build for production
       run: |
         rm -rf www/
-        ionic build --prod -- --base-href '/money-mate/'
+        ionic build --prod -- --base-href 'https://playmatesolutions.github.io/money-mate/'
         cp www/index.html www/404.html
         ls -la www/
 
