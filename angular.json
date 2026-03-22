@@ -38,6 +38,11 @@
                 "glob": "manifest.json",
                 "input": "src",
                 "output": ""
+              },
+              {
+                "glob": "sw.js",
+                "input": "src",
+                "output": ""
               }
             ],
             "styles": ["src/global.scss", "src/theme/variables.scss"],
