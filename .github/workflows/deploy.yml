@@ -49,13 +49,21 @@ jobs:
         ionic build --prod -- --base-href '/money-mate/'
         cp www/index.html www/404.html
         
-        # Fix service worker paths for GitHub Pages
+        # Fix service worker paths for subdirectory on custom domain
         sed -i "s|'/\([^']*\)|'/money-mate/\1|g" www/sw.js
         sed -i "s|'/',|'/money-mate/',|g" www/sw.js
         
         # Fix manifest.json paths
         sed -i 's|"start_url": "/"|"start_url": "/money-mate/"|g' www/manifest.json
         sed -i 's|"/assets/|"/money-mate/assets/|g' www/manifest.json
+        
+        # Fix HTML manifest and service worker references
+        sed -i 's|href="/manifest.json"|href="/money-mate/manifest.json"|g' www/index.html
+        sed -i 's|href="/manifest.json"|href="/money-mate/manifest.json"|g' www/404.html
+        
+        # Fix service worker registration path in main JS files
+        find www -name "*.js" -exec sed -i "s|navigator.serviceWorker.register('/sw.js')|navigator.serviceWorker.register('/money-mate/sw.js')|g" {} \;
+        find www -name "*.js" -exec sed -i "s|'/sw.js'|'/money-mate/sw.js'|g" {} \;
         
         ls -la www/
 
