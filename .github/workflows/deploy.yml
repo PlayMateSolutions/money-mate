@@ -34,7 +34,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
         cache: 'npm'
         cache-dependency-path: package-lock.json
 
@@ -46,7 +46,7 @@ jobs:
     - name: Build for production
       run: |
         rm -rf www/
-        ionic build --prod -- --base-href 'https://playmatesolutions.github.io/money-mate/'
+        ionic build --prod -- --base-href '/money-mate/'
         cp www/index.html www/404.html
         ls -la www/
 
