@@ -1,17 +1,7 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { 
   IonApp, 
-  IonRouterOutlet, 
-  IonMenu, 
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
-  IonContent, 
-  IonList, 
-  IonItem, 
-  IonIcon, 
-  IonLabel 
+  IonRouterOutlet
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
@@ -21,31 +11,19 @@ import {
   card, 
   menu 
 } from 'ionicons/icons';
+import { MenuComponent } from './core/components';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   imports: [
     IonApp, 
-    IonRouterOutlet, 
-    IonMenu, 
-    IonHeader, 
-    IonToolbar, 
-    IonTitle, 
-    IonContent, 
-    IonList, 
-    IonItem, 
-    IonIcon, 
-    IonLabel,
-    RouterLink
+    IonRouterOutlet,
+    MenuComponent
   ],
 })
 export class AppComponent {
   constructor() {
     addIcons({ statsChart, list, settings, card, menu });
-  }
-
-  closeMenu(menu: any) {
-    menu.close();
   }
 }

@@ -1,0 +1,23 @@
+<ion-menu contentId="main-content" #mainMenu>
+  <ion-header>
+    <ion-toolbar color="primary">
+      <ion-title>Money Mate</ion-title>
+    </ion-toolbar>
+  </ion-header>
+  <ion-content>
+    <ion-list>
+      <ion-item button routerLink="/tabs/dashboard" (click)="closeMenu(mainMenu)">
+        <ion-icon name="stats-chart" slot="start"></ion-icon>
+        <ion-label>Dashboard</ion-label>
+      </ion-item>
+      <ion-item button routerLink="/tabs/transactions" (click)="closeMenu(mainMenu)">
+        <ion-icon name="list" slot="start"></ion-icon>
+        <ion-label>Transactions</ion-label>
+      </ion-item>
+      <ion-item button routerLink="/settings" (click)="closeMenu(mainMenu)">
+        <ion-icon name="settings" slot="start"></ion-icon>
+        <ion-label>Settings</ion-label>
+      </ion-item>
+    </ion-list>
+  </ion-content>
+</ion-menu>
