@@ -1,13 +1,14 @@
 const CACHE_NAME = 'money-mate-v1';
+
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/assets/icon/favicon.png',
-  '/assets/icon/android-chrome-192x192.png',
-  '/assets/icon/android-chrome-512x512.png',
-  '/assets/shapes.svg'
-];
+  './',
+  './index.html', 
+  './manifest.json',
+  './assets/icon/favicon.png',
+  './assets/icon/android-chrome-192x192.png', 
+  './assets/icon/android-chrome-512x512.png',
+  './assets/shapes.svg'
+]
 
 // Install event - cache static resources
 self.addEventListener('install', (event) => {
@@ -97,7 +98,7 @@ self.addEventListener('fetch', (event) => {
             // Return cached index.html for navigation requests when offline
             if (event.request.destination === 'document' || 
                 event.request.mode === 'navigate') {
-              return caches.match('/index.html');
+              return caches.match('./index.html');
             }
             
             // For other failed requests, just return the error
