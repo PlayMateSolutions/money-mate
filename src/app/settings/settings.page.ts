@@ -1,14 +1,69 @@
-import { Component } from '@angular/core';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonMenuButton } from '@ionic/angular/standalone';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { 
+  IonHeader, 
+  IonToolbar, 
+  IonTitle, 
+  IonContent, 
+  IonMenuButton,
+  IonList,
+  IonItem,
+  IonItemGroup,
+  IonItemDivider,
+  IonLabel,
+  IonSelect,
+  IonSelectOption,
+  IonIcon,
+  IonNote
+} from '@ionic/angular/standalone';
+import { Subject, takeUntil } from 'rxjs';
+import { ThemeService, Theme } from '../core/services';
+import { addIcons } from 'ionicons';
+import { chevronForwardOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-settings',
   templateUrl: 'settings.page.html',
   styleUrls: ['settings.page.scss'],
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonMenuButton]
+  imports: [
+    IonHeader, 
+    IonToolbar, 
+    IonTitle, 
+    IonContent, 
+    IonMenuButton,
+    IonList,
+    IonItem,
+    IonItemGroup,
+    IonItemDivider,
+    IonLabel,
+    IonSelect,
+    IonSelectOption,
+    IonIcon,
+    IonNote
+  ]
 })
-export class SettingsPage {
+export class SettingsPage implements OnInit, OnDestroy {
+  currentTheme: Theme = 'auto';
+  private destroy$ = new Subject<void>();
 
-  constructor() {}
+  constructor(private themeService: ThemeService) {
+    addIcons({ chevronForwardOutline });
+  }
 
+  ngOnInit() {
+    // this.themeService.theme$
+    //   .pipe(takeUntil(this.destroy$))
+    //   .subscribe(theme => {
+    //     this.currentTheme = theme;
+    //   });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  onThemeChange(event: any) {
+    const theme = event.detail.value as Theme;
+    this.themeService.setTheme(theme);
+  }
 }

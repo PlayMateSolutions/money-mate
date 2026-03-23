@@ -15,6 +15,50 @@
   </ion-header>
 
   <div class="container">
-    <p>Settings content will go here</p>
+    <ion-list>
+      <!-- App Settings -->
+      <ion-item-group>
+        <ion-item-divider>
+          <ion-label>App Settings</ion-label>
+        </ion-item-divider>
+        <ion-item>
+          <ion-label>Theme</ion-label>
+          <ion-select 
+            [value]="currentTheme" 
+            (ionSelectionChange)="onThemeChange($event)"
+            interface="popover"
+            slot="end">
+            <ion-select-option value="auto">Auto (System)</ion-select-option>
+            <ion-select-option value="light">Light</ion-select-option>
+            <ion-select-option value="dark">Dark</ion-select-option>
+          </ion-select>
+        </ion-item>
+      </ion-item-group>
+
+      <!-- About -->
+      <ion-item-group>
+        <ion-item-divider>
+          <ion-label>About</ion-label>
+        </ion-item-divider>
+        <ion-item>
+          <ion-label>Version</ion-label>
+          <ion-note slot="end">1.0.0</ion-note>
+        </ion-item>
+        <ion-item button>
+          <ion-label>
+            <h2>Privacy Policy</h2>
+            <p>Read our privacy policy</p>
+          </ion-label>
+          <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+        </ion-item>
+        <ion-item button>
+          <ion-label>
+            <h2>Terms of Service</h2>
+            <p>Read our terms of service</p>
+          </ion-label>
+          <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+        </ion-item>
+      </ion-item-group>
+    </ion-list>
   </div>
 </ion-content>
