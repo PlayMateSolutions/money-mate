@@ -1,0 +1,156 @@
+.container {
+  padding: var(--ion-padding);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.permission-card {
+  margin-bottom: var(--ion-margin);
+  
+  ion-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.permission-status {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.permission-button {
+  margin-top: 8px;
+}
+
+.messages-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0 8px 0;
+  
+  h2 {
+    margin: 0;
+    color: var(--ion-text-color);
+  }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.message-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-end: 8px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  
+  &.financial-message {
+    --background: var(--ion-color-success-tint, rgba(16, 220, 96, 0.1));
+    --border-color: var(--ion-color-success, #10dc60);
+    border-left: 4px solid var(--border-color);
+  }
+}
+
+.message-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ion-color-primary-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  
+  ion-icon {
+    color: var(--ion-color-primary);
+    font-size: 20px;
+  }
+}
+
+.message-body {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ion-text-color);
+  margin: 4px 0;
+  word-break: break-word;
+}
+
+.timestamp {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.empty-state {
+  margin-top: 32px;
+  
+  .empty-content {
+    text-align: center;
+    padding: 32px 16px;
+    
+    ion-icon {
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    h3 {
+      color: var(--ion-text-color);
+      margin-bottom: 8px;
+    }
+    
+    p {
+      color: var(--ion-color-medium);
+      margin-bottom: 24px;
+    }
+  }
+}
+
+.demo-info {
+  margin-top: 24px;
+  
+  ol {
+    padding-left: 20px;
+    
+    li {
+      margin-bottom: 8px;
+      color: var(--ion-text-color);
+    }
+  }
+  
+  ion-note {
+    display: block;
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--ion-color-warning-tint, rgba(255, 206, 84, 0.1));
+    border-radius: 8px;
+    border-left: 4px solid var(--ion-color-warning);
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .messages-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    
+    .header-actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+}
+
+// Dark theme adjustments
+@media (prefers-color-scheme: dark) {
+  .message-item {
+    &.financial-message {
+      --background: rgba(16, 220, 96, 0.15);
+    }
+  }
+}

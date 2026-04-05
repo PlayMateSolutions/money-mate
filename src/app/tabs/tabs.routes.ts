@@ -17,6 +17,11 @@ export const routes: Routes = [
           import('../transactions/transactions.page').then((m) => m.TransactionsPage),
       },
       {
+        path: 'sms-demo',
+        loadComponent: () =>
+          import('../sms-demo/sms-demo.page').then((m) => m.SmsDemoPage),
+      },
+      {
         path: '',
         redirectTo: '/tabs/dashboard',
         pathMatch: 'full',

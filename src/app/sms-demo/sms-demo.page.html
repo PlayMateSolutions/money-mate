@@ -1,0 +1,142 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-menu-button slot="start"></ion-menu-button>
+    <ion-title>SMS Demo</ion-title>
+    <ion-button 
+      fill="clear" 
+      slot="end" 
+      (click)="loadMessages()" 
+      [disabled]="!permissionStatus.granted || isLoading">
+      <ion-icon name="refresh-outline"></ion-icon>
+    </ion-button>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)" [disabled]="!permissionStatus.granted">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">SMS Demo</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="container">
+    <!-- Permission Status Card -->
+    <ion-card class="permission-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="lock-closed-outline"></ion-icon>
+          SMS Permission Status
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="permission-status">
+          <ion-chip [color]="permissionStatus.granted ? 'success' : 'danger'">
+            <ion-icon [name]="permissionStatus.granted ? 'checkmark-circle-outline' : 'close-circle-outline'"></ion-icon>
+            <ion-label>{{ permissionStatus.granted ? 'Granted' : 'Not Granted' }}</ion-label>
+          </ion-chip>
+          
+          <ion-button 
+            *ngIf="!permissionStatus.granted && permissionStatus.canRequest"
+            (click)="requestPermission()"
+            [disabled]="isLoading"
+            expand="block"
+            class="permission-button">
+            Request SMS Permission
+          </ion-button>
+          
+          <ion-text *ngIf="!permissionStatus.canRequest" color="medium">
+            <p>SMS reading is not available on this platform.</p>
+            <p><small>This feature requires Android device.</small></p>
+          </ion-text>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Messages Section -->
+    <div *ngIf="permissionStatus.granted">
+      <!-- Messages Header -->
+      <div class="messages-header">
+        <h2>Recent SMS Messages</h2>
+        <div class="header-actions">
+          <ion-chip color="primary">
+            <ion-icon name="mail-outline"></ion-icon>
+            <ion-label>{{ messages.length }} messages</ion-label>
+          </ion-chip>
+          <ion-button 
+            fill="clear" 
+            size="small" 
+            (click)="clearMessages()"
+            *ngIf="messages.length > 0">
+            <ion-icon name="trash-outline"></ion-icon>
+            Clear
+          </ion-button>
+        </div>
+      </div>
+
+      <!-- Messages List -->
+      <ion-list *ngIf="messages.length > 0">
+        <ion-item 
+          *ngFor="let message of messages; trackBy: trackByMessageId"
+          class="message-item"
+          [class.financial-message]="isFinancialMessage(message.body)">
+          
+          <div slot="start" class="message-avatar">
+            <ion-icon name="mail-outline"></ion-icon>
+          </div>
+          
+          <ion-label>
+            <h3>{{ message.sender }}</h3>
+            <p class="message-body">{{ getMessagePreview(message.body) }}</p>
+            <ion-note color="medium" class="timestamp">
+              {{ formatTimestamp(message.timestamp) }}
+            </ion-note>
+          </ion-label>
+          
+          <ion-chip 
+            slot="end" 
+            color="success" 
+            size="small"
+            *ngIf="isFinancialMessage(message.body)">
+            <ion-label>Financial</ion-label>
+          </ion-chip>
+        </ion-item>
+      </ion-list>
+
+      <!-- Empty State -->
+      <ion-card *ngIf="messages.length === 0 && !isLoading" class="empty-state">
+        <ion-card-content>
+          <div class="empty-content">
+            <ion-icon name="mail-outline" size="large" color="medium"></ion-icon>
+            <h3>No SMS Messages</h3>
+            <p>Pull down to refresh or send yourself a test SMS to see it appear here.</p>
+            <ion-button fill="outline" (click)="loadMessages()" [disabled]="isLoading">
+              Load Messages
+            </ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <!-- Demo Instructions -->
+    <ion-card class="demo-info">
+      <ion-card-header>
+        <ion-card-title>Demo Instructions</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ol>
+          <li>Grant SMS permission when prompted</li>
+          <li>Send yourself a test SMS from another device</li>
+          <li>Watch it appear in real-time in this list</li>
+          <li>Financial SMS messages are automatically highlighted</li>
+        </ol>
+        <ion-note color="warning">
+          <strong>Note:</strong> This is a proof-of-concept demo. SMS reading only works on Android devices.
+        </ion-note>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>
