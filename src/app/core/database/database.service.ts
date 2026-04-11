@@ -13,19 +13,30 @@ export class DatabaseService extends Dexie {
 
   constructor() {
     super('MoneyMateDB');
+    console.log('Initializing database schema... ');
     
     this.version(1).stores({
       accounts: '++id, name, type, ownerName, createdAt',
-      categories: '++id, name, type, sortOrder, createdAt',
+      categories: '++id, name, sortOrder, createdAt',
       transactions: '++id, accountId, categoryId, date, type, amount, createdAt, createdBy'
     });
 
-    // Initialize default categories on first run
-    this.on('ready', () => this.initializeDefaultData());
+    // Initialize default categories on first run - using transaction approach like React example
+    this.on('ready', async () => {
+      console.log('Database ready event fired');
+      await this.initializeDefaultData();
+      return true; // Important: return true or a promise for Dexie
+    });
+
+    // Force database open to ensure initialization (similar to React example)
+    this.open().catch(err => {
+      console.error('Failed to open database:', err);
+    });
   }
 
   private async initializeDefaultData(): Promise<void> {
     try {
+      console.log('Checking for existing categories...');
       // Check if categories already exist
       const categoryCount = await this.categories.count();
       
