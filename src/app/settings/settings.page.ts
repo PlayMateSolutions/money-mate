@@ -19,6 +19,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { ThemeService, Theme } from '../core/services';
 import { addIcons } from 'ionicons';
 import { chevronForwardOutline } from 'ionicons/icons';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-settings',
@@ -45,7 +46,10 @@ export class SettingsPage implements OnInit, OnDestroy {
   currentTheme: Theme = 'auto';
   private destroy$ = new Subject<void>();
 
-  constructor(private themeService: ThemeService) {
+  constructor(
+    private themeService: ThemeService,
+    private router: Router
+  ) {
     addIcons({ chevronForwardOutline });
   }
 
@@ -65,5 +69,9 @@ export class SettingsPage implements OnInit, OnDestroy {
   onThemeChange(event: any) {
     const theme = event.detail.value as Theme;
     this.themeService.setTheme(theme);
+  }
+
+  async openCategoryManagement(): Promise<void> {
+    await this.router.navigate(['/settings/categories']);
   }
 }

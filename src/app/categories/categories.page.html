@@ -1,0 +1,58 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/settings"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Manage Categories</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Manage Categories</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="container">
+    <div class="loading-state" *ngIf="loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading categories...</p>
+    </div>
+
+    <div class="error-state" *ngIf="!loading && error">
+      <p>{{ error }}</p>
+    </div>
+
+    <ion-list *ngIf="!loading && !error">
+      <ion-item-divider>
+        <ion-label>Active</ion-label>
+      </ion-item-divider>
+      <ion-item *ngFor="let category of activeCategories; trackBy: trackByCategoryId">
+        <ion-icon [name]="getCategoryIcon(category.icon)" slot="start" [style.color]="category.color"></ion-icon>
+        <ion-label>
+          <h2>{{ category.name }}</h2>
+          <p>{{ category.color }}</p>
+        </ion-label>
+        <ion-button fill="clear" slot="end" (click)="openEditModal(category)">
+          <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+
+      <ion-item-divider>
+        <ion-label>Inactive</ion-label>
+      </ion-item-divider>
+      <ion-item *ngFor="let category of inactiveCategories; trackBy: trackByCategoryId">
+        <ion-icon [name]="getCategoryIcon(category.icon)" slot="start" [style.color]="category.color"></ion-icon>
+        <ion-label>
+          <h2>{{ category.name }}</h2>
+          <p>{{ category.color }}</p>
+        </ion-label>
+        <ion-badge color="medium" slot="end">Inactive</ion-badge>
+        <ion-button fill="clear" slot="end" (click)="openEditModal(category)">
+          <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+    </ion-list>
+  </div>
+</ion-content>

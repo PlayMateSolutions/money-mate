@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, from, throwError } from 'rxjs';
-import { map, tap, catchError } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { DatabaseService } from '../database.service';
 import { Category, CategoryType } from '../models';
 
@@ -34,6 +34,20 @@ export class CategoryRepository {
   }
 
   /**
+   * Get all categories including inactive (for settings management)
+   */
+  async getCategoriesForSettings(): Promise<Category[]> {
+    try {
+      return await this.db.categories
+        .orderBy('sortOrder')
+        .toArray();
+    } catch (error) {
+      console.error('Error fetching categories for settings:', error);
+      throw new Error('Failed to fetch categories for settings');
+    }
+  }
+
+  /**
    * Get categories as Observable
    */
   getCategories$(): Observable<Category[]> {
@@ -45,12 +59,12 @@ export class CategoryRepository {
   /**
    * Get category by ID
    */
-  async getCategoryById(id: string): Promise<Category | undefined> {
+  async getCategoryById(id: string, includeInactive = false): Promise<Category | undefined> {
     try {
       const category = await this.db.categories
         .where('id')
         .equals(id)
-        .filter(category => !category.isDeleted)
+        .filter(category => includeInactive || !category.isDeleted)
         .first();
       
       return category;
@@ -65,6 +79,10 @@ export class CategoryRepository {
    */
   async getCategoriesByType(type: CategoryType): Promise<Category[]> {
     try {
+      if (!type) {
+        return this.getCategories();
+      }
+
       const categories = await this.db.categories
         .where('type')
         .equals(type)
@@ -100,8 +118,7 @@ export class CategoryRepository {
    */
   async createCategory(categoryData: Omit<Category, 'id' | 'isDeleted' | 'createdAt' | 'updatedAt' | 'sortOrder'>): Promise<Category> {
     try {
-      // Get the next sort order for this type
-      const existingCategories = await this.getCategoriesByType(categoryData.type);
+      const existingCategories = await this.getCategoriesForSettings();
       const maxSortOrder = existingCategories.reduce((max, cat) => Math.max(max, cat.sortOrder), 0);
 
       const category: Category = {
@@ -128,16 +145,19 @@ export class CategoryRepository {
   /**
    * Update category
    */
-  async updateCategory(id: string, updates: Partial<Omit<Category, 'id' | 'isDeleted' | 'createdAt' | 'updatedAt'>>): Promise<Category> {
+  async updateCategory(id: string, updates: Partial<Omit<Category, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Category> {
     try {
       const updateData = {
         ...updates,
         updatedAt: new Date()
       };
 
-      await this.db.categories.update(id, updateData);
+      await this.db.categories
+        .where('id')
+        .equals(id)
+        .modify(updateData);
       
-      const updatedCategory = await this.getCategoryById(id);
+      const updatedCategory = await this.getCategoryById(id, true);
       if (!updatedCategory) {
         throw new Error('Category not found after update');
       }
@@ -152,15 +172,23 @@ export class CategoryRepository {
     }
   }
 
+  async setCategoryIsActive(id: string, isActive: boolean): Promise<void> {
+    try {
+      await this.updateCategory(id, { isDeleted: !isActive });
+
+      await this.getCategories();
+    } catch (error) {
+      console.error('Error updating category active state:', error);
+      throw new Error('Failed to update category active state');
+    }
+  }
+
   /**
-   * Soft delete category
+   * Legacy compatibility alias
    */
   async deleteCategory(id: string): Promise<void> {
     try {
-      await this.db.categories.update(id, {
-        isDeleted: true,
-        updatedAt: new Date()
-      });
+      await this.setCategoryIsActive(id, false);
 
       // Refresh categories list
       await this.getCategories();
@@ -195,13 +223,13 @@ export class CategoryRepository {
   /**
    * Check if category name exists (for validation)
    */
-  async categoryNameExists(name: string, type: CategoryType, excludeId?: string): Promise<boolean> {
+  async categoryNameExists(name: string, type?: CategoryType, excludeId?: string): Promise<boolean> {
     try {
       const existing = await this.db.categories
         .where('name')
         .equalsIgnoreCase(name)
         .filter(category => 
-          category.type === type && 
+          (!type || category.type === type) &&
           !category.isDeleted && 
           (!excludeId || category.id !== excludeId)
         )
