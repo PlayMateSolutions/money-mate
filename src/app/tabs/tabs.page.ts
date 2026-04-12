@@ -1,18 +1,26 @@
 import { Component, EnvironmentInjector, inject } from '@angular/core';
-import { IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel } from '@ionic/angular/standalone';
+import { IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel, IonFab, IonFabButton, ModalController } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { triangle, ellipse, square } from 'ionicons/icons';
+import { statsChart, list, add } from 'ionicons/icons';
+import { TransactionFormModalComponent } from '../transactions';
 
 @Component({
   selector: 'app-tabs',
   templateUrl: 'tabs.page.html',
   styleUrls: ['tabs.page.scss'],
-  imports: [IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel],
+  imports: [IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel, IonFab, IonFabButton],
 })
 export class TabsPage {
   public environmentInjector = inject(EnvironmentInjector);
 
-  constructor() {
-    addIcons({ triangle, ellipse, square });
+  constructor(private modalController: ModalController) {
+    addIcons({ statsChart, list, add });
+  }
+
+  async openTransactionModal(): Promise<void> {
+    const modal = await this.modalController.create({
+      component: TransactionFormModalComponent
+    });
+    await modal.present();
   }
 }

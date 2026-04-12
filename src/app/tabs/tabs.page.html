@@ -1,4 +1,10 @@
 <ion-tabs>
+  <ion-fab class="tabs-add-fab" vertical="bottom" horizontal="center" slot="fixed">
+    <ion-fab-button (click)="openTransactionModal()" aria-label="Add transaction">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
   <ion-tab-bar slot="bottom">
     <ion-tab-button tab="dashboard" href="/tabs/dashboard">
       <ion-icon aria-hidden="true" name="stats-chart"></ion-icon>
