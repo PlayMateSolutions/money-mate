@@ -11,3 +11,17 @@ export interface Account extends BaseEntity {
 }
 
 export type AccountType = Account['type'];
+
+// Predefined accounts that will be created on first setup
+export const DEFAULT_ACCOUNTS: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>[] = [
+  {
+    name: 'Cash',
+    type: 'cash',
+    balance: 0,
+    ownerName: 'Me',
+    color: '#FFB300',
+    icon: 'cash-outline',
+    isDeleted: false,
+    notes: 'Default cash account'
+  }
+];

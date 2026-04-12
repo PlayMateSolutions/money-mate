@@ -74,4 +74,8 @@ export class SettingsPage implements OnInit, OnDestroy {
   async openCategoryManagement(): Promise<void> {
     await this.router.navigate(['/settings/categories']);
   }
+
+  async openAccountManagement(): Promise<void> {
+    await this.router.navigate(['/settings/accounts']);
+  }
 }

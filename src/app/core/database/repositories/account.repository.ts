@@ -34,6 +34,20 @@ export class AccountRepository {
   }
 
   /**
+   * Get all accounts including inactive (for settings management)
+   */
+  async getAccountsForSettings(): Promise<Account[]> {
+    try {
+      return await this.db.accounts
+        .orderBy('createdAt')
+        .toArray();
+    } catch (error) {
+      console.error('Error fetching accounts for settings:', error);
+      throw new Error('Failed to fetch accounts for settings');
+    }
+  }
+
+  /**
    * Get accounts as Observable
    */
   getAccounts$(): Observable<Account[]> {
@@ -51,6 +65,23 @@ export class AccountRepository {
         .where('id')
         .equals(id)
         .filter(account => !account.isDeleted)
+        .first();
+      
+      return account;
+    } catch (error) {
+      console.error('Error fetching account by ID:', error);
+      throw new Error('Failed to fetch account');
+    }
+  }
+
+  /**
+   * Get account by ID including inactive (for settings management)
+   */
+  async getAccountByIdForSettings(id: string): Promise<Account | undefined> {
+    try {
+      const account = await this.db.accounts
+        .where('id')
+        .equals(id)
         .first();
       
       return account;
@@ -116,9 +147,12 @@ export class AccountRepository {
         updatedAt: new Date()
       };
 
-      await this.db.accounts.update(id, updateData);
+      await this.db.accounts
+        .where('id')
+        .equals(id)
+        .modify(updateData);
       
-      const updatedAccount = await this.getAccountById(id);
+      const updatedAccount = await this.getAccountByIdForSettings(id);
       if (!updatedAccount) {
         throw new Error('Account not found after update');
       }
@@ -130,6 +164,16 @@ export class AccountRepository {
     } catch (error) {
       console.error('Error updating account:', error);
       throw new Error('Failed to update account');
+    }
+  }
+
+  async setAccountIsActive(id: string, isActive: boolean): Promise<void> {
+    try {
+      await this.db.accounts.update(id, { isDeleted: !isActive, updatedAt: new Date() });
+      await this.getAccounts();
+    } catch (error) {
+      console.error('Error updating account active state:', error);
+      throw new Error('Failed to update account active state');
     }
   }
 

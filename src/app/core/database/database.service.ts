@@ -36,15 +36,29 @@ export class DatabaseService extends Dexie {
 
   private async initializeDefaultData(): Promise<void> {
     try {
-      console.log('Checking for existing categories...');
-      // Check if categories already exist
-      const categoryCount = await this.categories.count();
+      console.log('Checking for existing data...');
       
+      // Check and initialize accounts
+      const accountCount = await this.accounts.count();
+      if (accountCount === 0) {
+        const { DEFAULT_ACCOUNTS } = await import('./models/account.model');
+        
+        const accountsWithMetadata = DEFAULT_ACCOUNTS.map(account => ({
+          ...account,
+          id: crypto.randomUUID(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }));
+
+        await this.accounts.bulkAdd(accountsWithMetadata);
+        console.log('Default accounts initialized successfully');
+      }
+      
+      // Check and initialize categories
+      const categoryCount = await this.categories.count();
       if (categoryCount === 0) {
-        // Import default categories
         const { DEFAULT_CATEGORIES } = await import('./models/category.model');
         
-        // Add default categories with proper IDs and timestamps
         const categoriesWithMetadata = DEFAULT_CATEGORIES.map(category => ({
           ...category,
           id: crypto.randomUUID(),
