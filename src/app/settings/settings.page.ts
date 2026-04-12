@@ -14,12 +14,14 @@ import {
   IonSelect,
   IonSelectOption,
   IonIcon,
-  IonNote
+  IonNote,
+  IonAvatar,
+  IonButton
 } from '@ionic/angular/standalone';
 import { Subject, takeUntil } from 'rxjs';
 import { ThemeService, Theme, SessionService, AuthMode } from '../core/services';
 import { addIcons } from 'ionicons';
-import { chevronForwardOutline } from 'ionicons/icons';
+import { chevronForwardOutline, logOutOutline, personCircleOutline } from 'ionicons/icons';
 import { Router } from '@angular/router';
 
 @Component({
@@ -41,12 +43,18 @@ import { Router } from '@angular/router';
     IonSelect,
     IonSelectOption,
     IonIcon,
-    IonNote
+    IonNote,
+    IonAvatar,
+    IonButton
   ]
 })
 export class SettingsPage implements OnInit, OnDestroy {
   currentTheme: Theme = 'auto';
   authMode: AuthMode | 'none' = 'none';
+  userName = 'Guest User';
+  userEmail = 'Offline Mode';
+  userPicture = '';
+  accountSubtitle = 'Connect Google to enable sync and backup';
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -54,7 +62,7 @@ export class SettingsPage implements OnInit, OnDestroy {
     private sessionService: SessionService,
     private router: Router
   ) {
-    addIcons({ chevronForwardOutline });
+    addIcons({ chevronForwardOutline, logOutOutline, personCircleOutline });
   }
 
   ngOnInit() {
@@ -68,6 +76,12 @@ export class SettingsPage implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((session) => {
         this.authMode = session?.mode ?? 'none';
+        this.userName = session?.name || 'Guest User';
+        this.userEmail = session?.email || 'Offline Mode';
+        this.userPicture = session?.picture || '';
+        this.accountSubtitle = this.authMode === 'google'
+          ? 'Google Account'
+          : 'Connect Google to enable sync and backup';
       });
   }
 
@@ -95,5 +109,9 @@ export class SettingsPage implements OnInit, OnDestroy {
 
   async disconnectGoogle(): Promise<void> {
     await this.sessionService.signOutGoogle();
+  }
+
+  async logout(): Promise<void> {
+    await this.disconnectGoogle();
   }
 }

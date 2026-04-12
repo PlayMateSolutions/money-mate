@@ -7,3 +7,21 @@
   color: var(--ion-color-medium);
   font-size: 16px;
 }
+
+.account-item {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+}
+
+.avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ion-color-medium);
+}
+
+.avatar-placeholder ion-icon {
+  font-size: 36px;
+}

@@ -12,14 +12,3 @@ export const appEntryGuard: CanMatchFn = () => {
 
   return router.createUrlTree(['/login']);
 };
-
-export const loginEntryGuard: CanMatchFn = () => {
-  const router = inject(Router);
-  const sessionService = inject(SessionService);
-
-  if (sessionService.hasCompletedEntry) {
-    return router.createUrlTree(['/tabs/dashboard']);
-  }
-
-  return true;
-};
