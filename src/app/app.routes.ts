@@ -1,8 +1,15 @@
 import { Routes } from '@angular/router';
+import { appEntryGuard, loginEntryGuard } from './core/guards/entry.guard';
 
 export const routes: Routes = [
   {
+    path: 'login',
+    canMatch: [loginEntryGuard],
+    loadComponent: () => import('./auth').then((m) => m.LoginPage),
+  },
+  {
     path: '',
+    canMatch: [appEntryGuard],
     loadChildren: () => import('./tabs/tabs.routes').then((m) => m.routes),
   },
   {

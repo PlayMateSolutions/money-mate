@@ -1,0 +1,46 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Welcome</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="login-wrapper">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Money Mate</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p class="intro-text">
+          Continue with Google to enable cloud sync, or continue offline to use the app locally.
+        </p>
+
+        <ion-button
+          expand="block"
+          [disabled]="isBusy"
+          (click)="continueWithGoogle()">
+          <ion-icon name="logo-google" slot="start"></ion-icon>
+          Continue with Google
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="medium"
+          [disabled]="isBusy"
+          (click)="continueOffline()">
+          <ion-icon name="phone-portrait-outline" slot="start"></ion-icon>
+          Continue offline
+        </ion-button>
+
+        <div class="loading-block" *ngIf="isBusy">
+          <ion-spinner name="crescent"></ion-spinner>
+        </div>
+
+        <ion-text color="danger" *ngIf="errorMessage">
+          <p class="error-text">{{ errorMessage }}</p>
+        </ion-text>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

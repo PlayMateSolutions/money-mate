@@ -49,6 +49,34 @@
         </ion-item>
       </ion-item-group>
 
+      <ion-item-group>
+        <ion-item-divider>
+          <ion-label>Google Sync</ion-label>
+        </ion-item-divider>
+        <ion-item>
+          <ion-label>
+            <h2>Current Mode</h2>
+            <p *ngIf="authMode === 'google'">Connected with Google</p>
+            <p *ngIf="authMode === 'offline'">Offline mode</p>
+            <p *ngIf="authMode === 'none'">Not configured</p>
+          </ion-label>
+        </ion-item>
+        <ion-item button (click)="openLogin()" *ngIf="authMode !== 'google'">
+          <ion-label>
+            <h2>Connect Google Account</h2>
+            <p>Sign in to enable cloud sync later</p>
+          </ion-label>
+          <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+        </ion-item>
+        <ion-item button (click)="disconnectGoogle()" *ngIf="authMode === 'google'">
+          <ion-label>
+            <h2>Disconnect Google Account</h2>
+            <p>Switch back to offline mode</p>
+          </ion-label>
+          <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+        </ion-item>
+      </ion-item-group>
+
       <!-- About -->
       <ion-item-group>
         <ion-item-divider>

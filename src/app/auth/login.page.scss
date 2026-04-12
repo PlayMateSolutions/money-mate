@@ -1,0 +1,38 @@
+.login-wrapper {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+ion-card {
+  width: 100%;
+  max-width: 420px;
+  margin: 0;
+  background: var(--ion-card-background, var(--ion-background-color));
+}
+
+ion-card-title {
+  text-align: center;
+}
+
+.intro-text {
+  color: var(--ion-color-medium);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+ion-button {
+  margin-bottom: 12px;
+}
+
+.loading-block {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.error-text {
+  margin-top: 12px;
+  text-align: center;
+}

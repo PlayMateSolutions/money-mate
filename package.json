@@ -26,6 +26,7 @@
     "@capacitor/haptics": "8.0.1",
     "@capacitor/keyboard": "8.0.1",
     "@capacitor/status-bar": "8.0.1",
+    "@capgo/capacitor-social-login": "^7.6.8",
     "@ionic/angular": "^8.0.0",
     "dexie": "^4.3.0",
     "ionicons": "^7.0.0",

@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { 
   IonHeader, 
   IonToolbar, 
@@ -16,7 +17,7 @@ import {
   IonNote
 } from '@ionic/angular/standalone';
 import { Subject, takeUntil } from 'rxjs';
-import { ThemeService, Theme } from '../core/services';
+import { ThemeService, Theme, SessionService, AuthMode } from '../core/services';
 import { addIcons } from 'ionicons';
 import { chevronForwardOutline } from 'ionicons/icons';
 import { Router } from '@angular/router';
@@ -26,6 +27,7 @@ import { Router } from '@angular/router';
   templateUrl: 'settings.page.html',
   styleUrls: ['settings.page.scss'],
   imports: [
+    CommonModule,
     IonHeader, 
     IonToolbar, 
     IonTitle, 
@@ -44,10 +46,12 @@ import { Router } from '@angular/router';
 })
 export class SettingsPage implements OnInit, OnDestroy {
   currentTheme: Theme = 'auto';
+  authMode: AuthMode | 'none' = 'none';
   private destroy$ = new Subject<void>();
 
   constructor(
     private themeService: ThemeService,
+    private sessionService: SessionService,
     private router: Router
   ) {
     addIcons({ chevronForwardOutline });
@@ -59,6 +63,12 @@ export class SettingsPage implements OnInit, OnDestroy {
     //   .subscribe(theme => {
     //     this.currentTheme = theme;
     //   });
+
+    this.sessionService.session$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((session) => {
+        this.authMode = session?.mode ?? 'none';
+      });
   }
 
   ngOnDestroy() {
@@ -77,5 +87,13 @@ export class SettingsPage implements OnInit, OnDestroy {
 
   async openAccountManagement(): Promise<void> {
     await this.router.navigate(['/settings/accounts']);
+  }
+
+  async openLogin(): Promise<void> {
+    await this.router.navigate(['/login']);
+  }
+
+  async disconnectGoogle(): Promise<void> {
+    await this.sessionService.signOutGoogle();
   }
 }
