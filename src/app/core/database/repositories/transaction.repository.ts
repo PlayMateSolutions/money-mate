@@ -83,6 +83,8 @@ export class TransactionRepository {
       }
     });
 
+    await this.getAllTransactions();
+
     return transaction;
   }
 

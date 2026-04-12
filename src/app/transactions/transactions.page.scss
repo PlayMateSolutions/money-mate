@@ -7,3 +7,44 @@
   color: var(--ion-color-medium);
   font-size: 16px;
 }
+
+ion-list {
+  padding-top: 8px;
+}
+
+ion-item-divider {
+  --background: var(--ion-color-light);
+  --color: var(--ion-color-medium-shade);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+ion-item h2 {
+  margin: 0;
+  font-weight: 600;
+}
+
+ion-item p {
+  margin: 2px 0;
+}
+
+.amount-note {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+}
+
+ion-item ion-icon[slot='start'] {
+  font-size: 20px;
+}
+
+.transfer-row {
+  --background: var(--ion-color-light);
+}
+
+.transfer-subtitle {
+  color: var(--ion-color-medium-shade);
+  font-weight: 500;
+}

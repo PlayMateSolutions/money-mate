@@ -14,7 +14,52 @@
     </ion-toolbar>
   </ion-header>
 
-  <div class="container">
-    <p>Transactions content will go here</p>
+  <div class="container" *ngIf="loading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading transactions...</p>
   </div>
+
+  <div class="container" *ngIf="!loading && error">
+    <p>{{ error }}</p>
+  </div>
+
+  <div class="container" *ngIf="!loading && !error && !hasTransactions">
+    <p>No transactions yet</p>
+  </div>
+
+  <ion-list *ngIf="!loading && !error && hasTransactions">
+    <ng-container *ngFor="let group of groupedItems; trackBy: trackByDateGroup">
+      <ion-item-divider sticky>
+        <ion-label>{{ group.dateLabel }}</ion-label>
+      </ion-item-divider>
+
+      <ion-item
+        *ngFor="let item of group.items; trackBy: trackByTransactionId"
+        [class.transfer-row]="item.transaction.type === 'transfer'"
+      >
+        <ion-icon
+          slot="start"
+          [name]="item.iconName"
+          [style.color]="item.iconColor"
+        ></ion-icon>
+
+        <ion-label>
+          <h2 *ngIf="item.transaction.type !== 'transfer'">{{ item.transaction.description || item.categoryName }}</h2>
+          <h2 *ngIf="item.transaction.type === 'transfer'">Transfer</h2>
+
+          <p *ngIf="item.transaction.type !== 'transfer'">
+            {{ item.categoryName }} • {{ item.accountName }}
+          </p>
+
+          <p *ngIf="item.transaction.type === 'transfer'" class="transfer-subtitle">
+            {{ getTransferSubtitle(item) }}
+          </p>
+        </ion-label>
+
+        <ion-note slot="end" class="amount-note">
+          {{ getSignedAmountPrefix(item.transaction.amount) }}{{ item.transaction.amount | currency }}
+        </ion-note>
+      </ion-item>
+    </ng-container>
+  </ion-list>
 </ion-content>
