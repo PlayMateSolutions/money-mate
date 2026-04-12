@@ -15,6 +15,9 @@ import {
   IonTextarea,
   IonSelect,
   IonSelectOption,
+  IonDatetime,
+  IonDatetimeButton,
+  IonModal,
   IonSegment,
   IonSegmentButton,
   IonChip,
@@ -46,6 +49,9 @@ import { AccountRepository, CategoryRepository, TransactionRepository, CreateTra
     IonTextarea,
     IonSelect,
     IonSelectOption,
+    IonDatetime,
+    IonDatetimeButton,
+    IonModal,
     IonSegment,
     IonSegmentButton,
     IonChip,
@@ -129,6 +135,13 @@ export class TransactionFormModalComponent implements OnInit {
     if (event.key === 'Enter' || event.key === ',') {
       event.preventDefault();
       this.addTag();
+    }
+  }
+
+  onDateChange(event: CustomEvent<{ value?: string | string[] | null }>): void {
+    const value = event.detail.value;
+    if (typeof value === 'string' && value) {
+      this.form.date = value.slice(0, 10);
     }
   }
 

@@ -67,10 +67,7 @@
 
     <ion-item>
       <ion-label position="stacked">Date *</ion-label>
-      <ion-input
-        type="date"
-        [(ngModel)]="form.date"
-      ></ion-input>
+      <ion-datetime-button style="margin-top: 6px;" datetime="transaction-date"></ion-datetime-button>
     </ion-item>
 
     <ion-item>
@@ -114,4 +111,15 @@
       ></ion-textarea>
     </ion-item>
   </ion-list>
+
+  <ion-modal [keepContentsMounted]="true">
+    <ng-template>
+      <ion-datetime
+        id="transaction-date"
+        presentation="date"
+        [value]="form.date"
+        (ionChange)="onDateChange($event)"
+      ></ion-datetime>
+    </ng-template>
+  </ion-modal>
 </ion-content>
