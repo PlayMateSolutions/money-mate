@@ -5,33 +5,51 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-  <div class="login-wrapper">
-    <ion-card>
-      <ion-card-header>
-        <ion-card-title>Money Mate</ion-card-title>
-      </ion-card-header>
-      <ion-card-content>
+  <ion-card class="login-card">
+    <ion-card-header>
+      <div class="app-logo">
+        <div class="logo-circle">💰</div>
+      </div>
+      <ion-card-title>Money Mate</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <div class="login-container">
         <p class="intro-text">
-          Continue with Google to enable cloud sync, or continue offline to use the app locally.
+          Sign in with Google to enable cloud sync with Google Sheets, or continue offline to use the app locally.
         </p>
 
         <ion-button
           expand="block"
           [disabled]="isBusy"
-          (click)="continueWithGoogle()">
+          (click)="continueWithGoogle()"
+          class="google-button">
           <ion-icon name="logo-google" slot="start"></ion-icon>
-          Continue with Google
+          Sign in with Google
         </ion-button>
+
+        <div class="divider">
+          <span>or</span>
+        </div>
 
         <ion-button
           expand="block"
           fill="outline"
           color="medium"
           [disabled]="isBusy"
-          (click)="continueOffline()">
+          (click)="continueOffline()"
+          class="offline-button">
           <ion-icon name="phone-portrait-outline" slot="start"></ion-icon>
           Continue offline
         </ion-button>
+
+        <div class="scope-info">
+          <strong>When signing in with Google:</strong>
+          <ul>
+            <li>Access to your email address</li>
+            <li>Access to Google Drive files</li>
+            <li>Ability to sync with Google Sheets</li>
+          </ul>
+        </div>
 
         <div class="loading-block" *ngIf="isBusy">
           <ion-spinner name="crescent"></ion-spinner>
@@ -40,7 +58,29 @@
         <ion-text color="danger" *ngIf="errorMessage">
           <p class="error-text">{{ errorMessage }}</p>
         </ion-text>
-      </ion-card-content>
-    </ion-card>
-  </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- <div class="troubleshooting-section">
+    <div class="troubleshooting-header" (click)="toggleTroubleshooting()">
+      <p class="troubleshooting-title">Troubleshooting</p>
+      <ion-icon [name]="showTroubleshooting ? 'chevron-up' : 'chevron-down'" class="toggle-icon"></ion-icon>
+    </div>
+    <div *ngIf="showTroubleshooting" class="troubleshooting-content">
+      <p class="troubleshooting-text">
+        <strong>Google sign-in not working?</strong>
+      </p>
+      <ul class="troubleshooting-list">
+        <li>Ensure you have an active internet connection</li>
+        <li>Check that JavaScript is enabled in your browser</li>
+        <li>Clear your browser cache and cookies</li>
+        <li>Try using a different browser</li>
+      </ul>
+      <ion-button (click)="clearAppData()" expand="block" color="danger" size="small" class="clear-button">
+        <ion-icon slot="start" name="trash"></ion-icon>
+        Clear All App Data
+      </ion-button>
+    </div>
+  </div> -->
 </ion-content>
