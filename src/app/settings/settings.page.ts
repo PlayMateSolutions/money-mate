@@ -21,7 +21,7 @@ import {
 import { Subject, takeUntil } from 'rxjs';
 import { ThemeService, Theme, SessionService, AuthMode } from '../core/services';
 import { addIcons } from 'ionicons';
-import { chevronForwardOutline, logOutOutline, personCircleOutline } from 'ionicons/icons';
+import { chevronForwardOutline, logOutOutline, personCircleOutline, logoGoogle, openOutline } from 'ionicons/icons';
 import { Router } from '@angular/router';
 
 @Component({
@@ -55,6 +55,8 @@ export class SettingsPage implements OnInit, OnDestroy {
   userEmail = 'Offline Mode';
   userPicture = '';
   accountSubtitle = 'Connect Google to enable sync and backup';
+  linkedSheetId: string | null = null;
+  linkedSheetName: string | null = null;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -62,7 +64,7 @@ export class SettingsPage implements OnInit, OnDestroy {
     private sessionService: SessionService,
     private router: Router
   ) {
-    addIcons({ chevronForwardOutline, logOutOutline, personCircleOutline });
+    addIcons({ chevronForwardOutline, logOutOutline, personCircleOutline, logoGoogle, openOutline });
   }
 
   ngOnInit() {
@@ -79,6 +81,8 @@ export class SettingsPage implements OnInit, OnDestroy {
         this.userName = session?.name || 'Guest User';
         this.userEmail = session?.email || 'Offline Mode';
         this.userPicture = session?.picture || '';
+        this.linkedSheetId = this.sessionService.linkedSpreadsheet?.id || null;
+        this.linkedSheetName = this.sessionService.linkedSpreadsheet?.name || null;
         this.accountSubtitle = this.authMode === 'google'
           ? 'Google Account'
           : 'Connect Google to enable sync and backup';
@@ -105,6 +109,23 @@ export class SettingsPage implements OnInit, OnDestroy {
 
   async openLogin(): Promise<void> {
     await this.router.navigate(['/login']);
+  }
+
+  async manageLinkedSheet(): Promise<void> {
+    if (this.authMode === 'google') {
+      await this.router.navigate(['/onboarding']);
+      return;
+    }
+
+    await this.openLogin();
+  }
+
+  openLinkedSheet(): void {
+    if (!this.linkedSheetId) {
+      return;
+    }
+
+    window.open(`https://docs.google.com/spreadsheets/d/${this.linkedSheetId}/edit`, '_blank', 'noopener');
   }
 
   async disconnectGoogle(): Promise<void> {

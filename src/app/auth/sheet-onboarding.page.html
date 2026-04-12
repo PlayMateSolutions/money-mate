@@ -1,0 +1,92 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Set Up Sync</ion-title>
+    <ion-button slot="end" fill="clear" color="medium" (click)="logout()">
+      <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
+    </ion-button>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div *ngIf="loadingSpreadsheets" class="loading-state">
+    <ion-spinner name="crescent" color="primary"></ion-spinner>
+    <p>Loading your spreadsheets...</p>
+  </div>
+
+  <ion-card *ngIf="showSpreadsheetList && !loadingSpreadsheets">
+    <ion-card-header>
+      <ion-card-title>Select Your Spreadsheet</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list>
+        <ion-item
+          *ngFor="let spreadsheet of existingSpreadsheets"
+          button
+          (click)="selectExistingSpreadsheet(spreadsheet)">
+          <ion-icon name="document-outline" slot="start"></ion-icon>
+          <ion-label>
+            <h2>{{ spreadsheet.name }}</h2>
+            <p *ngIf="spreadsheet.linked">Previously linked</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+
+      <ion-button expand="block" fill="outline" color="medium" (click)="proceedToChooseCreate()">
+        Other Options
+        <ion-icon slot="end" name="ellipsis-horizontal-outline"></ion-icon>
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card *ngIf="showMainOptions && !loadingSpreadsheets">
+    <ion-card-header>
+      <ion-card-title>Connect a Google Sheet</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p class="subtitle">
+        Create a new sheet or pick an existing sheet to enable sync and backup.
+      </p>
+
+      <ion-list>
+        <ion-item button (click)="createNewSheet()" [disabled]="loading">
+          <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+          <ion-label>
+            <h2>Create New Sheet</h2>
+            <p>Creates a Money Mate spreadsheet in your Drive</p>
+          </ion-label>
+        </ion-item>
+
+        <ion-item button (click)="openPicker()" [disabled]="loading">
+          <ion-icon name="document-outline" slot="start"></ion-icon>
+          <ion-label>
+            <h2>Pick Existing Sheet</h2>
+            <p>Select a spreadsheet from Google Drive</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+
+      <div class="loader" *ngIf="loading">
+        <ion-spinner name="crescent"></ion-spinner>
+      </div>
+
+      <ion-text color="medium">
+        <p class="hint">You can also continue now and connect later from Settings.</p>
+      </ion-text>
+
+      <ion-button expand="block" fill="outline" color="medium" (click)="skipForNow()" [disabled]="loading">
+        Continue without sheet
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <drive-picker
+    *ngIf="pickerVisible"
+    [attr.client-id]="clientId"
+    [attr.app-id]="appId"
+    [attr.oauth-token]="oauthToken"
+    max-items="1"
+    title="Select Spreadsheet"
+    (picker-picked)="onDrivePicked($event)">
+    <drive-picker-docs-view view-id="SPREADSHEETS"></drive-picker-docs-view>
+  </drive-picker>
+</ion-content>

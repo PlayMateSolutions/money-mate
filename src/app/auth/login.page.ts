@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
+  AlertButton,
   IonButton,
   IonCard,
   IonCardContent,
@@ -60,11 +61,22 @@ export class LoginPage {
     this.errorMessage = null;
     this.isBusy = true;
 
-    const isSuccess = await this.sessionService.signInWithGoogle();
+    const result = await this.sessionService.signInWithGoogle();
     this.isBusy = false;
 
-    if (isSuccess) {
-      await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
+    if (result.success) {
+      if (this.sessionService.hasLinkedSpreadsheet()) {
+        await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
+        return;
+      }
+
+      await this.router.navigate(['/onboarding'], { replaceUrl: true });
+      return;
+    }
+
+    if (result.reason === 'permission_denied') {
+      this.errorMessage = 'Google Drive access is required to sync sheets.';
+      await this.showPermissionAlert();
       return;
     }
 
@@ -76,6 +88,34 @@ export class LoginPage {
       position: 'bottom',
     });
     await toast.present();
+  }
+
+  private async showPermissionAlert(): Promise<void> {
+    const buttons: AlertButton[] = [
+      {
+        text: 'Try Again',
+        handler: async () => {
+          await this.continueWithGoogle();
+        },
+      },
+      {
+        text: 'Continue Offline',
+        role: 'cancel',
+        handler: async () => {
+          await this.continueOffline();
+        },
+      },
+    ];
+
+    const alert = await this.alertController.create({
+      header: 'Permission Required',
+      subHeader: 'Google Drive Access',
+      message:
+        'Money Mate needs Google Drive file access to create or pick your sync sheet. Please sign in again and grant the requested permissions.',
+      buttons,
+    });
+
+    await alert.present();
   }
 
   async continueOffline(): Promise<void> {
@@ -102,11 +142,9 @@ export class LoginPage {
           role: 'destructive',
           handler: async () => {
             try {
-              // Clear localStorage
               localStorage.clear();
               sessionStorage.clear();
-              
-              // Reload page
+
               const toast = await this.toastController.create({
                 message: 'All data cleared. Refreshing...',
                 duration: 2000,
@@ -114,7 +152,7 @@ export class LoginPage {
                 position: 'bottom',
               });
               await toast.present();
-              
+
               setTimeout(() => {
                 window.location.href = '/login';
               }, 1000);

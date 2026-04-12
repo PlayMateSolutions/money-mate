@@ -18,6 +18,16 @@ export interface UserSession {
   expiresAt?: number;
 }
 
+export interface LinkedSpreadsheet {
+  id: string;
+  name: string;
+}
+
+export interface SignInResult {
+  success: boolean;
+  reason?: 'permission_denied' | 'login_failed';
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -25,6 +35,7 @@ export class SessionService {
   private readonly SESSION_KEY = 'money-mate-user-session';
   private readonly ENTRY_KEY = 'money-mate-auth-entry-completed';
   private readonly QUERY_PARAMS_KEY = 'money-mate-auth-query-params';
+  private readonly SPREADSHEET_KEY = 'money-mate-linked-spreadsheet';
   private readonly sessionSubject = new BehaviorSubject<UserSession | null>(null);
   private initialized = false;
 
@@ -51,6 +62,32 @@ export class SessionService {
     return this.currentSession?.mode === 'google';
   }
 
+  get linkedSpreadsheet(): LinkedSpreadsheet | null {
+    const raw = localStorage.getItem(this.SPREADSHEET_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(raw) as LinkedSpreadsheet;
+    } catch {
+      localStorage.removeItem(this.SPREADSHEET_KEY);
+      return null;
+    }
+  }
+
+  hasLinkedSpreadsheet(): boolean {
+    return !!this.linkedSpreadsheet?.id;
+  }
+
+  setLinkedSpreadsheet(spreadsheet: LinkedSpreadsheet): void {
+    localStorage.setItem(this.SPREADSHEET_KEY, JSON.stringify(spreadsheet));
+  }
+
+  clearLinkedSpreadsheet(): void {
+    localStorage.removeItem(this.SPREADSHEET_KEY);
+  }
+
   async initializeGoogleAuth(): Promise<void> {
     if (this.initialized) {
       return;
@@ -65,7 +102,7 @@ export class SessionService {
     this.initialized = true;
   }
 
-  async signInWithGoogle(): Promise<boolean> {
+  async signInWithGoogle(): Promise<SignInResult> {
     try {
       await this.initializeGoogleAuth();
       this.removeQueryParams();
@@ -82,7 +119,21 @@ export class SessionService {
       const accessToken = result?.accessToken?.token;
 
       if (!accessToken) {
-        return false;
+        return { success: false, reason: 'login_failed' };
+      }
+
+      const tokenInfoResponse = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?access_token=${accessToken}`,
+      );
+      const tokenInfo = await tokenInfoResponse.json() as { scope?: string };
+      const grantedScopes = tokenInfo.scope?.split(' ') || [];
+      const hasDriveFilePermission = grantedScopes.includes(
+        'https://www.googleapis.com/auth/drive.file',
+      );
+
+      if (!hasDriveFilePermission) {
+        this.restoreQueryParams();
+        return { success: false, reason: 'permission_denied' };
       }
 
       const session: UserSession = {
@@ -97,11 +148,11 @@ export class SessionService {
       this.setSession(session);
       this.markEntryCompleted();
       this.restoreQueryParams();
-      return true;
+      return { success: true };
     } catch (error) {
       console.error('Google sign-in failed:', error);
       this.restoreQueryParams();
-      return false;
+      return { success: false, reason: 'login_failed' };
     }
   }
 

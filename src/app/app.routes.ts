@@ -7,6 +7,10 @@ export const routes: Routes = [
     loadComponent: () => import('./auth').then((m) => m.LoginPage),
   },
   {
+    path: 'onboarding',
+    loadComponent: () => import('./auth').then((m) => m.SheetOnboardingPage),
+  },
+  {
     path: '',
     canMatch: [appEntryGuard],
     loadChildren: () => import('./tabs/tabs.routes').then((m) => m.routes),

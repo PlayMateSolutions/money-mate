@@ -3,6 +3,23 @@
   text-align: center;
 }
 
+ion-list {
+  padding-top: 0;
+  background: transparent;
+}
+
+ion-item-divider {
+  --background: transparent;
+  --color: var(--ion-color-medium-shade);
+  --inner-padding-top: 0;
+  --inner-padding-bottom: 8px;
+  --padding-start: 0;
+  min-height: auto;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
 .container p {
   color: var(--ion-color-medium);
   font-size: 16px;
@@ -24,4 +41,30 @@
 
 .avatar-placeholder ion-icon {
   font-size: 36px;
+}
+
+.sheet-item {
+  --padding-top: 8px;
+  --padding-bottom: 12px;
+}
+
+.sheet-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+
+  span {
+    font-weight: 500;
+    color: var(--ion-text-color);
+  }
+
+  ion-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+}
+
+ion-item[button] {
+  --detail-icon: none;
 }

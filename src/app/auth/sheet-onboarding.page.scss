@@ -1,0 +1,31 @@
+ion-card {
+  max-width: 520px;
+  margin: 20px auto;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 40px;
+  color: var(--ion-color-medium);
+}
+
+.subtitle {
+  color: var(--ion-color-medium);
+  margin-bottom: 14px;
+}
+
+.loader {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0;
+}
+
+.hint {
+  margin-top: 14px;
+  margin-bottom: 8px;
+  text-align: center;
+}

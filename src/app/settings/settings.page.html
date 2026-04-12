@@ -7,13 +7,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Settings</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
+<ion-content>
   <div class="container">
     <ion-list>
       <!-- App Settings -->
@@ -53,7 +47,7 @@
         <ion-item-divider>
           <ion-label>Account</ion-label>
         </ion-item-divider>
-        <ion-item lines="none" class="account-item">
+        <ion-item class="account-item">
           <ion-avatar slot="start" *ngIf="userPicture">
             <img [src]="userPicture" alt="Profile Picture" />
           </ion-avatar>
@@ -81,6 +75,33 @@
             *ngIf="authMode !== 'google'"
             (click)="openLogin()">
             Connect
+          </ion-button>
+        </ion-item>
+        <ion-item class="sheet-item">
+          <ion-label>
+            <h2>Linked Spreadsheet</h2>
+            <p *ngIf="!linkedSheetName">Link a sheet to start syncing and backing up your data</p>
+
+            <div class="sheet-inline" *ngIf="linkedSheetName">
+              <ion-icon name="logo-google" color="primary"></ion-icon>
+              <span>{{ linkedSheetName }}</span>
+              <ion-button
+                fill="clear"
+                color="medium"
+                size="small"
+                (click)="openLinkedSheet()"
+                aria-label="Open linked spreadsheet">
+                <ion-icon name="open-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+            </div>
+          </ion-label>
+
+          <ion-button
+            *ngIf="!linkedSheetName"
+            expand="block"
+            size="small"
+            (click)="manageLinkedSheet()">
+            Link Sheet
           </ion-button>
         </ion-item>
       </ion-item-group>
