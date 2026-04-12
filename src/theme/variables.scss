@@ -1,31 +1,31 @@
 // For information on how to create your own theme, please refer to:
 // https://ionicframework.com/docs/theming/
 
-/** Financial Green Theme - Money Mate Color Scheme **/
+/** Purple Theme - Money Mate Color Scheme **/
 :root {
-  /** Primary: Forest Green **/
-  --ion-color-primary: #2E7D32;
-  --ion-color-primary-rgb: 46, 125, 50;
+  /** Primary: Indigo Purple **/
+  --ion-color-primary: #667EEA;
+  --ion-color-primary-rgb: 102, 126, 234;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #28692c;
-  --ion-color-primary-tint: #439747;
+  --ion-color-primary-shade: #5a6fcf;
+  --ion-color-primary-tint: #758beb;
 
-  /** Secondary: Gold Accent **/
-  --ion-color-secondary: #FFB300;
-  --ion-color-secondary-rgb: 255, 179, 0;
-  --ion-color-secondary-contrast: #000000;
-  --ion-color-secondary-contrast-rgb: 0, 0, 0;
-  --ion-color-secondary-shade: #e09e00;
-  --ion-color-secondary-tint: #ffbb1a;
+  /** Secondary: Deep Purple **/
+  --ion-color-secondary: #764BA2;
+  --ion-color-secondary-rgb: 118, 75, 162;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #68428f;
+  --ion-color-secondary-tint: #845db0;
 
-  /** Tertiary: Light Green **/
-  --ion-color-tertiary: #4CAF50;
-  --ion-color-tertiary-rgb: 76, 175, 80;
+  /** Tertiary: Accent Violet **/
+  --ion-color-tertiary: #8B5CF6;
+  --ion-color-tertiary-rgb: 139, 92, 246;
   --ion-color-tertiary-contrast: #ffffff;
   --ion-color-tertiary-contrast-rgb: 255, 255, 255;
-  --ion-color-tertiary-shade: #439a46;
-  --ion-color-tertiary-tint: #5eb862;
+  --ion-color-tertiary-shade: #7a51d8;
+  --ion-color-tertiary-tint: #976df7;
 
   /** Success: Enhanced Green **/
   --ion-color-success: #66BB6A;
@@ -53,42 +53,41 @@
 }
 
 /** Dark Theme Overrides **/
-// Dark Mode Support
 @media (prefers-color-scheme: dark) {
   :root {
-    /** Primary: Lighter Green for dark mode **/
-    --ion-color-primary: #4CAF50;
-    --ion-color-primary-rgb: 76, 175, 80;
-    --ion-color-primary-contrast: #000000;
-    --ion-color-primary-contrast-rgb: 0, 0, 0;
-    --ion-color-primary-shade: #439a46;
-    --ion-color-primary-tint: #5eb862;
+    /** Primary: Lighter Indigo for dark mode **/
+    --ion-color-primary: #7F93F2;
+    --ion-color-primary-rgb: 127, 147, 242;
+    --ion-color-primary-contrast: #ffffff;
+    --ion-color-primary-contrast-rgb: 255, 255, 255;
+    --ion-color-primary-shade: #7081d5;
+    --ion-color-primary-tint: #8ca0f3;
 
-    /** Secondary: Softer Gold **/
-    --ion-color-secondary: #FFD54F;
-    --ion-color-secondary-rgb: 255, 213, 79;
-    --ion-color-secondary-contrast: #000000;
-    --ion-color-secondary-contrast-rgb: 0, 0, 0;
-    --ion-color-secondary-shade: #e0bb46;
-    --ion-color-secondary-tint: #ffda61;
+    /** Secondary: Lighter Purple for dark mode **/
+    --ion-color-secondary: #9368BF;
+    --ion-color-secondary-rgb: 147, 104, 191;
+    --ion-color-secondary-contrast: #ffffff;
+    --ion-color-secondary-contrast-rgb: 255, 255, 255;
+    --ion-color-secondary-shade: #815ca8;
+    --ion-color-secondary-tint: #9f77c5;
   }
 }
 
 // Manual Dark Mode (when .dark class is applied)
 .dark {
-  /** Primary: Lighter Green for dark mode **/
-  --ion-color-primary: #4CAF50;
-  --ion-color-primary-rgb: 76, 175, 80;
-  --ion-color-primary-contrast: #000000;
-  --ion-color-primary-contrast-rgb: 0, 0, 0;
-  --ion-color-primary-shade: #439a46;
-  --ion-color-primary-tint: #5eb862;
+  /** Primary: Lighter Indigo for dark mode **/
+  --ion-color-primary: #7F93F2;
+  --ion-color-primary-rgb: 127, 147, 242;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #7081d5;
+  --ion-color-primary-tint: #8ca0f3;
 
-  /** Secondary: Softer Gold **/
-  --ion-color-secondary: #FFD54F;
-  --ion-color-secondary-rgb: 255, 213, 79;
-  --ion-color-secondary-contrast: #000000;
-  --ion-color-secondary-contrast-rgb: 0, 0, 0;
-  --ion-color-secondary-shade: #e0bb46;
-  --ion-color-secondary-tint: #ffda61;
+  /** Secondary: Lighter Purple for dark mode **/
+  --ion-color-secondary: #9368BF;
+  --ion-color-secondary-rgb: 147, 104, 191;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #815ca8;
+  --ion-color-secondary-tint: #9f77c5;
 }
