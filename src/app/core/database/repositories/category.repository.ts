@@ -145,7 +145,7 @@ export class CategoryRepository {
   /**
    * Update category
    */
-  async updateCategory(id: string, updates: Partial<Omit<Category, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Category> {
+  async updateCategory(id: string, updates: Partial<Omit<Category, 'id' | 'isDeleted' | 'createdAt' | 'updatedAt'>>): Promise<Category> {
     try {
       const updateData = {
         ...updates,
@@ -174,8 +174,7 @@ export class CategoryRepository {
 
   async setCategoryIsActive(id: string, isActive: boolean): Promise<void> {
     try {
-      await this.updateCategory(id, { isDeleted: !isActive });
-
+      await this.db.categories.update(id, { isDeleted: !isActive, updatedAt: new Date() });
       await this.getCategories();
     } catch (error) {
       console.error('Error updating category active state:', error);

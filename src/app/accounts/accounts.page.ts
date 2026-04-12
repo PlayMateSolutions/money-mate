@@ -15,12 +15,15 @@ import {
   IonButton,
   IonItemDivider,
   IonSpinner,
+  IonFab,
+  IonFabButton,
   ModalController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   createOutline,
-  pricetagOutline
+  pricetagOutline,
+  add
 } from 'ionicons/icons';
 import * as ionicons from 'ionicons/icons';
 import { Account } from '../core/database/models';
@@ -47,7 +50,9 @@ import { AccountEditModalComponent, AccountEditModalResult } from './components/
     IonBadge,
     IonButton,
     IonItemDivider,
-    IonSpinner
+    IonSpinner,
+    IonFab,
+    IonFabButton
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -57,6 +62,13 @@ export class AccountsPage implements OnInit {
   error: string | null = null;
   private registeredIconNames = new Set<string>(['create-outline', 'pricetag-outline']);
 
+  private readonly accountTypeDefaults: Record<Account['type'], { color: string; icon: string }> = {
+    cash: { color: '#FFB300', icon: 'cash-outline' },
+    checking: { color: '#4CAF50', icon: 'card-outline' },
+    savings: { color: '#2196F3', icon: 'wallet-outline' },
+    credit: { color: '#9C27B0', icon: 'card-outline' }
+  };
+
   constructor(
     private accountRepository: AccountRepository,
     private modalController: ModalController,
@@ -64,7 +76,8 @@ export class AccountsPage implements OnInit {
   ) {
     addIcons({
       createOutline,
-      pricetagOutline
+      pricetagOutline,
+      add
     });
   }
 
@@ -207,6 +220,43 @@ export class AccountsPage implements OnInit {
       console.error('Error saving account changes:', error);
       this.error = 'Failed to save account changes';
       await this.loadAccounts();
+      this.cdr.markForCheck();
+    }
+  }
+
+  async openCreateModal(): Promise<void> {
+    const modal = await this.modalController.create({
+      component: AccountEditModalComponent
+    });
+
+    await modal.present();
+
+    const { data, role } = await modal.onDidDismiss<AccountEditModalResult>();
+    if (role !== 'save' || !data) {
+      return;
+    }
+
+    try {
+      this.error = null;
+      const defaults = this.accountTypeDefaults[data.type];
+      const newAccount = await this.accountRepository.createAccount({
+        name: data.name,
+        type: data.type,
+        ownerName: data.ownerName || 'Me',
+        color: data.color || defaults.color,
+        icon: data.icon || defaults.icon,
+        balance: 0,
+        notes: ''
+      });
+
+      this.accounts = [...this.accounts, newAccount];
+      this.registerIconsFromAccounts([newAccount]);
+      this.cdr.markForCheck();
+
+      await this.loadAccounts();
+    } catch (error) {
+      console.error('Error creating account:', error);
+      this.error = 'Failed to create account';
       this.cdr.markForCheck();
     }
   }

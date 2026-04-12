@@ -34,7 +34,6 @@
           <h2>{{ account.name }}</h2>
           <p>{{ account.type }} • Balance: {{ account.balance | currency }}</p>
         </ion-label>
-        <ion-badge color="success" slot="end">IsActive</ion-badge>
         <ion-button fill="clear" slot="end" (click)="openEditModal(account)">
           <ion-icon slot="icon-only" name="create-outline"></ion-icon>
         </ion-button>
@@ -56,4 +55,10 @@
       </ion-item>
     </ion-list>
   </div>
+
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="openCreateModal()">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>

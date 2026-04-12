@@ -33,7 +33,7 @@ export interface AccountEditModalResult {
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-title>Edit Account</ion-title>
+        <ion-title>{{ account ? 'Edit Account' : 'Create Account' }}</ion-title>
         <ion-buttons slot="start">
           <ion-button (click)="cancel()">Cancel</ion-button>
         </ion-buttons>
@@ -51,7 +51,7 @@ export interface AccountEditModalResult {
         </ion-item>
 
         <ion-item>
-          <ion-label position="stacked">Type *</ion-label>
+          <ion-label position="stacked">Type</ion-label>
           <ion-select [(ngModel)]="form.type">
             <ion-select-option value="cash">Cash</ion-select-option>
             <ion-select-option value="checking">Checking</ion-select-option>
@@ -102,7 +102,7 @@ export interface AccountEditModalResult {
   ]
 })
 export class AccountEditModalComponent implements OnInit {
-  @Input({ required: true }) account!: Account;
+  @Input() account?: Account;
 
   form: AccountEditModalResult = {
     name: '',
@@ -116,23 +116,20 @@ export class AccountEditModalComponent implements OnInit {
   constructor(private modalController: ModalController) {}
 
   ngOnInit(): void {
-    this.form = {
-      name: this.account.name,
-      type: this.account.type,
-      ownerName: this.account.ownerName,
-      color: this.account.color,
-      icon: this.account.icon,
-      isActive: !this.account.isDeleted
-    };
+    if (this.account) {
+      this.form = {
+        name: this.account.name,
+        type: this.account.type,
+        ownerName: this.account.ownerName,
+        color: this.account.color,
+        icon: this.account.icon,
+        isActive: !this.account.isDeleted
+      };
+    }
   }
 
   get canSave(): boolean {
-    return (
-      this.form.name.trim().length > 0 &&
-      this.form.type &&
-      this.form.color.trim().length > 0 &&
-      this.form.icon.trim().length > 0
-    );
+    return this.form.name.trim().length > 0;
   }
 
   async cancel(): Promise<void> {

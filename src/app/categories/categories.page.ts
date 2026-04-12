@@ -15,12 +15,15 @@ import {
   IonButton,
   IonItemDivider,
   IonSpinner,
+  IonFab,
+  IonFabButton,
   ModalController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   createOutline,
   pricetagOutline,
+  add
 } from 'ionicons/icons';
 import * as ionicons from 'ionicons/icons';
 import { Category } from '../core/database/models';
@@ -47,7 +50,9 @@ import { CategoryEditModalComponent, CategoryEditModalResult } from './component
     IonBadge,
     IonButton,
     IonItemDivider,
-    IonSpinner
+    IonSpinner,
+    IonFab,
+    IonFabButton
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -64,7 +69,8 @@ export class CategoriesPage implements OnInit {
   ) {
     addIcons({
       createOutline,
-      pricetagOutline
+      pricetagOutline,
+      add
     });
   }
 
@@ -167,12 +173,18 @@ export class CategoriesPage implements OnInit {
       this.registerIconsFromCategories(this.categories);
       this.cdr.markForCheck();
 
+      const wasActive = !category.isDeleted;
+      const willBeActive = data.isActive;
+
       await this.categoryRepository.updateCategory(category.id, {
         name: data.name,
         icon: data.icon,
-        color: data.color,
-        isDeleted: !data.isActive
+        color: data.color
       });
+
+      if (wasActive !== willBeActive) {
+        await this.categoryRepository.setCategoryIsActive(category.id, willBeActive);
+      }
 
       await this.loadCategories();
     } catch (error) {
@@ -182,4 +194,37 @@ export class CategoriesPage implements OnInit {
       this.cdr.markForCheck();
     }
   }
+
+  async openCreateModal(): Promise<void> {
+    const modal = await this.modalController.create({
+      component: CategoryEditModalComponent
+    });
+
+    await modal.present();
+
+    const { data, role } = await modal.onDidDismiss<CategoryEditModalResult>();
+    if (role !== 'save' || !data) {
+      return;
+    }
+
+    try {
+      this.error = null;
+      const newCategory = await this.categoryRepository.createCategory({
+        name: data.name,
+        icon: data.icon,
+        color: data.color
+      });
+
+      this.categories = [...this.categories, newCategory];
+      this.registerIconsFromCategories([newCategory]);
+      this.cdr.markForCheck();
+
+      await this.loadCategories();
+    } catch (error) {
+      console.error('Error creating category:', error);
+      this.error = 'Failed to create category';
+      this.cdr.markForCheck();
+    }
+  }
+
 }

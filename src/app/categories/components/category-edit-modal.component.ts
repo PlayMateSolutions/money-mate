@@ -29,7 +29,7 @@ export interface CategoryEditModalResult {
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-title>Edit Category</ion-title>
+        <ion-title>{{ category ? 'Edit Category' : 'Create Category' }}</ion-title>
         <ion-buttons slot="start">
           <ion-button (click)="cancel()">Cancel</ion-button>
         </ion-buttons>
@@ -81,7 +81,7 @@ export interface CategoryEditModalResult {
   ]
 })
 export class CategoryEditModalComponent implements OnInit {
-  @Input({ required: true }) category!: Category;
+  @Input() category?: Category;
 
   form: CategoryEditModalResult = {
     name: '',
@@ -93,12 +93,14 @@ export class CategoryEditModalComponent implements OnInit {
   constructor(private modalController: ModalController) {}
 
   ngOnInit(): void {
-    this.form = {
-      name: this.category.name,
-      icon: this.category.icon,
-      color: this.category.color,
-      isActive: !this.category.isDeleted
-    };
+    if (this.category) {
+      this.form = {
+        name: this.category.name,
+        icon: this.category.icon,
+        color: this.category.color,
+        isActive: !this.category.isDeleted
+      };
+    }
   }
 
   get canSave(): boolean {
