@@ -24,12 +24,14 @@ export interface CategoryEditModalResult {
   isActive: boolean;
 }
 
+type CategoryModalData = Partial<Category>;
+
 @Component({
   selector: 'app-category-edit-modal',
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-title>{{ category ? 'Edit Category' : 'Create Category' }}</ion-title>
+        <ion-title>{{ category?.id ? 'Edit Category' : 'Create Category' }}</ion-title>
         <ion-buttons slot="start">
           <ion-button (click)="cancel()">Cancel</ion-button>
         </ion-buttons>
@@ -42,7 +44,7 @@ export interface CategoryEditModalResult {
     <ion-content>
       <ion-list>
         <ion-item>
-          <ion-label position="stacked">Name</ion-label>
+          <ion-label position="stacked">Name *</ion-label>
           <ion-input [(ngModel)]="form.name" placeholder="Category name"></ion-input>
         </ion-item>
 
@@ -53,7 +55,19 @@ export interface CategoryEditModalResult {
 
         <ion-item>
           <ion-label position="stacked">Color</ion-label>
-          <ion-input [(ngModel)]="form.color" placeholder="#2196F3"></ion-input>
+          <div style="display:flex; align-items:center; gap:12px; width:100%;">
+            <ion-input
+              style="flex:1;"
+              [ngModel]="form.color"
+              (ngModelChange)="onColorChange($event)"
+              placeholder="#2196F3"
+            ></ion-input>
+            <div
+              style="width:20px; height:20px; border-radius:50%; border:1px solid var(--ion-color-medium); flex-shrink:0;"
+              [style.background]="form.color || '#ffffff'"
+            ></div>
+            <ion-button fill="outline" size="small" (click)="regenerateColor()">Generate</ion-button>
+          </div>
         </ion-item>
 
         <ion-item>
@@ -81,7 +95,7 @@ export interface CategoryEditModalResult {
   ]
 })
 export class CategoryEditModalComponent implements OnInit {
-  @Input() category?: Category;
+  @Input() category?: CategoryModalData;
 
   form: CategoryEditModalResult = {
     name: '',
@@ -93,18 +107,42 @@ export class CategoryEditModalComponent implements OnInit {
   constructor(private modalController: ModalController) {}
 
   ngOnInit(): void {
-    if (this.category) {
+    if (this.category?.id) {
       this.form = {
-        name: this.category.name,
-        icon: this.category.icon,
-        color: this.category.color,
+        name: this.category.name ?? '',
+        icon: this.category.icon ?? '',
+        color: this.normalizeColor(this.category.color ?? ''),
         isActive: !this.category.isDeleted
       };
+      return;
     }
+
+    this.form = {
+      name: this.category?.name ?? '',
+      icon: this.category?.icon ?? 'pricetag-outline',
+      color: this.normalizeColor(this.category?.color ?? '') || this.generateRandomColor(),
+      isActive: this.category?.isDeleted !== undefined ? !this.category.isDeleted : true
+    };
+  }
+
+  private generateRandomColor(): string {
+    return ('#' + ((Math.random() * 0xFFFFFF) << 0).toString(16).padStart(6, '0')).toUpperCase();
+  }
+
+  private normalizeColor(value: string): string {
+    return value.trim().toUpperCase();
+  }
+
+  onColorChange(value: string | number | null | undefined): void {
+    this.form.color = this.normalizeColor(String(value ?? ''));
+  }
+
+  regenerateColor(): void {
+    this.form.color = this.generateRandomColor();
   }
 
   get canSave(): boolean {
-    return this.form.name.trim().length > 0 && this.form.icon.trim().length > 0 && this.form.color.trim().length > 0;
+    return this.form.name.trim().length > 0;
   }
 
   async cancel(): Promise<void> {
@@ -121,7 +159,7 @@ export class CategoryEditModalComponent implements OnInit {
         ...this.form,
         name: this.form.name.trim(),
         icon: this.form.icon.trim(),
-        color: this.form.color.trim()
+        color: this.normalizeColor(this.form.color)
       },
       'save'
     );

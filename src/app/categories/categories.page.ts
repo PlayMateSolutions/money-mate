@@ -61,6 +61,7 @@ export class CategoriesPage implements OnInit {
   loading = true;
   error: string | null = null;
   private registeredIconNames = new Set<string>(['create-outline', 'pricetag-outline']);
+  private readonly categoryDefaultIcon = 'pricetag-outline';
 
   constructor(
     private categoryRepository: CategoryRepository,
@@ -88,6 +89,10 @@ export class CategoriesPage implements OnInit {
 
   trackByCategoryId(_: number, category: Category): string {
     return category.id;
+  }
+
+  private getRandomCategoryColor(): string {
+    return ('#' + ((Math.random() * 0xFFFFFF) << 0).toString(16).padStart(6, '0')).toUpperCase();
   }
 
   getCategoryIcon(iconName: string): string {
@@ -196,8 +201,18 @@ export class CategoriesPage implements OnInit {
   }
 
   async openCreateModal(): Promise<void> {
+    const draftCategory: Partial<Category> = {
+      name: '',
+      icon: this.categoryDefaultIcon,
+      color: this.getRandomCategoryColor(),
+      isDeleted: false
+    };
+
     const modal = await this.modalController.create({
-      component: CategoryEditModalComponent
+      component: CategoryEditModalComponent,
+      componentProps: {
+        category: draftCategory
+      }
     });
 
     await modal.present();
@@ -209,10 +224,13 @@ export class CategoriesPage implements OnInit {
 
     try {
       this.error = null;
+      const icon = data.icon || this.categoryDefaultIcon;
+      const color = data.color || draftCategory.color || this.getRandomCategoryColor();
+
       const newCategory = await this.categoryRepository.createCategory({
         name: data.name,
-        icon: data.icon,
-        color: data.color
+        icon,
+        color
       });
 
       this.categories = [...this.categories, newCategory];

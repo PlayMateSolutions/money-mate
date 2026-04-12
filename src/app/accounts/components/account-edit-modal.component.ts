@@ -67,7 +67,19 @@ export interface AccountEditModalResult {
 
         <ion-item>
           <ion-label position="stacked">Color</ion-label>
-          <ion-input [(ngModel)]="form.color" placeholder="#FFB300"></ion-input>
+          <div style="display:flex; align-items:center; gap:12px; width:100%;">
+            <ion-input
+              style="flex:1;"
+              [ngModel]="form.color"
+              (ngModelChange)="onColorChange($event)"
+              placeholder="#FFB300"
+            ></ion-input>
+            <div
+              style="width:20px; height:20px; border-radius:50%; border:1px solid var(--ion-color-medium); flex-shrink:0;"
+              [style.background]="form.color || '#ffffff'"
+            ></div>
+            <ion-button fill="outline" size="small" (click)="regenerateColor()">Generate</ion-button>
+          </div>
         </ion-item>
 
         <ion-item>
@@ -102,7 +114,7 @@ export interface AccountEditModalResult {
   ]
 })
 export class AccountEditModalComponent implements OnInit {
-  @Input() account?: Account;
+  @Input() account?: Partial<Account>;
 
   form: AccountEditModalResult = {
     name: '',
@@ -116,16 +128,42 @@ export class AccountEditModalComponent implements OnInit {
   constructor(private modalController: ModalController) {}
 
   ngOnInit(): void {
-    if (this.account) {
+    if (this.account?.id) {
       this.form = {
-        name: this.account.name,
-        type: this.account.type,
-        ownerName: this.account.ownerName,
-        color: this.account.color,
-        icon: this.account.icon,
+        name: this.account.name ?? '',
+        type: this.account.type ?? 'savings',
+        ownerName: this.account.ownerName ?? '',
+        color: this.normalizeColor(this.account.color ?? ''),
+        icon: this.account.icon ?? '',
         isActive: !this.account.isDeleted
       };
+      return;
     }
+
+    this.form = {
+      name: this.account?.name ?? '',
+      type: this.account?.type ?? 'savings',
+      ownerName: this.account?.ownerName ?? '',
+      color: this.normalizeColor(this.account?.color ?? '') || this.generateRandomColor(),
+      icon: this.account?.icon ?? '',
+      isActive: this.account?.isDeleted !== undefined ? !this.account.isDeleted : true
+    };
+  }
+
+  private generateRandomColor(): string {
+    return ('#' + ((Math.random() * 0xFFFFFF) << 0).toString(16).padStart(6, '0')).toUpperCase();
+  }
+
+  private normalizeColor(value: string): string {
+    return value.trim().toUpperCase();
+  }
+
+  onColorChange(value: string | number | null | undefined): void {
+    this.form.color = this.normalizeColor(String(value ?? ''));
+  }
+
+  regenerateColor(): void {
+    this.form.color = this.generateRandomColor();
   }
 
   get canSave(): boolean {
@@ -146,7 +184,7 @@ export class AccountEditModalComponent implements OnInit {
         name: this.form.name.trim(),
         type: this.form.type,
         ownerName: this.form.ownerName.trim(),
-        color: this.form.color.trim(),
+        color: this.normalizeColor(this.form.color),
         icon: this.form.icon.trim(),
         isActive: this.form.isActive
       },

@@ -225,8 +225,18 @@ export class AccountsPage implements OnInit {
   }
 
   async openCreateModal(): Promise<void> {
+    const draftAccount: Partial<Account> = {
+      name: '',
+      type: 'savings',
+      ownerName: '',
+      color: this.accountTypeDefaults['savings'].color,
+      icon: this.accountTypeDefaults['savings'].icon,
+      isDeleted: false
+    };
+
     const modal = await this.modalController.create({
-      component: AccountEditModalComponent
+      component: AccountEditModalComponent,
+      componentProps: { account: draftAccount }
     });
 
     await modal.present();
