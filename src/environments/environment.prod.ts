@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
-  googleSignInClientId: '739815252489-2p9ne9e8vdeub77m2irkn20ga7vre7fp.apps.googleusercontent.com',
-  googleProjectNumber: '739815252489',
+  googleSignInClientId: '1031239235658-94pfpseiboals1kv4g0aehujusmlbcfb.apps.googleusercontent.com',
+  googleProjectNumber: '1031239235658',
   googleScopes: [
     'email',
     'profile',
