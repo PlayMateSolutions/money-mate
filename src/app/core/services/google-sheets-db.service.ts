@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { SessionService } from './session.service';
 
 export interface GoogleDriveSpreadsheetFile {
   id: string;
@@ -19,7 +20,10 @@ export interface GoogleBatchUpdateRange {
   providedIn: 'root',
 })
 export class GoogleSheetsDbService {
-  async listSpreadsheets(accessToken: string, pageSize = 25): Promise<GoogleDriveSpreadsheetFile[]> {
+  constructor(private readonly sessionService: SessionService) {}
+
+  async listSpreadsheets(pageSize = 25): Promise<GoogleDriveSpreadsheetFile[]> {
+    const accessToken = this.getAccessToken();
     const query = encodeURIComponent("mimeType='application/vnd.google-apps.spreadsheet' and trashed=false");
     const fields = encodeURIComponent('files(id,name,modifiedTime)');
 
@@ -45,7 +49,8 @@ export class GoogleSheetsDbService {
       }));
   }
 
-  async createSpreadsheet(accessToken: string, title: string, sheetTitles: string[]): Promise<GoogleSpreadsheetCreateResult> {
+  async createSpreadsheet(title: string, sheetTitles: string[]): Promise<GoogleSpreadsheetCreateResult> {
+    const accessToken = this.getAccessToken();
     const response = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
       method: 'POST',
       headers: {
@@ -70,10 +75,10 @@ export class GoogleSheetsDbService {
   }
 
   async batchUpdateValues(
-    accessToken: string,
-    spreadsheetId: string,
     ranges: GoogleBatchUpdateRange[],
   ): Promise<void> {
+    const accessToken = this.getAccessToken();
+    const spreadsheetId = this.getSpreadsheetId();
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`,
       {
@@ -94,7 +99,9 @@ export class GoogleSheetsDbService {
     }
   }
 
-  async getValues(accessToken: string, spreadsheetId: string, range: string): Promise<string[][]> {
+  async getValues(range: string): Promise<string[][]> {
+    const accessToken = this.getAccessToken();
+    const spreadsheetId = this.getSpreadsheetId();
     const encodedRange = encodeURIComponent(range);
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}`,
@@ -114,11 +121,11 @@ export class GoogleSheetsDbService {
   }
 
   async appendValues(
-    accessToken: string,
-    spreadsheetId: string,
     range: string,
     values: string[][],
   ): Promise<void> {
+    const accessToken = this.getAccessToken();
+    const spreadsheetId = this.getSpreadsheetId();
     const encodedRange = encodeURIComponent(range);
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}:append?valueInputOption=RAW`,
@@ -140,11 +147,11 @@ export class GoogleSheetsDbService {
   }
 
   async updateRangeValues(
-    accessToken: string,
-    spreadsheetId: string,
     range: string,
     values: string[][],
   ): Promise<void> {
+    const accessToken = this.getAccessToken();
+    const spreadsheetId = this.getSpreadsheetId();
     const encodedRange = encodeURIComponent(range);
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}?valueInputOption=RAW`,
@@ -163,5 +170,23 @@ export class GoogleSheetsDbService {
     if (!response.ok) {
       throw new Error(`Failed to update range values (${response.status})`);
     }
+  }
+
+  private getAccessToken(): string {
+    const accessToken = this.sessionService.currentSession?.accessToken;
+    if (!accessToken) {
+      throw new Error('Google access token is not available');
+    }
+
+    return accessToken;
+  }
+
+  private getSpreadsheetId(): string {
+    const spreadsheetId = this.sessionService.linkedSpreadsheet?.id;
+    if (!spreadsheetId) {
+      throw new Error('Linked spreadsheet is not available');
+    }
+
+    return spreadsheetId;
   }
 }

@@ -103,7 +103,7 @@ export class SheetOnboardingPage implements OnInit {
     this.loadingSpreadsheets = true;
     try {
       const linked = this.sessionService.linkedSpreadsheet;
-      const files = await this.googleSheetService.listUserSpreadsheets(accessToken);
+      const files = await this.googleSheetService.listUserSpreadsheets();
 
       if (linked?.id) {
         const linkedEntry: SpreadsheetOption = {
@@ -161,7 +161,7 @@ export class SheetOnboardingPage implements OnInit {
     this.loading = true;
     try {
       const title = `Money Mate | ${new Date().toISOString().slice(0, 10)}`;
-      const spreadsheet = await this.googleSheetService.createMoneyMateSpreadsheet(accessToken, title);
+      const spreadsheet = await this.googleSheetService.createMoneyMateSpreadsheet(title);
 
       this.sessionService.setLinkedSpreadsheet(spreadsheet);
 

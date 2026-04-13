@@ -17,18 +17,18 @@ export class GoogleSheetService {
     private readonly categoryRepository: CategoryRepository,
   ) {}
 
-  async listUserSpreadsheets(accessToken: string): Promise<SpreadsheetSummary[]> {
-    return this.googleSheetsDbService.listSpreadsheets(accessToken);
+  async listUserSpreadsheets(): Promise<SpreadsheetSummary[]> {
+    return this.googleSheetsDbService.listSpreadsheets();
   }
 
-  async createMoneyMateSpreadsheet(accessToken: string, title: string): Promise<SpreadsheetSummary> {
-    const result = await this.googleSheetsDbService.createSpreadsheet(accessToken, title, [
+  async createMoneyMateSpreadsheet(title: string): Promise<SpreadsheetSummary> {
+    const result = await this.googleSheetsDbService.createSpreadsheet(title, [
       'accounts',
       'categories',
       'transactions',
     ]);
 
-    await this.googleSheetsDbService.batchUpdateValues(accessToken, result.spreadsheetId, [
+    await this.googleSheetsDbService.batchUpdateValues([
       {
         range: 'accounts!A1',
         values: [[
@@ -89,8 +89,8 @@ export class GoogleSheetService {
     };
   }
 
-  async syncCategories(accessToken: string, spreadsheetId: string): Promise<void> {
-    const sheetRows = await this.googleSheetsDbService.getValues(accessToken, spreadsheetId, 'categories!A:K');
+  async syncCategories(): Promise<void> {
+    const sheetRows = await this.googleSheetsDbService.getValues('categories!A:K');
     const rowsWithoutHeader = sheetRows.slice(1);
     const localCategories = await this.categoryRepository.getCategoriesForSettings();
 
@@ -134,15 +134,11 @@ export class GoogleSheetService {
 
       if (existing) {
         await this.googleSheetsDbService.updateRangeValues(
-          accessToken,
-          spreadsheetId,
           `categories!A${existing.rowNumber}:K${existing.rowNumber}`,
           rowValues,
         );
       } else {
         await this.googleSheetsDbService.appendValues(
-          accessToken,
-          spreadsheetId,
           'categories!A:K',
           rowValues,
         );

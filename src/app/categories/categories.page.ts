@@ -171,10 +171,7 @@ export class CategoriesPage implements OnInit {
       return;
     }
 
-    const accessToken = this.sessionService.currentSession?.accessToken;
-    const spreadsheetId = this.sessionService.linkedSpreadsheet?.id;
-
-    if (!accessToken || !spreadsheetId) {
+    if (!this.sessionService.currentSession?.accessToken || !this.sessionService.linkedSpreadsheet?.id) {
       return;
     }
 
@@ -183,7 +180,7 @@ export class CategoriesPage implements OnInit {
       this.error = null;
       this.cdr.markForCheck();
 
-      await this.googleSheetService.syncCategories(accessToken, spreadsheetId);
+      await this.googleSheetService.syncCategories();
       await this.loadCategories();
       await this.presentToast('Categories synced successfully', 'success');
     } catch (error) {
