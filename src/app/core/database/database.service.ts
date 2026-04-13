@@ -17,11 +17,12 @@ export class DatabaseService extends Dexie {
     console.log('Initializing database schema... ');
     
     this.version(1).stores({
-      accounts: '++id, name, type, ownerName, createdAt',
+      accounts: '++id, name, type, ownerName, createdAt, isDirty',
       categories: '++id, name, sortOrder, createdAt, isDirty',
       transactions: '++id, accountId, categoryId, date, type, amount, createdAt, createdBy'
     });
 
+    this.registerAccountHooks();
     this.registerCategoryHooks();
 
     // Initialize default categories on first run - using transaction approach like React example
@@ -44,6 +45,36 @@ export class DatabaseService extends Dexie {
     } finally {
       this.dirtyTrackingBypassCount = Math.max(0, this.dirtyTrackingBypassCount - 1);
     }
+  }
+
+  private registerAccountHooks(): void {
+    this.accounts.hook('creating', (_primKey, obj: Account) => {
+      if (this.dirtyTrackingBypassCount > 0) {
+        return;
+      }
+
+      const now = new Date();
+      const actor = this.getCurrentActorName();
+      obj.createdAt = obj.createdAt ?? now;
+      obj.updatedAt = now;
+      obj.createdBy = obj.createdBy ?? actor;
+      obj.updatedBy = actor;
+      obj.isDirty = true;
+    });
+
+    this.accounts.hook('updating', (mods: Partial<Account>) => {
+      if (this.dirtyTrackingBypassCount > 0) {
+        return mods;
+      }
+
+      const actor = this.getCurrentActorName();
+      return {
+        ...mods,
+        updatedAt: new Date(),
+        updatedBy: actor,
+        isDirty: true,
+      };
+    });
   }
 
   private registerCategoryHooks(): void {
@@ -102,11 +133,16 @@ export class DatabaseService extends Dexie {
         const accountsWithMetadata = DEFAULT_ACCOUNTS.map(account => ({
           ...account,
           id: crypto.randomUUID(),
+          isDirty: true,
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          createdBy: 'system',
+          updatedBy: 'system'
         }));
 
-        await this.accounts.bulkAdd(accountsWithMetadata);
+        await this.runWithoutDirtyTracking(async () => {
+          await this.accounts.bulkAdd(accountsWithMetadata);
+        });
         console.log('Default accounts initialized successfully');
       }
       

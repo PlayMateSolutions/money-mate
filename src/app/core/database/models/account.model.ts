@@ -1,6 +1,6 @@
-import { BaseEntity } from './common.types';
+import { AuditableEntity } from './common.types';
 
-export interface Account extends BaseEntity {
+export interface Account extends AuditableEntity {
   name: string; // "Chase Checking", "Visa Credit Card"
   type: 'checking' | 'savings' | 'credit' | 'cash';
   balance: number; // Current balance
@@ -13,7 +13,7 @@ export interface Account extends BaseEntity {
 export type AccountType = Account['type'];
 
 // Predefined accounts that will be created on first setup
-export const DEFAULT_ACCOUNTS: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>[] = [
+export const DEFAULT_ACCOUNTS: Omit<Account, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy' | 'isDirty'>[] = [
   {
     name: 'Cash',
     type: 'cash',

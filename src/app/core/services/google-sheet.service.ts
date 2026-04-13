@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { GoogleSheetsDbService } from './google-sheets-db.service';
-import { Category, GUEST_USER_NAME } from '../database/models';
-import { CategoryRepository } from '../database/repositories';
+import { Account, Category, GUEST_USER_NAME } from '../database/models';
+import { AccountRepository, CategoryRepository } from '../database/repositories';
 
 export interface SpreadsheetSummary {
   id: string;
@@ -14,6 +14,7 @@ export interface SpreadsheetSummary {
 export class GoogleSheetService {
   constructor(
     private readonly googleSheetsDbService: GoogleSheetsDbService,
+    private readonly accountRepository: AccountRepository,
     private readonly categoryRepository: CategoryRepository,
   ) {}
 
@@ -43,6 +44,8 @@ export class GoogleSheetService {
           'isDeleted',
           'createdAt',
           'updatedAt',
+          'createdBy',
+          'updatedBy',
         ]],
       },
       {
@@ -87,6 +90,66 @@ export class GoogleSheetService {
       id: result.spreadsheetId,
       name: result.title,
     };
+  }
+
+  async syncAccounts(): Promise<void> {
+    const sheetRows = await this.googleSheetsDbService.getValues('accounts!A:M');
+    const rowsWithoutHeader = sheetRows.slice(1);
+    const localAccounts = await this.accountRepository.getAccountsForSettings();
+
+    const sheetById = new Map<string, { account: Account; rowNumber: number }>();
+    rowsWithoutHeader.forEach((row, index) => {
+      const parsed = this.parseSheetAccount(row);
+      if (!parsed) {
+        return;
+      }
+
+      sheetById.set(parsed.id, {
+        account: parsed,
+        rowNumber: index + 2,
+      });
+    });
+
+    const localById = new Map(localAccounts.map((account) => [account.id, account]));
+
+    for (const [id, sheetRecord] of sheetById.entries()) {
+      const localRecord = localById.get(id);
+      if (!localRecord) {
+        await this.accountRepository.upsertFromSheet(sheetRecord.account);
+        continue;
+      }
+
+      const localUpdatedAt = new Date(localRecord.updatedAt).getTime();
+      const sheetUpdatedAt = new Date(sheetRecord.account.updatedAt).getTime();
+
+      if (sheetUpdatedAt > localUpdatedAt && !localRecord.isDirty) {
+        await this.accountRepository.upsertFromSheet(sheetRecord.account);
+      }
+    }
+
+    const dirtyAccounts = await this.accountRepository.getDirtyAccounts();
+    const pushedIds: string[] = [];
+
+    for (const account of dirtyAccounts) {
+      const rowValues = [this.toSheetAccountRow(account)];
+      const existing = sheetById.get(account.id);
+
+      if (existing) {
+        await this.googleSheetsDbService.updateRangeValues(
+          `accounts!A${existing.rowNumber}:M${existing.rowNumber}`,
+          rowValues,
+        );
+      } else {
+        await this.googleSheetsDbService.appendValues(
+          'accounts!A:M',
+          rowValues,
+        );
+      }
+
+      pushedIds.push(account.id);
+    }
+
+    await this.accountRepository.clearDirtyFlags(pushedIds);
   }
 
   async syncCategories(): Promise<void> {
@@ -174,6 +237,32 @@ export class GoogleSheetService {
     };
   }
 
+  private parseSheetAccount(row: string[]): Account | null {
+    if (!row[0]) {
+      return null;
+    }
+
+    const createdAt = this.parseDate(row[9]);
+    const updatedAt = this.parseDate(row[10]);
+
+    return {
+      id: row[0],
+      name: row[1] || '',
+      type: this.parseAccountType(row[2]),
+      balance: Number(row[3] || 0),
+      ownerName: row[4] || '',
+      color: row[5] || '#9E9E9E',
+      icon: row[6] || 'cash-outline',
+      notes: row[7] || '',
+      isDeleted: row[8] === 'true',
+      createdAt,
+      updatedAt,
+      createdBy: row[11] || GUEST_USER_NAME,
+      updatedBy: row[12] || row[11] || GUEST_USER_NAME,
+      isDirty: false,
+    };
+  }
+
   private toSheetCategoryRow(category: Category): string[] {
     return [
       category.id,
@@ -188,6 +277,36 @@ export class GoogleSheetService {
       category.createdBy || GUEST_USER_NAME,
       category.updatedBy || category.createdBy || GUEST_USER_NAME,
     ];
+  }
+
+  private toSheetAccountRow(account: Account): string[] {
+    return [
+      account.id,
+      account.name,
+      account.type,
+      String(account.balance),
+      account.ownerName,
+      account.color,
+      account.icon,
+      account.notes || '',
+      String(!!account.isDeleted),
+      this.toIso(account.createdAt),
+      this.toIso(account.updatedAt),
+      account.createdBy || GUEST_USER_NAME,
+      account.updatedBy || account.createdBy || GUEST_USER_NAME,
+    ];
+  }
+
+  private parseAccountType(value: string | undefined): Account['type'] {
+    switch (value) {
+      case 'checking':
+      case 'savings':
+      case 'credit':
+      case 'cash':
+        return value;
+      default:
+        return 'cash';
+    }
   }
 
   private toIso(value: Date | string): string {

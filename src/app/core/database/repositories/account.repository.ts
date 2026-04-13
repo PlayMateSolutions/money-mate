@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, from, throwError } from 'rxjs';
-import { map, tap, catchError, switchMap } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { DatabaseService } from '../database.service';
-import { Account, AccountType } from '../models';
+import { Account, AccountType, GUEST_USER_NAME } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -115,14 +115,16 @@ export class AccountRepository {
   /**
    * Create new account
    */
-  async createAccount(accountData: Omit<Account, 'id' | 'isDeleted' | 'createdAt' | 'updatedAt'>): Promise<Account> {
+  async createAccount(accountData: Omit<Account, 'id' | 'isDeleted' | 'isDirty' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'>): Promise<Account> {
     try {
       const account: Account = {
         ...accountData,
         id: crypto.randomUUID(),
         isDeleted: false,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        createdBy: GUEST_USER_NAME,
+        updatedBy: GUEST_USER_NAME,
       };
 
       await this.db.accounts.add(account);
@@ -140,17 +142,12 @@ export class AccountRepository {
   /**
    * Update account
    */
-  async updateAccount(id: string, updates: Partial<Omit<Account, 'id' | 'isDeleted' | 'createdAt' | 'updatedAt'>>): Promise<Account> {
+  async updateAccount(id: string, updates: Partial<Omit<Account, 'id' | 'isDirty' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'>>): Promise<Account> {
     try {
-      const updateData = {
-        ...updates,
-        updatedAt: new Date()
-      };
-
       await this.db.accounts
         .where('id')
         .equals(id)
-        .modify(updateData);
+        .modify(updates);
       
       const updatedAccount = await this.getAccountByIdForSettings(id);
       if (!updatedAccount) {
@@ -169,8 +166,7 @@ export class AccountRepository {
 
   async setAccountIsActive(id: string, isActive: boolean): Promise<void> {
     try {
-      await this.db.accounts.update(id, { isDeleted: !isActive, updatedAt: new Date() });
-      await this.getAccounts();
+      await this.updateAccount(id, { isDeleted: !isActive });
     } catch (error) {
       console.error('Error updating account active state:', error);
       throw new Error('Failed to update account active state');
@@ -182,13 +178,7 @@ export class AccountRepository {
    */
   async deleteAccount(id: string): Promise<void> {
     try {
-      await this.db.accounts.update(id, {
-        isDeleted: true,
-        updatedAt: new Date()
-      });
-
-      // Refresh accounts list
-      await this.getAccounts();
+      await this.setAccountIsActive(id, false);
     } catch (error) {
       console.error('Error deleting account:', error);
       throw new Error('Failed to delete account');
@@ -202,7 +192,6 @@ export class AccountRepository {
     try {
       await this.db.accounts.update(id, {
         balance: newBalance,
-        updatedAt: new Date()
       });
 
       const updatedAccount = await this.getAccountById(id);
@@ -230,6 +219,51 @@ export class AccountRepository {
     } catch (error) {
       console.error('Error calculating total balance:', error);
       throw new Error('Failed to calculate total balance');
+    }
+  }
+
+  async getDirtyAccounts(): Promise<Account[]> {
+    try {
+      return await this.db.accounts
+        .filter((account) => !!account.isDirty)
+        .toArray();
+    } catch (error) {
+      console.error('Error fetching dirty accounts:', error);
+      throw new Error('Failed to fetch dirty accounts');
+    }
+  }
+
+  async clearDirtyFlags(accountIds: string[]): Promise<void> {
+    if (accountIds.length === 0) {
+      return;
+    }
+
+    try {
+      await this.db.runWithoutDirtyTracking(async () => {
+        await this.db.accounts.where('id').anyOf(accountIds).modify({ isDirty: false });
+      });
+      await this.getAccounts();
+    } catch (error) {
+      console.error('Error clearing account dirty flags:', error);
+      throw new Error('Failed to clear account dirty flags');
+    }
+  }
+
+  async upsertFromSheet(account: Account): Promise<void> {
+    try {
+      await this.db.runWithoutDirtyTracking(async () => {
+        await this.db.accounts.put({
+          ...account,
+          isDirty: false,
+          createdBy: account.createdBy || GUEST_USER_NAME,
+          updatedBy: account.updatedBy || account.createdBy || GUEST_USER_NAME,
+        });
+      });
+
+      await this.getAccounts();
+    } catch (error) {
+      console.error('Error upserting account from sheet:', error);
+      throw new Error('Failed to upsert account from sheet');
     }
   }
 

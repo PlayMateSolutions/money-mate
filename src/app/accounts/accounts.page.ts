@@ -17,18 +17,22 @@ import {
   IonSpinner,
   IonFab,
   IonFabButton,
-  ModalController
+  ModalController,
+  ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   createOutline,
   pricetagOutline,
-  add
+  add,
+  cloudUploadOutline,
+  syncOutline,
 } from 'ionicons/icons';
 import * as ionicons from 'ionicons/icons';
 import { Account } from '../core/database/models';
 import { AccountRepository } from '../core/database/repositories';
 import { AccountEditModalComponent, AccountEditModalResult } from './components/account-edit-modal.component';
+import { GoogleSheetService, SessionService } from '../core/services';
 
 @Component({
   selector: 'app-accounts',
@@ -59,6 +63,7 @@ import { AccountEditModalComponent, AccountEditModalResult } from './components/
 export class AccountsPage implements OnInit {
   accounts: Account[] = [];
   loading = true;
+  syncing = false;
   error: string | null = null;
   private registeredIconNames = new Set<string>(['create-outline', 'pricetag-outline']);
 
@@ -72,12 +77,17 @@ export class AccountsPage implements OnInit {
   constructor(
     private accountRepository: AccountRepository,
     private modalController: ModalController,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private readonly sessionService: SessionService,
+    private readonly googleSheetService: GoogleSheetService,
+    private readonly toastController: ToastController,
   ) {
     addIcons({
       createOutline,
       pricetagOutline,
-      add
+      add,
+      cloudUploadOutline,
+      syncOutline,
     });
   }
 
@@ -91,6 +101,18 @@ export class AccountsPage implements OnInit {
 
   get inactiveAccounts(): Account[] {
     return this.accounts.filter(account => account.isDeleted);
+  }
+
+  get hasDirtyAccounts(): boolean {
+    return this.accounts.some((account) => !!account.isDirty);
+  }
+
+  get canSync(): boolean {
+    return !!this.sessionService.currentSession?.accessToken && !!this.sessionService.linkedSpreadsheet?.id;
+  }
+
+  get syncEnabled(): boolean {
+    return this.canSync && this.hasDirtyAccounts && !this.syncing;
   }
 
   trackByAccountId(_: number, account: Account): string {
@@ -146,6 +168,33 @@ export class AccountsPage implements OnInit {
     }
   }
 
+  async syncAccounts(): Promise<void> {
+    if (!this.syncEnabled) {
+      return;
+    }
+
+    if (!this.sessionService.currentSession?.accessToken || !this.sessionService.linkedSpreadsheet?.id) {
+      return;
+    }
+
+    try {
+      this.syncing = true;
+      this.error = null;
+      this.cdr.markForCheck();
+
+      await this.googleSheetService.syncAccounts();
+      await this.loadAccounts();
+      await this.presentToast('Accounts synced successfully', 'success');
+    } catch (error) {
+      console.error('Error syncing accounts:', error);
+      this.error = 'Failed to sync accounts';
+      await this.presentToast('Failed to sync accounts', 'danger');
+    } finally {
+      this.syncing = false;
+      this.cdr.markForCheck();
+    }
+  }
+
   async openEditModal(account: Account): Promise<void> {
     const modal = await this.modalController.create({
       component: AccountEditModalComponent,
@@ -175,8 +224,7 @@ export class AccountsPage implements OnInit {
           ownerName: data.ownerName,
           color: data.color,
           icon: data.icon,
-          isDeleted: !data.isActive,
-          updatedAt: new Date()
+          isDeleted: !data.isActive
         };
       });
       this.registerIconsFromAccounts(this.accounts);
@@ -188,7 +236,7 @@ export class AccountsPage implements OnInit {
       // Optimistic update for regular fields
       this.accounts = this.accounts.map((current) =>
         current.id === account.id
-          ? { ...current, name: data.name, type: data.type, ownerName: data.ownerName, color: data.color, icon: data.icon, updatedAt: new Date() }
+          ? { ...current, name: data.name, type: data.type, ownerName: data.ownerName, color: data.color, icon: data.icon }
           : current
       );
       this.cdr.markForCheck();
@@ -269,5 +317,15 @@ export class AccountsPage implements OnInit {
       this.error = 'Failed to create account';
       this.cdr.markForCheck();
     }
+  }
+
+  private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2000,
+      color,
+      position: 'bottom',
+    });
+    await toast.present();
   }
 }
