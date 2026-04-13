@@ -21,7 +21,7 @@ import {
 import { addIcons } from 'ionicons';
 import { addCircleOutline, documentOutline, ellipsisHorizontalOutline, logOutOutline } from 'ionicons/icons';
 import { Router } from '@angular/router';
-import { SessionService } from '../core/services';
+import { GoogleSheetService, SessionService } from '../core/services';
 import { environment } from '../../environments/environment';
 import '@googleworkspace/drive-picker-element';
 
@@ -74,6 +74,7 @@ export class SheetOnboardingPage implements OnInit {
 
   constructor(
     private readonly sessionService: SessionService,
+    private readonly googleSheetService: GoogleSheetService,
     private readonly router: Router,
     private readonly toastController: ToastController,
   ) {
@@ -102,29 +103,7 @@ export class SheetOnboardingPage implements OnInit {
     this.loadingSpreadsheets = true;
     try {
       const linked = this.sessionService.linkedSpreadsheet;
-      const query = encodeURIComponent("mimeType='application/vnd.google-apps.spreadsheet' and trashed=false");
-      const fields = encodeURIComponent('files(id,name,modifiedTime)');
-      const response = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}&orderBy=modifiedTime%20desc&pageSize=25`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        },
-      );
-
-      const files: SpreadsheetOption[] = [];
-
-      if (response.ok) {
-        const data = await response.json() as { files?: Array<{ id: string; name: string }> };
-        const mapped = (data.files || [])
-          .filter((file) => !!file.id)
-          .map((file) => ({
-            id: file.id,
-            name: file.name || 'Untitled Spreadsheet',
-          }));
-        files.push(...mapped);
-      }
+      const files = await this.googleSheetService.listUserSpreadsheets(accessToken);
 
       if (linked?.id) {
         const linkedEntry: SpreadsheetOption = {
@@ -182,31 +161,9 @@ export class SheetOnboardingPage implements OnInit {
     this.loading = true;
     try {
       const title = `Money Mate | ${new Date().toISOString().slice(0, 10)}`;
-      const response = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          properties: { title },
-          sheets: [
-            { properties: { title: 'accounts' } },
-            { properties: { title: 'categories' } },
-            { properties: { title: 'transactions' } },
-          ],
-        }),
-      });
+      const spreadsheet = await this.googleSheetService.createMoneyMateSpreadsheet(accessToken, title);
 
-      if (!response.ok) {
-        throw new Error(`Failed to create sheet (${response.status})`);
-      }
-
-      const data = await response.json() as { spreadsheetId: string; properties?: { title?: string } };
-      this.sessionService.setLinkedSpreadsheet({
-        id: data.spreadsheetId,
-        name: data.properties?.title || title,
-      });
+      this.sessionService.setLinkedSpreadsheet(spreadsheet);
 
       await this.showToast('Sheet created successfully', 'success');
       await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
