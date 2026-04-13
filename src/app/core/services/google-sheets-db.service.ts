@@ -93,4 +93,75 @@ export class GoogleSheetsDbService {
       throw new Error(`Failed to populate headers (${response.status})`);
     }
   }
+
+  async getValues(accessToken: string, spreadsheetId: string, range: string): Promise<string[][]> {
+    const encodedRange = encodeURIComponent(range);
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sheet values (${response.status})`);
+    }
+
+    const data = await response.json() as { values?: string[][] };
+    return data.values || [];
+  }
+
+  async appendValues(
+    accessToken: string,
+    spreadsheetId: string,
+    range: string,
+    values: string[][],
+  ): Promise<void> {
+    const encodedRange = encodeURIComponent(range);
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}:append?valueInputOption=RAW`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          values,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to append values (${response.status})`);
+    }
+  }
+
+  async updateRangeValues(
+    accessToken: string,
+    spreadsheetId: string,
+    range: string,
+    values: string[][],
+  ): Promise<void> {
+    const encodedRange = encodeURIComponent(range);
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}?valueInputOption=RAW`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          values,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to update range values (${response.status})`);
+    }
+  }
 }

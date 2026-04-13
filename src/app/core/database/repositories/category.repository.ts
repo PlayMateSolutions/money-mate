@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, from, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { DatabaseService } from '../database.service';
-import { Category, CategoryType } from '../models';
+import { Category, CategoryType, GUEST_USER_NAME } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -116,7 +116,7 @@ export class CategoryRepository {
   /**
    * Create new category
    */
-  async createCategory(categoryData: Omit<Category, 'id' | 'isDeleted' | 'createdAt' | 'updatedAt' | 'sortOrder'>): Promise<Category> {
+  async createCategory(categoryData: Omit<Category, 'id' | 'isDeleted' | 'isDirty' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy' | 'sortOrder'>): Promise<Category> {
     try {
       const existingCategories = await this.getCategoriesForSettings();
       const maxSortOrder = existingCategories.reduce((max, cat) => Math.max(max, cat.sortOrder), 0);
@@ -127,7 +127,9 @@ export class CategoryRepository {
         isDeleted: false,
         sortOrder: maxSortOrder + 1,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        createdBy: GUEST_USER_NAME,
+        updatedBy: GUEST_USER_NAME
       };
 
       await this.db.categories.add(category);
@@ -145,17 +147,12 @@ export class CategoryRepository {
   /**
    * Update category
    */
-  async updateCategory(id: string, updates: Partial<Omit<Category, 'id' | 'isDeleted' | 'createdAt' | 'updatedAt'>>): Promise<Category> {
+  async updateCategory(id: string, updates: Partial<Omit<Category, 'id' | 'isDirty' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'>>): Promise<Category> {
     try {
-      const updateData = {
-        ...updates,
-        updatedAt: new Date()
-      };
-
       await this.db.categories
         .where('id')
         .equals(id)
-        .modify(updateData);
+        .modify(updates);
       
       const updatedCategory = await this.getCategoryById(id, true);
       if (!updatedCategory) {
@@ -174,8 +171,7 @@ export class CategoryRepository {
 
   async setCategoryIsActive(id: string, isActive: boolean): Promise<void> {
     try {
-      await this.db.categories.update(id, { isDeleted: !isActive, updatedAt: new Date() });
-      await this.getCategories();
+      await this.updateCategory(id, { isDeleted: !isActive });
     } catch (error) {
       console.error('Error updating category active state:', error);
       throw new Error('Failed to update category active state');
@@ -205,8 +201,7 @@ export class CategoryRepository {
       await this.db.transaction('rw', this.db.categories, async () => {
         for (let i = 0; i < categoryIds.length; i++) {
           await this.db.categories.update(categoryIds[i], {
-            sortOrder: i + 1,
-            updatedAt: new Date()
+            sortOrder: i + 1
           });
         }
       });
@@ -238,6 +233,51 @@ export class CategoryRepository {
     } catch (error) {
       console.error('Error checking category name:', error);
       return false;
+    }
+  }
+
+  async getDirtyCategories(): Promise<Category[]> {
+    try {
+      return await this.db.categories
+        .filter((category) => !!category.isDirty)
+        .toArray();
+    } catch (error) {
+      console.error('Error fetching dirty categories:', error);
+      throw new Error('Failed to fetch dirty categories');
+    }
+  }
+
+  async clearDirtyFlags(categoryIds: string[]): Promise<void> {
+    if (categoryIds.length === 0) {
+      return;
+    }
+
+    try {
+      await this.db.runWithoutDirtyTracking(async () => {
+        await this.db.categories.where('id').anyOf(categoryIds).modify({ isDirty: false });
+      });
+      await this.getCategories();
+    } catch (error) {
+      console.error('Error clearing category dirty flags:', error);
+      throw new Error('Failed to clear category dirty flags');
+    }
+  }
+
+  async upsertFromSheet(category: Category): Promise<void> {
+    try {
+      await this.db.runWithoutDirtyTracking(async () => {
+        await this.db.categories.put({
+          ...category,
+          isDirty: false,
+          createdBy: category.createdBy || GUEST_USER_NAME,
+          updatedBy: category.updatedBy || category.createdBy || GUEST_USER_NAME,
+        });
+      });
+
+      await this.getCategories();
+    } catch (error) {
+      console.error('Error upserting category from sheet:', error);
+      throw new Error('Failed to upsert category from sheet');
     }
   }
 

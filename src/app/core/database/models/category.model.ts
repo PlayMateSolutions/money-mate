@@ -1,6 +1,6 @@
-import { BaseEntity } from './common.types';
+import { AuditableEntity } from './common.types';
 
-export interface Category extends BaseEntity {
+export interface Category extends AuditableEntity {
   name: string; // "Food", "Transportation", "Entertainment"
   type?: 'income' | 'expense'; // Optional - transaction amount sign determines income/expense
   color: string; // Hex color for UI (e.g., '#4CAF50')
@@ -9,7 +9,7 @@ export interface Category extends BaseEntity {
 }
 
 // Predefined categories that will be created on first setup
-export const DEFAULT_CATEGORIES: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>[] = [
+export const DEFAULT_CATEGORIES: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy' | 'isDirty'>[] = [
   // General Categories (type determined by transaction amount sign)
   { name: 'Food & Dining', color: '#FF9800', icon: 'restaurant-outline', isDeleted: false, sortOrder: 1 },
   { name: 'Transportation', color: '#2196F3', icon: 'car-outline', isDeleted: false, sortOrder: 2 },

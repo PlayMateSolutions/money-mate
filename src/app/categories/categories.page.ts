@@ -17,18 +17,22 @@ import {
   IonSpinner,
   IonFab,
   IonFabButton,
-  ModalController
+  ModalController,
+  ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   createOutline,
   pricetagOutline,
-  add
+  add,
+  cloudUploadOutline,
+  syncOutline,
 } from 'ionicons/icons';
 import * as ionicons from 'ionicons/icons';
 import { Category } from '../core/database/models';
 import { CategoryRepository } from '../core/database/repositories';
 import { CategoryEditModalComponent, CategoryEditModalResult } from './components/category-edit-modal.component';
+import { GoogleSheetService, SessionService } from '../core/services';
 
 @Component({
   selector: 'app-categories',
@@ -59,6 +63,7 @@ import { CategoryEditModalComponent, CategoryEditModalResult } from './component
 export class CategoriesPage implements OnInit {
   categories: Category[] = [];
   loading = true;
+  syncing = false;
   error: string | null = null;
   private registeredIconNames = new Set<string>(['create-outline', 'pricetag-outline']);
   private readonly categoryDefaultIcon = 'pricetag-outline';
@@ -66,12 +71,17 @@ export class CategoriesPage implements OnInit {
   constructor(
     private categoryRepository: CategoryRepository,
     private modalController: ModalController,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private readonly sessionService: SessionService,
+    private readonly googleSheetService: GoogleSheetService,
+    private readonly toastController: ToastController,
   ) {
     addIcons({
       createOutline,
       pricetagOutline,
-      add
+      add,
+      cloudUploadOutline,
+      syncOutline,
     });
   }
 
@@ -85,6 +95,18 @@ export class CategoriesPage implements OnInit {
 
   get inactiveCategories(): Category[] {
     return this.categories.filter(category => category.isDeleted);
+  }
+
+  get hasDirtyCategories(): boolean {
+    return this.categories.some((category) => !!category.isDirty);
+  }
+
+  get canSync(): boolean {
+    return !!this.sessionService.currentSession?.accessToken && !!this.sessionService.linkedSpreadsheet?.id;
+  }
+
+  get syncEnabled(): boolean {
+    return this.canSync && this.hasDirtyCategories && !this.syncing;
   }
 
   trackByCategoryId(_: number, category: Category): string {
@@ -144,6 +166,36 @@ export class CategoriesPage implements OnInit {
     }
   }
 
+  async syncCategories(): Promise<void> {
+    if (!this.syncEnabled) {
+      return;
+    }
+
+    const accessToken = this.sessionService.currentSession?.accessToken;
+    const spreadsheetId = this.sessionService.linkedSpreadsheet?.id;
+
+    if (!accessToken || !spreadsheetId) {
+      return;
+    }
+
+    try {
+      this.syncing = true;
+      this.error = null;
+      this.cdr.markForCheck();
+
+      await this.googleSheetService.syncCategories(accessToken, spreadsheetId);
+      await this.loadCategories();
+      await this.presentToast('Categories synced successfully', 'success');
+    } catch (error) {
+      console.error('Error syncing categories:', error);
+      this.error = 'Failed to sync categories';
+      await this.presentToast('Failed to sync categories', 'danger');
+    } finally {
+      this.syncing = false;
+      this.cdr.markForCheck();
+    }
+  }
+
   async openEditModal(category: Category): Promise<void> {
     const modal = await this.modalController.create({
       component: CategoryEditModalComponent,
@@ -171,8 +223,7 @@ export class CategoriesPage implements OnInit {
           name: data.name,
           icon: data.icon,
           color: data.color,
-          isDeleted: !data.isActive,
-          updatedAt: new Date()
+          isDeleted: !data.isActive
         };
       });
       this.registerIconsFromCategories(this.categories);
@@ -243,6 +294,16 @@ export class CategoriesPage implements OnInit {
       this.error = 'Failed to create category';
       this.cdr.markForCheck();
     }
+  }
+
+  private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2000,
+      color,
+      position: 'bottom',
+    });
+    await toast.present();
   }
 
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import Dexie, { Table } from 'dexie';
-import { Account, Category, Transaction } from './models';
+import { Account, Category, GUEST_USER_NAME, Transaction } from './models';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +10,7 @@ export class DatabaseService extends Dexie {
   accounts!: Table<Account>;
   categories!: Table<Category>;
   transactions!: Table<Transaction>;
+  private dirtyTrackingBypassCount = 0;
 
   constructor() {
     super('MoneyMateDB');
@@ -17,9 +18,11 @@ export class DatabaseService extends Dexie {
     
     this.version(1).stores({
       accounts: '++id, name, type, ownerName, createdAt',
-      categories: '++id, name, sortOrder, createdAt',
+      categories: '++id, name, sortOrder, createdAt, isDirty',
       transactions: '++id, accountId, categoryId, date, type, amount, createdAt, createdBy'
     });
+
+    this.registerCategoryHooks();
 
     // Initialize default categories on first run - using transaction approach like React example
     this.on('ready', async () => {
@@ -32,6 +35,59 @@ export class DatabaseService extends Dexie {
     this.open().catch(err => {
       console.error('Failed to open database:', err);
     });
+  }
+
+  async runWithoutDirtyTracking<T>(operation: () => Promise<T>): Promise<T> {
+    this.dirtyTrackingBypassCount += 1;
+    try {
+      return await operation();
+    } finally {
+      this.dirtyTrackingBypassCount = Math.max(0, this.dirtyTrackingBypassCount - 1);
+    }
+  }
+
+  private registerCategoryHooks(): void {
+    this.categories.hook('creating', (_primKey, obj: Category) => {
+      if (this.dirtyTrackingBypassCount > 0) {
+        return;
+      }
+
+      const now = new Date();
+      const actor = this.getCurrentActorName();
+      obj.createdAt = obj.createdAt ?? now;
+      obj.updatedAt = now;
+      obj.createdBy = obj.createdBy ?? actor;
+      obj.updatedBy = actor;
+      obj.isDirty = true;
+    });
+
+    this.categories.hook('updating', (mods: Partial<Category>) => {
+      if (this.dirtyTrackingBypassCount > 0) {
+        return mods;
+      }
+
+      const actor = this.getCurrentActorName();
+      return {
+        ...mods,
+        updatedAt: new Date(),
+        updatedBy: actor,
+        isDirty: true,
+      };
+    });
+  }
+
+  private getCurrentActorName(): string {
+    try {
+      const rawSession = localStorage.getItem('money-mate-user-session');
+      if (!rawSession) {
+        return GUEST_USER_NAME;
+      }
+
+      const parsed = JSON.parse(rawSession) as { name?: string };
+      return parsed.name?.trim() || GUEST_USER_NAME;
+    } catch {
+      return GUEST_USER_NAME;
+    }
   }
 
   private async initializeDefaultData(): Promise<void> {
@@ -62,11 +118,16 @@ export class DatabaseService extends Dexie {
         const categoriesWithMetadata = DEFAULT_CATEGORIES.map(category => ({
           ...category,
           id: crypto.randomUUID(),
+          isDirty: true,
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          createdBy: 'system',
+          updatedBy: 'system'
         }));
 
-        await this.categories.bulkAdd(categoriesWithMetadata);
+        await this.runWithoutDirtyTracking(async () => {
+          await this.categories.bulkAdd(categoriesWithMetadata);
+        });
         console.log('Default categories initialized successfully');
       }
     } catch (error) {
