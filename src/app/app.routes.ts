@@ -3,6 +3,10 @@ import { appEntryGuard } from './core/guards/entry.guard';
 
 export const routes: Routes = [
   {
+    path: 'auth/callback',
+    loadComponent: () => import('./auth').then((m) => m.LoginPage),
+  },
+  {
     path: 'login',
     loadComponent: () => import('./auth').then((m) => m.LoginPage),
   },

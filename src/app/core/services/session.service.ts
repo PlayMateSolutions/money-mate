@@ -36,6 +36,7 @@ export class SessionService {
   private readonly ENTRY_KEY = 'money-mate-auth-entry-completed';
   private readonly QUERY_PARAMS_KEY = 'money-mate-auth-query-params';
   private readonly SPREADSHEET_KEY = 'money-mate-linked-spreadsheet';
+  private readonly AUTH_CALLBACK_PATH = '/auth/callback';
   private readonly sessionSubject = new BehaviorSubject<UserSession | null>(null);
   private initialized = false;
 
@@ -191,7 +192,14 @@ export class SessionService {
       return false;
     }
 
+    const shouldNavigateToCallback = this.isRunningOnWeb() && !this.router.url.startsWith(this.AUTH_CALLBACK_PATH);
+    const returnUrl = shouldNavigateToCallback ? this.router.url : null;
+
     try {
+      if (shouldNavigateToCallback) {
+        await this.router.navigateByUrl(this.AUTH_CALLBACK_PATH, { replaceUrl: true });
+      }
+
       await this.initializeGoogleAuth();
 
       const response = await SocialLogin.login({
@@ -222,7 +230,15 @@ export class SessionService {
     } catch (error) {
       console.error('Google token refresh failed:', error);
       return false;
+    } finally {
+      if (returnUrl && this.router.url.startsWith(this.AUTH_CALLBACK_PATH)) {
+        await this.router.navigateByUrl(returnUrl, { replaceUrl: true });
+      }
     }
+  }
+
+  private isRunningOnWeb(): boolean {
+    return typeof window !== 'undefined';
   }
 
   private markEntryCompleted(): void {
