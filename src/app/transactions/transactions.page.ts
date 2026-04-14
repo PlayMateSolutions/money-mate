@@ -6,6 +6,8 @@ import {
   IonToolbar,
   IonTitle,
   IonContent,
+  IonButtons,
+  IonButton,
   IonMenuButton,
   IonList,
   IonItem,
@@ -13,13 +15,16 @@ import {
   IonLabel,
   IonNote,
   IonIcon,
-  IonSpinner
+  IonSpinner,
+  IonBadge,
+  ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import * as ionicons from 'ionicons/icons';
-import { pricetagOutline, swapHorizontalOutline } from 'ionicons/icons';
+import { cloudUploadOutline, pricetagOutline, swapHorizontalOutline } from 'ionicons/icons';
 import { Account, Category, Transaction } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
+import { GoogleSheetService, SessionService } from '../core/services';
 
 interface TransactionListItem {
   id: string;
@@ -48,6 +53,8 @@ interface TransactionDateGroup {
     IonToolbar,
     IonTitle,
     IonContent,
+    IonButtons,
+    IonButton,
     IonMenuButton,
     IonList,
     IonItem,
@@ -55,11 +62,13 @@ interface TransactionDateGroup {
     IonLabel,
     IonNote,
     IonIcon,
-    IonSpinner
+    IonSpinner,
+    IonBadge,
   ]
 })
 export class TransactionsPage implements OnInit, OnDestroy {
   loading = true;
+  syncing = false;
   error: string | null = null;
   groupedItems: TransactionDateGroup[] = [];
   private accountsMap = new Map<string, Account>();
@@ -73,11 +82,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
   constructor(
     private transactionRepository: TransactionRepository,
     private accountRepository: AccountRepository,
-    private categoryRepository: CategoryRepository
+    private categoryRepository: CategoryRepository,
+    private readonly sessionService: SessionService,
+    private readonly googleSheetService: GoogleSheetService,
+    private readonly toastController: ToastController,
   ) {
     addIcons({
       pricetagOutline,
-      swapHorizontalOutline
+      swapHorizontalOutline,
+      cloudUploadOutline,
     });
   }
 
@@ -98,6 +111,18 @@ export class TransactionsPage implements OnInit, OnDestroy {
     return this.groupedItems.length > 0;
   }
 
+  get hasDirtyTransactions(): boolean {
+    return this.groupedItems.some((group) => group.items.some((item) => !!item.transaction.isDirty));
+  }
+
+  get canSync(): boolean {
+    return !!this.sessionService.currentSession?.accessToken && !!this.sessionService.linkedSpreadsheet?.id;
+  }
+
+  get syncEnabled(): boolean {
+    return this.canSync && this.hasDirtyTransactions && !this.syncing;
+  }
+
   trackByDateGroup(_: number, group: TransactionDateGroup): string {
     return group.dateKey;
   }
@@ -112,6 +137,32 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   getTransferSubtitle(item: TransactionListItem): string {
     return `${item.accountName} → ${item.transferToAccountName ?? 'Unknown account'}`;
+  }
+
+  async syncTransactions(): Promise<void> {
+    if (!this.syncEnabled) {
+      return;
+    }
+
+    if (!this.sessionService.currentSession?.accessToken || !this.sessionService.linkedSpreadsheet?.id) {
+      return;
+    }
+
+    try {
+      this.syncing = true;
+      this.error = null;
+
+      await this.googleSheetService.syncTransactions();
+      await this.refreshLookups();
+      await this.transactionRepository.getAllTransactions();
+      await this.presentToast('Transactions synced successfully', 'success');
+    } catch (error) {
+      console.error('Error syncing transactions:', error);
+      this.error = 'Failed to sync transactions';
+      await this.presentToast('Failed to sync transactions', 'danger');
+    } finally {
+      this.syncing = false;
+    }
   }
 
   private getDateKey(date: Date): string {
@@ -253,6 +304,16 @@ export class TransactionsPage implements OnInit, OnDestroy {
     this.groupedItems = Array.from(groupedMap.values()).sort(
       (a, b) => new Date(b.dateKey).getTime() - new Date(a.dateKey).getTime()
     );
+  }
+
+  private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2000,
+      color,
+      position: 'bottom',
+    });
+    await toast.present();
   }
 
 }

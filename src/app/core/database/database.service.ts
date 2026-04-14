@@ -19,11 +19,12 @@ export class DatabaseService extends Dexie {
     this.version(1).stores({
       accounts: '++id, name, type, ownerName, createdAt, isDirty',
       categories: '++id, name, sortOrder, createdAt, isDirty',
-      transactions: '++id, accountId, categoryId, date, type, amount, createdAt, createdBy'
+      transactions: '++id, accountId, categoryId, date, type, amount, createdAt, createdBy, isDirty'
     });
 
     this.registerAccountHooks();
     this.registerCategoryHooks();
+    this.registerTransactionHooks();
 
     // Initialize default categories on first run - using transaction approach like React example
     this.on('ready', async () => {
@@ -93,6 +94,36 @@ export class DatabaseService extends Dexie {
     });
 
     this.categories.hook('updating', (mods: Partial<Category>) => {
+      if (this.dirtyTrackingBypassCount > 0) {
+        return mods;
+      }
+
+      const actor = this.getCurrentActorName();
+      return {
+        ...mods,
+        updatedAt: new Date(),
+        updatedBy: actor,
+        isDirty: true,
+      };
+    });
+  }
+
+  private registerTransactionHooks(): void {
+    this.transactions.hook('creating', (_primKey, obj: Transaction) => {
+      if (this.dirtyTrackingBypassCount > 0) {
+        return;
+      }
+
+      const now = new Date();
+      const actor = this.getCurrentActorName();
+      obj.createdAt = obj.createdAt ?? now;
+      obj.updatedAt = now;
+      obj.createdBy = obj.createdBy ?? actor;
+      obj.updatedBy = actor;
+      obj.isDirty = true;
+    });
+
+    this.transactions.hook('updating', (mods: Partial<Transaction>) => {
       if (this.dirtyTrackingBypassCount > 0) {
         return mods;
       }

@@ -47,9 +47,8 @@ export class GoogleSheetService {
       .map((transaction) => ({ ...transaction, isDirty: false }));
 
     await this.db.transaction('rw', this.db.accounts, this.db.categories, this.db.transactions, async () => {
-      await this.db.transactions.clear();
-
       await this.db.runWithoutDirtyTracking(async () => {
+        await this.db.transactions.clear();
         await this.db.accounts.clear();
         await this.db.categories.clear();
 
@@ -60,11 +59,11 @@ export class GoogleSheetService {
         if (categories.length > 0) {
           await this.db.categories.bulkPut(categories);
         }
-      });
 
-      if (transactions.length > 0) {
-        await this.db.transactions.bulkPut(transactions);
-      }
+        if (transactions.length > 0) {
+          await this.db.transactions.bulkPut(transactions);
+        }
+      });
     });
 
     await Promise.all([
@@ -269,6 +268,65 @@ export class GoogleSheetService {
     await this.categoryRepository.clearDirtyFlags(pushedIds);
   }
 
+  async syncTransactions(): Promise<void> {
+    const sheetRows = await this.googleSheetsDbService.getValues('transactions!A:O');
+    const rowsWithoutHeader = sheetRows.slice(1);
+    const localTransactions = await this.transactionRepository.getAllTransactions();
+
+    const sheetById = new Map<string, { transaction: Transaction; rowNumber: number }>();
+    rowsWithoutHeader.forEach((row, index) => {
+      const parsed = this.parseSheetTransaction(row);
+      if (!parsed) {
+        return;
+      }
+
+      sheetById.set(parsed.id, {
+        transaction: parsed,
+        rowNumber: index + 2,
+      });
+    });
+
+    const localById = new Map(localTransactions.map((transaction) => [transaction.id, transaction]));
+
+    for (const [id, sheetRecord] of sheetById.entries()) {
+      const localRecord = localById.get(id);
+      if (!localRecord) {
+        await this.transactionRepository.upsertFromSheet(sheetRecord.transaction);
+        continue;
+      }
+
+      const localUpdatedAt = new Date(localRecord.updatedAt).getTime();
+      const sheetUpdatedAt = new Date(sheetRecord.transaction.updatedAt).getTime();
+      if (sheetUpdatedAt > localUpdatedAt && !localRecord.isDirty) {
+        await this.transactionRepository.upsertFromSheet(sheetRecord.transaction);
+      }
+    }
+
+    const dirtyTransactions = await this.transactionRepository.getDirtyTransactions();
+    const pushedIds: string[] = [];
+
+    for (const transaction of dirtyTransactions) {
+      const rowValues = [this.toSheetTransactionRow(transaction)];
+      const existing = sheetById.get(transaction.id);
+
+      if (existing) {
+        await this.googleSheetsDbService.updateRangeValues(
+          `transactions!A${existing.rowNumber}:O${existing.rowNumber}`,
+          rowValues,
+        );
+      } else {
+        await this.googleSheetsDbService.appendValues(
+          'transactions!A:O',
+          rowValues,
+        );
+      }
+
+      pushedIds.push(transaction.id);
+    }
+
+    await this.transactionRepository.clearDirtyFlags(pushedIds);
+  }
+
   private parseSheetCategory(row: string[]): Category | null {
     if (!row[0]) {
       return null;
@@ -378,6 +436,26 @@ export class GoogleSheetService {
       this.toIso(account.updatedAt),
       account.createdBy || GUEST_USER_NAME,
       account.updatedBy || account.createdBy || GUEST_USER_NAME,
+    ];
+  }
+
+  private toSheetTransactionRow(transaction: Transaction): string[] {
+    return [
+      transaction.id,
+      transaction.accountId,
+      String(transaction.amount),
+      transaction.type,
+      transaction.categoryId,
+      transaction.description,
+      this.toIso(transaction.date),
+      transaction.notes || '',
+      JSON.stringify(transaction.tags || []),
+      transaction.transferToAccountId || '',
+      String(!!transaction.isDeleted),
+      this.toIso(transaction.createdAt),
+      this.toIso(transaction.updatedAt),
+      transaction.createdBy || GUEST_USER_NAME,
+      transaction.updatedBy || transaction.createdBy || GUEST_USER_NAME,
     ];
   }
 

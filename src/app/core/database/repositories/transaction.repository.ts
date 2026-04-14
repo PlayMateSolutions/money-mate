@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { DatabaseService } from '../database.service';
-import { Transaction, TransactionType } from '../models';
+import { GUEST_USER_NAME, Transaction, TransactionType } from '../models';
 
 export interface CreateTransactionInput {
   accountId: string;
@@ -49,7 +49,8 @@ export class TransactionRepository {
       isDeleted: false,
       createdAt: now,
       updatedAt: now,
-      createdBy: 'user'
+      createdBy: GUEST_USER_NAME,
+      updatedBy: GUEST_USER_NAME,
     };
 
     await this.db.transaction('rw', [this.db.transactions, this.db.accounts], async () => {
@@ -118,6 +119,52 @@ export class TransactionRepository {
   getTransactions$(): Observable<Transaction[]> {
     this.getAllTransactions();
     return this.transactions$;
+  }
+
+  async getDirtyTransactions(): Promise<Transaction[]> {
+    try {
+      return await this.db.transactions
+        .filter((transaction) => !!transaction.isDirty)
+        .toArray();
+    } catch (error) {
+      console.error('Error fetching dirty transactions:', error);
+      throw new Error('Failed to fetch dirty transactions');
+    }
+  }
+
+  async clearDirtyFlags(transactionIds: string[]): Promise<void> {
+    if (transactionIds.length === 0) {
+      return;
+    }
+
+    try {
+      await this.db.runWithoutDirtyTracking(async () => {
+        await this.db.transactions.where('id').anyOf(transactionIds).modify({ isDirty: false });
+      });
+
+      await this.getAllTransactions();
+    } catch (error) {
+      console.error('Error clearing transaction dirty flags:', error);
+      throw new Error('Failed to clear transaction dirty flags');
+    }
+  }
+
+  async upsertFromSheet(transaction: Transaction): Promise<void> {
+    try {
+      await this.db.runWithoutDirtyTracking(async () => {
+        await this.db.transactions.put({
+          ...transaction,
+          isDirty: false,
+          createdBy: transaction.createdBy || GUEST_USER_NAME,
+          updatedBy: transaction.updatedBy || transaction.createdBy || GUEST_USER_NAME,
+        });
+      });
+
+      await this.getAllTransactions();
+    } catch (error) {
+      console.error('Error upserting transaction from sheet:', error);
+      throw new Error('Failed to upsert transaction from sheet');
+    }
   }
 
   private handleError(error: unknown): never {

@@ -4,6 +4,13 @@
     <ion-title>
       Transactions
     </ion-title>
+    <ion-buttons slot="end" *ngIf="canSync">
+      <ion-button (click)="syncTransactions()" [disabled]="!syncEnabled">
+        <ion-spinner *ngIf="syncing" name="crescent"></ion-spinner>
+        <ion-icon *ngIf="!syncing" name="cloud-upload-outline" slot="start"></ion-icon>
+        <ion-badge *ngIf="hasDirtyTransactions && !syncing" color="warning" slot="end">!</ion-badge>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
