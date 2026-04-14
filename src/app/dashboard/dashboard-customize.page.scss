@@ -1,0 +1,38 @@
+.customize-list {
+  padding: 8px 0;
+}
+
+ion-item {
+  --inner-padding-end: 8px;
+  --padding-start: 16px;
+}
+
+.widget-preview {
+  margin: 10px 0 0;
+  border: 1px solid var(--ion-color-light-shade);
+  background: var(--ion-color-light);
+  box-shadow: none;
+}
+
+.preview-line {
+  height: 8px;
+  border-radius: 6px;
+  background: var(--ion-color-light-shade);
+  margin-bottom: 8px;
+}
+
+.preview-line-lg {
+  width: 85%;
+}
+
+.preview-line-sm {
+  width: 55%;
+  margin-bottom: 0;
+}
+
+.actions {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

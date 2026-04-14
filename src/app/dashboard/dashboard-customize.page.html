@@ -1,0 +1,50 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/dashboard"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Customize Dashboard</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="save()">Save</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-list lines="full" class="customize-list">
+    <ion-reorder-group [disabled]="false" (ionItemReorder)="handleReorder($event)">
+      <ion-item *ngFor="let widget of widgets; trackBy: trackByWidgetId">
+        <ion-label>
+          <h2>{{ widget.title }}</h2>
+          <p>{{ widget.subtitle }}</p>
+
+          <ion-card class="widget-preview" aria-hidden="true">
+            <ion-card-content>
+              <div class="preview-line preview-line-lg"></div>
+              <div class="preview-line"></div>
+              <div class="preview-line preview-line-sm"></div>
+            </ion-card-content>
+          </ion-card>
+        </ion-label>
+
+        <ion-toggle
+          slot="end"
+          [checked]="widget.visible"
+          (ionChange)="onToggleVisibility(widget.id, $event.detail.checked)"
+          aria-label="Show {{ widget.title }}">
+        </ion-toggle>
+
+        <ion-reorder slot="end"></ion-reorder>
+      </ion-item>
+    </ion-reorder-group>
+  </ion-list>
+
+  <div class="actions">
+    <ion-button fill="outline" expand="block" (click)="resetToDefault()">
+      Reset to default
+    </ion-button>
+    <ion-button expand="block" (click)="save()">
+      Save layout
+    </ion-button>
+  </div>
+</ion-content>

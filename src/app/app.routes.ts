@@ -31,4 +31,8 @@ export const routes: Routes = [
     path: 'settings',
     loadComponent: () => import('./settings/settings.page').then((m) => m.SettingsPage),
   },
+  {
+    path: 'dashboard/customize',
+    loadComponent: () => import('./dashboard/dashboard-customize.page').then((m) => m.DashboardCustomizePage),
+  },
 ];
