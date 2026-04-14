@@ -26,7 +26,7 @@ import {
   ModalController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { closeCircle } from 'ionicons/icons';
+import { chevronDownOutline, chevronUpOutline, closeCircle } from 'ionicons/icons';
 import { Account, Category, TransactionType } from '../../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository, CreateTransactionInput } from '../../core/database/repositories';
 
@@ -66,9 +66,11 @@ import { AccountRepository, CategoryRepository, TransactionRepository, CreateTra
   `]
 })
 export class TransactionFormModalComponent implements OnInit {
+  private readonly lastUsedAccountStorageKey = 'money-mate-last-used-account-id';
   accounts: Account[] = [];
   categories: Category[] = [];
   saving = false;
+  showMoreOptions = false;
   tagInput = '';
 
   form: {
@@ -99,7 +101,7 @@ export class TransactionFormModalComponent implements OnInit {
     private categoryRepository: CategoryRepository,
     private transactionRepository: TransactionRepository
   ) {
-    addIcons({ closeCircle });
+    addIcons({ closeCircle, chevronDownOutline, chevronUpOutline });
   }
 
   async ngOnInit(): Promise<void> {
@@ -110,8 +112,15 @@ export class TransactionFormModalComponent implements OnInit {
     this.accounts = accounts;
     this.categories = categories;
 
-    // Preselect first account if only one exists
-    if (this.accounts.length === 1) {
+    const lastUsedAccountId = this.getLastUsedAccountId();
+    const hasLastUsedAccount = !!lastUsedAccountId && this.accounts.some((account) => account.id === lastUsedAccountId);
+
+    if (hasLastUsedAccount) {
+      this.form.accountId = lastUsedAccountId as string;
+      return;
+    }
+
+    if (this.accounts.length > 0) {
       this.form.accountId = this.accounts[0].id;
     }
   }
@@ -128,7 +137,15 @@ export class TransactionFormModalComponent implements OnInit {
     // Clear transfer-specific field when switching away
     if (this.form.type !== 'transfer') {
       this.form.transferToAccountId = '';
+      return;
     }
+
+    this.showMoreOptions = false;
+    this.form.categoryId = '';
+    this.form.description = '';
+    this.form.notes = '';
+    this.form.tags = [];
+    this.tagInput = '';
   }
 
   onTagKeydown(event: KeyboardEvent): void {
@@ -191,10 +208,23 @@ export class TransactionFormModalComponent implements OnInit {
       };
 
       const transaction = await this.transactionRepository.createTransaction(input);
+      this.persistLastUsedAccountId(this.form.accountId);
       await this.modalController.dismiss(transaction, 'saved');
     } catch (error) {
       console.error('Error saving transaction:', error);
       this.saving = false;
     }
+  }
+
+  private getLastUsedAccountId(): string | null {
+    return localStorage.getItem(this.lastUsedAccountStorageKey);
+  }
+
+  private persistLastUsedAccountId(accountId: string): void {
+    if (!accountId) {
+      return;
+    }
+
+    localStorage.setItem(this.lastUsedAccountStorageKey, accountId);
   }
 }

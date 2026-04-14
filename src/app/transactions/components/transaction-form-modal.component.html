@@ -25,6 +25,7 @@
     <ion-item>
       <ion-label position="stacked">Amount *</ion-label>
       <ion-input
+        autofocus
         type="number"
         [(ngModel)]="form.amount"
         placeholder="0.00"
@@ -70,7 +71,7 @@
       <ion-datetime-button style="margin-top: 6px;" datetime="transaction-date"></ion-datetime-button>
     </ion-item>
 
-    <ion-item>
+    <ion-item *ngIf="form.type !== 'transfer'">
       <ion-label position="stacked">Description</ion-label>
       <ion-input
         [(ngModel)]="form.description"
@@ -78,38 +79,45 @@
       ></ion-input>
     </ion-item>
 
-    <ion-item>
-      <ion-label position="stacked">Tags</ion-label>
-      <ion-input
-        [(ngModel)]="tagInput"
-        placeholder="Type a tag and press Enter"
-        (keydown)="onTagKeydown($event)"
-      ></ion-input>
-    </ion-item>
-    <ion-item lines="none" *ngIf="form.tags.length > 0">
-      <div style="display:flex; flex-wrap:wrap; gap:6px; padding: 4px 0; width:100%;">
-        <ion-chip
-          *ngFor="let tag of form.tags"
-          (click)="removeTag(tag)"
-          style="cursor:pointer;"
-        >
-          {{ tag }}
-          <ion-icon name="close-circle" style="margin-left:4px;"></ion-icon>
-        </ion-chip>
-      </div>
-    </ion-item>
-    <ion-item lines="none" *ngIf="form.tags.length === 0">
-      <ion-note style="padding: 4px 0;">No tags added yet</ion-note>
+    <ion-item button detail="false" *ngIf="form.type !== 'transfer'" (click)="showMoreOptions = !showMoreOptions">
+      <ion-label>{{ showMoreOptions ? 'Hide More options' : 'More options' }}</ion-label>
+      <ion-icon slot="end" [name]="showMoreOptions ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
     </ion-item>
 
-    <ion-item>
-      <ion-label position="stacked">Notes</ion-label>
-      <ion-textarea
-        [(ngModel)]="form.notes"
-        placeholder="Additional details..."
-        rows="3"
-      ></ion-textarea>
-    </ion-item>
+    <ng-container *ngIf="form.type !== 'transfer' && showMoreOptions">
+      <ion-item>
+        <ion-label position="stacked">Tags</ion-label>
+        <ion-input
+          [(ngModel)]="tagInput"
+          placeholder="Type a tag and press Enter"
+          (keydown)="onTagKeydown($event)"
+        ></ion-input>
+      </ion-item>
+      <ion-item lines="none" *ngIf="form.tags.length > 0">
+        <div style="display:flex; flex-wrap:wrap; gap:6px; padding: 4px 0; width:100%;">
+          <ion-chip
+            *ngFor="let tag of form.tags"
+            (click)="removeTag(tag)"
+            style="cursor:pointer;"
+          >
+            {{ tag }}
+            <ion-icon name="close-circle" style="margin-left:4px;"></ion-icon>
+          </ion-chip>
+        </div>
+      </ion-item>
+      <ion-item lines="none" *ngIf="form.tags.length === 0">
+        <ion-note style="padding: 4px 0;">No tags added yet</ion-note>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="stacked">Notes</ion-label>
+        <ion-textarea
+          [(ngModel)]="form.notes"
+          placeholder="Additional details..."
+          rows="3"
+        ></ion-textarea>
+      </ion-item>
+    </ng-container>
   </ion-list>
 
   <ion-modal [keepContentsMounted]="true">
