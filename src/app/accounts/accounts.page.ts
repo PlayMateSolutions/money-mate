@@ -92,7 +92,11 @@ export class AccountsPage implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadAccounts();
+    void this.loadAccounts();
+  }
+
+  ionViewWillEnter(): void {
+    void this.loadAccounts();
   }
 
   get activeAccounts(): Account[] {
@@ -232,24 +236,6 @@ export class AccountsPage implements OnInit {
 
       const wasActive = !account.isDeleted;
       const willBeActive = data.isActive;
-
-      // Optimistic update for regular fields
-      this.accounts = this.accounts.map((current) =>
-        current.id === account.id
-          ? { ...current, name: data.name, type: data.type, ownerName: data.ownerName, color: data.color, icon: data.icon }
-          : current
-      );
-      this.cdr.markForCheck();
-
-      // Optimistic update for isDeleted if state changed
-      if (wasActive !== willBeActive) {
-        this.accounts = this.accounts.map((current) =>
-          current.id === account.id
-            ? { ...current, isDeleted: !willBeActive }
-            : current
-        );
-        this.cdr.markForCheck();
-      }
 
       await this.accountRepository.updateAccount(account.id, {
         name: data.name,

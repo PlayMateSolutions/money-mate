@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { GoogleSheetsDbService } from './google-sheets-db.service';
-import { Account, Category, GUEST_USER_NAME } from '../database/models';
-import { AccountRepository, CategoryRepository } from '../database/repositories';
+import { Account, Category, GUEST_USER_NAME, Transaction } from '../database/models';
+import { AccountRepository, CategoryRepository, TransactionRepository } from '../database/repositories';
+import { DatabaseService } from '../database/database.service';
 
 export interface SpreadsheetSummary {
   id: string;
@@ -16,7 +17,62 @@ export class GoogleSheetService {
     private readonly googleSheetsDbService: GoogleSheetsDbService,
     private readonly accountRepository: AccountRepository,
     private readonly categoryRepository: CategoryRepository,
+    private readonly transactionRepository: TransactionRepository,
+    private readonly db: DatabaseService,
   ) {}
+
+  async importAllFromSheetToLocal(): Promise<void> {
+    const [accountsRows, categoriesRows, transactionsRows] = await Promise.all([
+      this.getValuesOrEmpty('accounts!A:M'),
+      this.getValuesOrEmpty('categories!A:K'),
+      this.getValuesOrEmpty('transactions!A:O'),
+    ]);
+
+    const accounts = accountsRows
+      .slice(1)
+      .map((row) => this.parseSheetAccount(row))
+      .filter((account): account is Account => !!account)
+      .map((account) => ({ ...account, isDirty: false }));
+
+    const categories = categoriesRows
+      .slice(1)
+      .map((row) => this.parseSheetCategory(row))
+      .filter((category): category is Category => !!category)
+      .map((category) => ({ ...category, isDirty: false }));
+
+    const transactions = transactionsRows
+      .slice(1)
+      .map((row) => this.parseSheetTransaction(row))
+      .filter((transaction): transaction is Transaction => !!transaction)
+      .map((transaction) => ({ ...transaction, isDirty: false }));
+
+    await this.db.transaction('rw', this.db.accounts, this.db.categories, this.db.transactions, async () => {
+      await this.db.transactions.clear();
+
+      await this.db.runWithoutDirtyTracking(async () => {
+        await this.db.accounts.clear();
+        await this.db.categories.clear();
+
+        if (accounts.length > 0) {
+          await this.db.accounts.bulkPut(accounts);
+        }
+
+        if (categories.length > 0) {
+          await this.db.categories.bulkPut(categories);
+        }
+      });
+
+      if (transactions.length > 0) {
+        await this.db.transactions.bulkPut(transactions);
+      }
+    });
+
+    await Promise.all([
+      this.accountRepository.getAccounts(),
+      this.categoryRepository.getCategories(),
+      this.transactionRepository.getAllTransactions(),
+    ]);
+  }
 
   async listUserSpreadsheets(): Promise<SpreadsheetSummary[]> {
     return this.googleSheetsDbService.listSpreadsheets();
@@ -237,6 +293,34 @@ export class GoogleSheetService {
     };
   }
 
+  private parseSheetTransaction(row: string[]): Transaction | null {
+    if (!row[0]) {
+      return null;
+    }
+
+    const amount = Number(row[2] || 0);
+    const type = this.parseTransactionType(row[3], amount);
+
+    return {
+      id: row[0],
+      accountId: row[1] || '',
+      amount,
+      type,
+      categoryId: row[4] || '',
+      description: row[5] || '',
+      date: this.parseDate(row[6]),
+      notes: row[7] || '',
+      tags: this.parseTags(row[8]),
+      transferToAccountId: row[9] || undefined,
+      isDeleted: row[10] === 'true',
+      createdAt: this.parseDate(row[11]),
+      updatedAt: this.parseDate(row[12]),
+      createdBy: row[13] || GUEST_USER_NAME,
+      updatedBy: row[14] || row[13] || GUEST_USER_NAME,
+      isDirty: false,
+    };
+  }
+
   private parseSheetAccount(row: string[]): Account | null {
     if (!row[0]) {
       return null;
@@ -306,6 +390,47 @@ export class GoogleSheetService {
         return value;
       default:
         return 'cash';
+    }
+  }
+
+  private parseTransactionType(value: string | undefined, amount: number): Transaction['type'] {
+    switch (value) {
+      case 'income':
+      case 'expense':
+      case 'transfer':
+        return value;
+      default:
+        return amount < 0 ? 'expense' : 'income';
+    }
+  }
+
+  private parseTags(value: string | undefined): string[] {
+    if (!value?.trim()) {
+      return [];
+    }
+
+    const trimmed = value.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed) as unknown;
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => String(item)).filter(Boolean);
+        }
+      } catch {
+      }
+    }
+
+    return trimmed
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+
+  private async getValuesOrEmpty(range: string): Promise<string[][]> {
+    try {
+      return await this.googleSheetsDbService.getValues(range);
+    } catch {
+      return [];
     }
   }
 

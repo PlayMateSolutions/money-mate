@@ -137,12 +137,22 @@ export class SheetOnboardingPage implements OnInit {
   }
 
   async selectExistingSpreadsheet(spreadsheet: SpreadsheetOption): Promise<void> {
-    this.sessionService.setLinkedSpreadsheet({
-      id: spreadsheet.id,
-      name: spreadsheet.name,
-    });
-    await this.showToast('Spreadsheet linked successfully', 'success');
-    await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
+    this.loading = true;
+    try {
+      this.sessionService.setLinkedSpreadsheet({
+        id: spreadsheet.id,
+        name: spreadsheet.name,
+      });
+
+      await this.googleSheetService.importAllFromSheetToLocal();
+      await this.showToast('Spreadsheet linked and data imported', 'success');
+      await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
+    } catch (error) {
+      console.error('Failed to import sheet data:', error);
+      await this.showToast('Unable to import data from sheet', 'danger');
+    } finally {
+      this.loading = false;
+    }
   }
 
   proceedToChooseCreate(): void {
@@ -186,13 +196,22 @@ export class SheetOnboardingPage implements OnInit {
       return;
     }
 
-    this.sessionService.setLinkedSpreadsheet({
-      id: selectedDoc.id,
-      name: selectedDoc.name,
-    });
+    this.loading = true;
+    try {
+      this.sessionService.setLinkedSpreadsheet({
+        id: selectedDoc.id,
+        name: selectedDoc.name,
+      });
 
-    await this.showToast('Spreadsheet linked successfully', 'success');
-    await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
+      await this.googleSheetService.importAllFromSheetToLocal();
+      await this.showToast('Spreadsheet linked and data imported', 'success');
+      await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
+    } catch (error) {
+      console.error('Failed to import picked sheet data:', error);
+      await this.showToast('Unable to import data from sheet', 'danger');
+    } finally {
+      this.loading = false;
+    }
   }
 
   async skipForNow(): Promise<void> {
