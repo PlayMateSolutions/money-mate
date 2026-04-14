@@ -172,6 +172,59 @@ export class SessionService {
     this.markEntryCompleted();
   }
 
+  isTokenExpiringSoon(bufferMs = 5 * 60 * 1000): boolean {
+    const session = this.currentSession;
+    if (!session || session.mode !== 'google' || !session.accessToken) {
+      return true;
+    }
+
+    if (!session.expiresAt) {
+      return true;
+    }
+
+    return session.expiresAt <= Date.now() + bufferMs;
+  }
+
+  async refreshGoogleToken(): Promise<boolean> {
+    const currentSession = this.currentSession;
+    if (!currentSession || currentSession.mode !== 'google') {
+      return false;
+    }
+
+    try {
+      await this.initializeGoogleAuth();
+
+      const response = await SocialLogin.login({
+        provider: 'google',
+        options: {
+          scopes: environment.googleScopes,
+          forceRefreshToken: true,
+        },
+      });
+
+      const result = response.result as GoogleLoginResponseOnline | undefined;
+      const accessToken = result?.accessToken?.token;
+      if (!accessToken) {
+        return false;
+      }
+
+      const refreshedSession: UserSession = {
+        mode: 'google',
+        email: result?.profile?.email ?? currentSession.email,
+        name: result?.profile?.name ?? currentSession.name,
+        picture: result?.profile?.imageUrl ?? currentSession.picture,
+        accessToken,
+        expiresAt: Date.now() + 60 * 60 * 1000,
+      };
+
+      this.setSession(refreshedSession);
+      return true;
+    } catch (error) {
+      console.error('Google token refresh failed:', error);
+      return false;
+    }
+  }
+
   private markEntryCompleted(): void {
     localStorage.setItem(this.ENTRY_KEY, 'true');
   }

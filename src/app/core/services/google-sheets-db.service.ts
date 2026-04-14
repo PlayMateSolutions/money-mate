@@ -23,7 +23,7 @@ export class GoogleSheetsDbService {
   constructor(private readonly sessionService: SessionService) {}
 
   async listSpreadsheets(pageSize = 25): Promise<GoogleDriveSpreadsheetFile[]> {
-    const accessToken = this.getAccessToken();
+    const accessToken = await this.getAccessToken();
     const query = encodeURIComponent("mimeType='application/vnd.google-apps.spreadsheet' and trashed=false");
     const fields = encodeURIComponent('files(id,name,modifiedTime)');
 
@@ -50,7 +50,7 @@ export class GoogleSheetsDbService {
   }
 
   async createSpreadsheet(title: string, sheetTitles: string[]): Promise<GoogleSpreadsheetCreateResult> {
-    const accessToken = this.getAccessToken();
+    const accessToken = await this.getAccessToken();
     const response = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
       method: 'POST',
       headers: {
@@ -77,7 +77,7 @@ export class GoogleSheetsDbService {
   async batchUpdateValues(
     ranges: GoogleBatchUpdateRange[],
   ): Promise<void> {
-    const accessToken = this.getAccessToken();
+    const accessToken = await this.getAccessToken();
     const spreadsheetId = this.getSpreadsheetId();
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`,
@@ -100,7 +100,7 @@ export class GoogleSheetsDbService {
   }
 
   async getValues(range: string): Promise<string[][]> {
-    const accessToken = this.getAccessToken();
+    const accessToken = await this.getAccessToken();
     const spreadsheetId = this.getSpreadsheetId();
     const encodedRange = encodeURIComponent(range);
     const response = await fetch(
@@ -124,7 +124,7 @@ export class GoogleSheetsDbService {
     range: string,
     values: string[][],
   ): Promise<void> {
-    const accessToken = this.getAccessToken();
+    const accessToken = await this.getAccessToken();
     const spreadsheetId = this.getSpreadsheetId();
     const encodedRange = encodeURIComponent(range);
     const response = await fetch(
@@ -150,7 +150,7 @@ export class GoogleSheetsDbService {
     range: string,
     values: string[][],
   ): Promise<void> {
-    const accessToken = this.getAccessToken();
+    const accessToken = await this.getAccessToken();
     const spreadsheetId = this.getSpreadsheetId();
     const encodedRange = encodeURIComponent(range);
     const response = await fetch(
@@ -172,7 +172,25 @@ export class GoogleSheetsDbService {
     }
   }
 
-  private getAccessToken(): string {
+  private async ensureValidToken(): Promise<void> {
+    const currentSession = this.sessionService.currentSession;
+    if (!currentSession?.accessToken) {
+      throw new Error('Google access token is not available');
+    }
+
+    if (!this.sessionService.isTokenExpiringSoon()) {
+      return;
+    }
+
+    const refreshed = await this.sessionService.refreshGoogleToken();
+    if (!refreshed || !this.sessionService.currentSession?.accessToken) {
+      throw new Error('Session expired. Please sign in again.');
+    }
+  }
+
+  private async getAccessToken(): Promise<string> {
+    await this.ensureValidToken();
+
     const accessToken = this.sessionService.currentSession?.accessToken;
     if (!accessToken) {
       throw new Error('Google access token is not available');
