@@ -41,8 +41,11 @@
       </ion-item-divider>
 
       <ion-item
+        button
+        detail="false"
         *ngFor="let item of group.items; trackBy: trackByTransactionId"
         [class.transfer-row]="item.transaction.type === 'transfer'"
+        (click)="openEditModal(item)"
       >
         <ion-icon
           slot="start"

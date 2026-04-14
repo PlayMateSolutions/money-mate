@@ -17,6 +17,7 @@ import {
   IonIcon,
   IonSpinner,
   IonBadge,
+  ModalController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -25,6 +26,7 @@ import { cloudUploadOutline, pricetagOutline, swapHorizontalOutline } from 'ioni
 import { Account, Category, Transaction } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
 import { GoogleSheetService, SessionService } from '../core/services';
+import { TransactionFormModalComponent } from './components/transaction-form-modal.component';
 
 interface TransactionListItem {
   id: string;
@@ -86,6 +88,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private readonly sessionService: SessionService,
     private readonly googleSheetService: GoogleSheetService,
     private readonly toastController: ToastController,
+    private readonly modalController: ModalController,
   ) {
     addIcons({
       pricetagOutline,
@@ -137,6 +140,18 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   getTransferSubtitle(item: TransactionListItem): string {
     return `${item.accountName} → ${item.transferToAccountName ?? 'Unknown account'}`;
+  }
+
+  async openEditModal(item: TransactionListItem): Promise<void> {
+    const modal = await this.modalController.create({
+      component: TransactionFormModalComponent,
+      componentProps: { transactionToEdit: item.transaction },
+    });
+    await modal.present();
+    const { role } = await modal.onWillDismiss();
+    if (role === 'saved') {
+      await this.refreshLookups();
+    }
   }
 
   async syncTransactions(): Promise<void> {

@@ -15,6 +15,10 @@ export interface CreateTransactionInput {
   transferToAccountId?: string;
 }
 
+export interface UpdateTransactionInput extends CreateTransactionInput {
+  id: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -87,6 +91,79 @@ export class TransactionRepository {
     await this.getAllTransactions();
 
     return transaction;
+  }
+
+  async updateTransaction(input: UpdateTransactionInput): Promise<Transaction> {
+    const now = new Date();
+
+    let storedAmount: number;
+    if (input.type === 'expense') {
+      storedAmount = -Math.abs(input.amount);
+    } else {
+      storedAmount = Math.abs(input.amount);
+    }
+
+    const oldTx = await this.db.transactions.get(input.id);
+    if (!oldTx) {
+      throw new Error(`Transaction ${input.id} not found`);
+    }
+
+    const updated: Transaction = {
+      ...oldTx,
+      accountId: input.accountId,
+      amount: storedAmount,
+      type: input.type,
+      categoryId: input.categoryId,
+      description: input.description,
+      date: input.date,
+      notes: input.notes,
+      tags: input.tags ?? [],
+      transferToAccountId: input.type === 'transfer' ? input.transferToAccountId : undefined,
+      updatedAt: now,
+      updatedBy: GUEST_USER_NAME,
+    };
+
+    await this.db.transaction('rw', [this.db.transactions, this.db.accounts], async () => {
+      // Reverse old transaction's balance effect
+      if (oldTx.type === 'transfer' && oldTx.transferToAccountId) {
+        const oldSource = await this.db.accounts.get(oldTx.accountId);
+        if (oldSource) {
+          await this.db.accounts.update(oldTx.accountId, { balance: oldSource.balance + Math.abs(oldTx.amount), updatedAt: now });
+        }
+        const oldDest = await this.db.accounts.get(oldTx.transferToAccountId);
+        if (oldDest) {
+          await this.db.accounts.update(oldTx.transferToAccountId, { balance: oldDest.balance - Math.abs(oldTx.amount), updatedAt: now });
+        }
+      } else {
+        const oldAccount = await this.db.accounts.get(oldTx.accountId);
+        if (oldAccount) {
+          // oldTx.amount is negative for expense, positive for income — subtracting reverses the effect
+          await this.db.accounts.update(oldTx.accountId, { balance: oldAccount.balance - oldTx.amount, updatedAt: now });
+        }
+      }
+
+      // Apply new transaction's balance effect
+      if (input.type === 'transfer' && input.transferToAccountId) {
+        const newSource = await this.db.accounts.get(input.accountId);
+        if (newSource) {
+          await this.db.accounts.update(input.accountId, { balance: newSource.balance - Math.abs(input.amount), updatedAt: now });
+        }
+        const newDest = await this.db.accounts.get(input.transferToAccountId);
+        if (newDest) {
+          await this.db.accounts.update(input.transferToAccountId, { balance: newDest.balance + Math.abs(input.amount), updatedAt: now });
+        }
+      } else {
+        const newAccount = await this.db.accounts.get(input.accountId);
+        if (newAccount) {
+          await this.db.accounts.update(input.accountId, { balance: newAccount.balance + storedAmount, updatedAt: now });
+        }
+      }
+
+      await this.db.transactions.put(updated);
+    });
+
+    await this.getAllTransactions();
+    return updated;
   }
 
   async getTransactionsByAccount(accountId: string): Promise<Transaction[]> {

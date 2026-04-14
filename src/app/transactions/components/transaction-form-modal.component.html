@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>New Transaction</ion-title>
+    <ion-title>{{ isEditMode ? 'Edit Transaction' : 'New Transaction' }}</ion-title>
     <ion-buttons slot="start">
       <ion-button (click)="cancel()">Cancel</ion-button>
     </ion-buttons>
@@ -14,7 +14,7 @@
 
 <ion-content>
   <div style="padding: 12px 16px 0;">
-    <ion-segment [(ngModel)]="form.type" (ionChange)="onTypeChange()">
+    <ion-segment [(ngModel)]="form.type" (ionChange)="onTypeChange()" *ngIf="!isEditMode">
       <ion-segment-button value="expense">Expense</ion-segment-button>
       <ion-segment-button value="income">Income</ion-segment-button>
       <ion-segment-button value="transfer">Transfer</ion-segment-button>
