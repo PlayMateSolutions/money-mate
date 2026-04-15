@@ -67,6 +67,8 @@ interface TransactionDateGroup {
   ]
 })
 export class TransactionsPage implements OnInit, OnDestroy {
+  private readonly CURRENCY_KEY = 'money-mate-currency';
+  selectedCurrency = 'USD';
   loading = true;
   syncing = false;
   error: string | null = null;
@@ -96,6 +98,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.loadSelectedCurrency();
     void this.initializeTransactionsStream();
   }
 
@@ -104,6 +107,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   async ionViewWillEnter(): Promise<void> {
+    this.loadSelectedCurrency();
     await this.refreshLookups();
     await this.transactionRepository.getAllTransactions();
   }
@@ -134,6 +138,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   getDisplayAmount(amount: number): number {
     return Math.abs(amount);
+  }
+
+  private loadSelectedCurrency(): void {
+    this.selectedCurrency = localStorage.getItem(this.CURRENCY_KEY) || 'USD';
   }
 
   getTransferSubtitle(item: TransactionListItem): string {

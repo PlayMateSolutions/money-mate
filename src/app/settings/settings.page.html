@@ -27,6 +27,18 @@
             <ion-select-option value="dark">Dark</ion-select-option>
           </ion-select>
         </ion-item>
+        <ion-item>
+          <ion-label>Currency</ion-label>
+          <ion-select
+            [value]="selectedCurrency"
+            (ionChange)="onCurrencyChange($event)"
+            interface="modal"
+            slot="end">
+            <ion-select-option *ngFor="let currency of currencies" [value]="currency.code">
+              {{ currency.name }} ({{ currency.code }})
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
         <ion-item button (click)="openCategoryManagement()">
           <ion-label>
             <h2>Manage Categories</h2>

@@ -52,8 +52,8 @@
         </ion-label>
 
         <div slot="end" class="amount-block">
-          <ion-note class="amount-note">
-            {{ getSignedAmountPrefix(item.transaction.amount) }}{{ formatAmount(item.transaction.amount) }}
+          <ion-note class="amount-note" [class.positive-amount]="item.transaction.amount > 0">
+            {{ formatAmount(item.transaction.amount) }}
           </ion-note>
           <span class="date-note">{{ formatDate(item.date) }}</span>
         </div>

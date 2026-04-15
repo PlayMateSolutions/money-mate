@@ -71,7 +71,7 @@
           class="amount-note"
           [class.positive-amount]="item.transaction.amount > 0"
         >
-          {{ getDisplayAmount(item.transaction.amount) | currency }}
+          {{ getDisplayAmount(item.transaction.amount) | currency:selectedCurrency }}
         </ion-note>
       </ion-item>
     </ng-container>

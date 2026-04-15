@@ -61,7 +61,9 @@ import { GoogleSheetService, SessionService } from '../core/services';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AccountsPage implements OnInit {
+  private readonly CURRENCY_KEY = 'money-mate-currency';
   accounts: Account[] = [];
+  selectedCurrency = 'USD';
   loading = true;
   syncing = false;
   error: string | null = null;
@@ -92,10 +94,12 @@ export class AccountsPage implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadSelectedCurrency();
     void this.loadAccounts();
   }
 
   ionViewWillEnter(): void {
+    this.loadSelectedCurrency();
     void this.loadAccounts();
   }
 
@@ -121,6 +125,10 @@ export class AccountsPage implements OnInit {
 
   trackByAccountId(_: number, account: Account): string {
     return account.id;
+  }
+
+  private loadSelectedCurrency(): void {
+    this.selectedCurrency = localStorage.getItem(this.CURRENCY_KEY) || 'USD';
   }
 
   getAccountIcon(iconName: string): string {

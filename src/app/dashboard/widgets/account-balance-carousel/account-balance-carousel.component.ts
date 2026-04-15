@@ -30,6 +30,7 @@ interface BalanceCard {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
+  private readonly CURRENCY_KEY = 'money-mate-currency';
   @ViewChild('swiperContainer', { static: false }) swiperContainer!: ElementRef;
 
   cards: BalanceCard[] = [];
@@ -167,9 +168,11 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
   }
 
   formatBalance(balance: number): string {
+    const currencyCode = localStorage.getItem(this.CURRENCY_KEY) || 'USD';
+
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currencyCode,
       minimumFractionDigits: 2
     }).format(balance);
   }

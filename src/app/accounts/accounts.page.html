@@ -39,7 +39,7 @@
         <ion-icon [name]="getAccountIcon(account.icon)" slot="start" [style.color]="account.color"></ion-icon>
         <ion-label>
           <h2>{{ account.name }}</h2>
-          <p>{{ account.type }} • Balance: {{ account.balance | currency }}</p>
+          <p>{{ account.type }} • Balance: {{ account.balance | currency:selectedCurrency }}</p>
         </ion-label>
         <ion-button fill="clear" slot="end" (click)="openEditModal(account)">
           <ion-icon slot="icon-only" name="create-outline"></ion-icon>
@@ -53,7 +53,7 @@
         <ion-icon [name]="getAccountIcon(account.icon)" slot="start" [style.color]="account.color"></ion-icon>
         <ion-label>
           <h2>{{ account.name }}</h2>
-          <p>{{ account.type }} • Balance: {{ account.balance | currency }}</p>
+          <p>{{ account.type }} • Balance: {{ account.balance | currency:selectedCurrency }}</p>
         </ion-label>
         <ion-badge color="medium" slot="end">Inactive</ion-badge>
         <ion-button fill="clear" slot="end" (click)="openEditModal(account)">

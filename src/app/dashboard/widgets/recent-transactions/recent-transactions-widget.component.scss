@@ -48,6 +48,10 @@
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--ion-text-color);
+
+    &.positive-amount {
+      color: var(--ion-color-success);
+    }
   }
 
   .amount-block {

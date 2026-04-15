@@ -23,6 +23,13 @@ import { ThemeService, Theme, SessionService, AuthMode } from '../core/services'
 import { addIcons } from 'ionicons';
 import { chevronForwardOutline, logOutOutline, personCircleOutline, logoGoogle, openOutline } from 'ionicons/icons';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+
+interface CurrencyItem {
+  code: string;
+  name: string;
+  symbol?: string;
+}
 
 @Component({
   selector: 'app-settings',
@@ -49,7 +56,10 @@ import { Router } from '@angular/router';
   ]
 })
 export class SettingsPage implements OnInit, OnDestroy {
+  private readonly CURRENCY_KEY = 'money-mate-currency';
   currentTheme: Theme = 'auto';
+  selectedCurrency = 'USD';
+  currencies: CurrencyItem[] = [];
   authMode: AuthMode | 'none' = 'none';
   userName = 'Guest User';
   userEmail = 'Offline Mode';
@@ -62,12 +72,16 @@ export class SettingsPage implements OnInit, OnDestroy {
   constructor(
     private themeService: ThemeService,
     private sessionService: SessionService,
-    private router: Router
+    private router: Router,
+    private http: HttpClient,
   ) {
     addIcons({ chevronForwardOutline, logOutOutline, personCircleOutline, logoGoogle, openOutline });
   }
 
   ngOnInit() {
+    this.selectedCurrency = localStorage.getItem(this.CURRENCY_KEY) || 'USD';
+    this.loadCurrencies();
+
     // this.themeService.theme$
     //   .pipe(takeUntil(this.destroy$))
     //   .subscribe(theme => {
@@ -97,6 +111,25 @@ export class SettingsPage implements OnInit, OnDestroy {
   onThemeChange(event: any) {
     const theme = event.detail.value as Theme;
     this.themeService.setTheme(theme);
+  }
+
+  onCurrencyChange(event: any): void {
+    console.log('Currency changed:', event.detail.value);
+    this.selectedCurrency = event.detail.value || 'USD';
+    localStorage.setItem(this.CURRENCY_KEY, this.selectedCurrency);
+  }
+
+  loadCurrencies(): void {
+    this.http.get<CurrencyItem[]>('/assets/assets/countries.json')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((data) => {
+        this.currencies = data ?? [];
+
+        if (!this.currencies.some((currency) => currency.code === this.selectedCurrency)) {
+          this.selectedCurrency = 'USD';
+          localStorage.setItem(this.CURRENCY_KEY, this.selectedCurrency);
+        }
+      });
   }
 
   async openCategoryManagement(): Promise<void> {

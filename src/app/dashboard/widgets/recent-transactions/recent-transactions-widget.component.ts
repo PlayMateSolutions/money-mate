@@ -59,6 +59,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecentTransactionsWidgetComponent implements OnInit, OnDestroy {
+  private readonly CURRENCY_KEY = 'money-mate-currency';
   items: TransactionDisplayItem[] = [];
   loading = true;
   error: string | null = null;
@@ -98,15 +99,13 @@ export class RecentTransactionsWidgetComponent implements OnInit, OnDestroy {
   }
 
   formatAmount(amount: number): string {
+    const currencyCode = localStorage.getItem(this.CURRENCY_KEY) || 'USD';
+
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currencyCode,
       minimumFractionDigits: 2,
-    }).format(amount);
-  }
-
-  getSignedAmountPrefix(amount: number): string {
-    return amount > 0 ? '+' : '';
+    }).format(Math.abs(amount));
   }
 
   getTransferSubtitle(item: TransactionDisplayItem): string {
