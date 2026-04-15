@@ -112,6 +112,18 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
       return [];
     }
 
+    if (accounts.length === 1) {
+      const [account] = accounts;
+      return [{
+        id: account.id,
+        name: account.name,
+        balance: account.balance,
+        type: account.type,
+        color: account.color,
+        icon: account.icon
+      }];
+    }
+
     const totalBalance = accounts.reduce((sum: number, account: Account) => sum + account.balance, 0);
 
     const totalCard: BalanceCard = {

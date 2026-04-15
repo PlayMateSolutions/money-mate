@@ -207,7 +207,9 @@
 @media (max-width: 480px) {
   .carousel-container {
     .balance-card {
-      height: 220px;
+      aspect-ratio: 1.65 / 1;
+      height: auto;
+      max-height: 220px;
       margin: 12px;
 
       .card-content {
@@ -244,6 +246,14 @@
           }
         }
       }
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .carousel-container {
+    .balance-card {
+      max-width: 560px;
     }
   }
 }
