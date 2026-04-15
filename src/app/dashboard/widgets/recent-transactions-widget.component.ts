@@ -23,7 +23,6 @@ import {
   IonIcon,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import * as ionicons from 'ionicons/icons';
 import { pricetagOutline, swapHorizontalOutline } from 'ionicons/icons';
 import { Account, Category, Transaction } from '../../core/database/models';
 import {
@@ -31,19 +30,11 @@ import {
   CategoryRepository,
   TransactionRepository,
 } from '../../core/database/repositories';
-
-interface RecentTransactionItem {
-  id: string;
-  transactionType: Transaction['type'];
-  description: string;
-  categoryName: string;
-  accountName: string;
-  transferToAccountName?: string;
-  iconName: string;
-  iconColor: string;
-  amount: number;
-  date: Date;
-}
+import {
+  buildTransactionDisplayItem,
+  registerCategoryIcons,
+  TransactionDisplayItem,
+} from '../../core/services';
 
 @Component({
   selector: 'app-recent-transactions-widget',
@@ -68,7 +59,7 @@ interface RecentTransactionItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecentTransactionsWidgetComponent implements OnInit, OnDestroy {
-  items: RecentTransactionItem[] = [];
+  items: TransactionDisplayItem[] = [];
   loading = true;
   error: string | null = null;
 
@@ -102,7 +93,7 @@ export class RecentTransactionsWidgetComponent implements OnInit, OnDestroy {
     this.transactionsSub?.unsubscribe();
   }
 
-  trackByItemId(_: number, item: RecentTransactionItem): string {
+  trackByItemId(_: number, item: TransactionDisplayItem): string {
     return item.id;
   }
 
@@ -118,7 +109,7 @@ export class RecentTransactionsWidgetComponent implements OnInit, OnDestroy {
     return amount > 0 ? '+' : '';
   }
 
-  getTransferSubtitle(item: RecentTransactionItem): string {
+  getTransferSubtitle(item: TransactionDisplayItem): string {
     return `${item.accountName} → ${item.transferToAccountName ?? 'Unknown account'}`;
   }
 
@@ -141,7 +132,7 @@ export class RecentTransactionsWidgetComponent implements OnInit, OnDestroy {
 
       await this.refreshLookups();
 
-      this.transactionsSub = this.transactionRepository.getTransactions$().subscribe({
+      this.transactionsSub = this.transactionRepository.getRecentTransactions$(this.maxItems).subscribe({
         next: (transactions) => {
           this.items = this.buildItems(transactions);
           this.loading = false;
@@ -173,62 +164,17 @@ export class RecentTransactionsWidgetComponent implements OnInit, OnDestroy {
 
     this.accountsMap = new Map<string, Account>(accounts.map((account) => [account.id, account]));
     this.categoriesMap = new Map<string, Category>(categories.map((category) => [category.id, category]));
-    this.registerIconsFromCategories(categories);
+    registerCategoryIcons(categories, this.registeredIconNames);
   }
 
-  private registerIconsFromCategories(categories: Category[]): void {
-    const iconsToRegister: Record<string, string> = {};
-
-    categories.forEach((category) => {
-      const iconName = category.icon?.trim();
-      if (!iconName || this.registeredIconNames.has(iconName)) {
-        return;
-      }
-
-      const exportName = iconName.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase());
-      const iconData = (ionicons as Record<string, string>)[exportName];
-      if (!iconData) {
-        return;
-      }
-
-      iconsToRegister[iconName] = iconData;
-      this.registeredIconNames.add(iconName);
-    });
-
-    if (Object.keys(iconsToRegister).length > 0) {
-      addIcons(iconsToRegister);
-    }
-  }
-
-  private buildItems(transactions: Transaction[]): RecentTransactionItem[] {
-    return transactions.slice(0, this.maxItems).map((transaction) => {
-      const accountName = this.accountsMap.get(transaction.accountId)?.name ?? 'Unknown account';
-      const transferToAccountName = transaction.transferToAccountId
-        ? this.accountsMap.get(transaction.transferToAccountId)?.name
-        : undefined;
-      const category = this.categoriesMap.get(transaction.categoryId);
-      const categoryName = transaction.type === 'transfer'
-        ? 'Transfer'
-        : (category?.name ?? 'Uncategorized');
-      const categoryColor = category?.color || 'var(--ion-color-medium)';
-      const categoryIconName = category?.icon?.trim();
-      const iconName = transaction.type === 'transfer'
-        ? 'swap-horizontal-outline'
-        : (categoryIconName && this.registeredIconNames.has(categoryIconName) ? categoryIconName : 'pricetag-outline');
-      const iconColor = transaction.type === 'transfer' ? 'var(--ion-color-medium)' : categoryColor;
-
-      return {
-        id: transaction.id,
-        transactionType: transaction.type,
-        description: transaction.description,
-        categoryName,
-        accountName,
-        transferToAccountName,
-        iconName,
-        iconColor,
-        amount: transaction.amount,
-        date: new Date(transaction.date),
-      };
-    });
+  private buildItems(transactions: Transaction[]): TransactionDisplayItem[] {
+    return transactions.slice(0, this.maxItems).map((transaction) => (
+      buildTransactionDisplayItem(
+        transaction,
+        this.accountsMap,
+        this.categoriesMap,
+        this.registeredIconNames,
+      )
+    ));
   }
 }

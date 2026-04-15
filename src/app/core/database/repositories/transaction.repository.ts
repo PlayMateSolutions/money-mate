@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, map, Observable } from 'rxjs';
 import { DatabaseService } from '../database.service';
 import { GUEST_USER_NAME, Transaction, TransactionType } from '../models';
 
@@ -25,6 +25,9 @@ export interface UpdateTransactionInput extends CreateTransactionInput {
 export class TransactionRepository {
   private transactionsSubject = new BehaviorSubject<Transaction[]>([]);
   public transactions$ = this.transactionsSubject.asObservable();
+  private recentTransactionsSubject = new BehaviorSubject<Transaction[]>([]);
+  public recentTransactions$ = this.recentTransactionsSubject.asObservable();
+  private readonly recentTransactionsCacheSize = 10;
 
   constructor(private db: DatabaseService) {}
 
@@ -88,7 +91,7 @@ export class TransactionRepository {
       }
     });
 
-    await this.getAllTransactions();
+    await this.refreshTransactionStreams();
 
     return transaction;
   }
@@ -162,7 +165,7 @@ export class TransactionRepository {
       await this.db.transactions.put(updated);
     });
 
-    await this.getAllTransactions();
+    await this.refreshTransactionStreams();
     return updated;
   }
 
@@ -193,9 +196,33 @@ export class TransactionRepository {
     }
   }
 
+  async getRecentTransactions(limit = this.recentTransactionsCacheSize): Promise<Transaction[]> {
+    try {
+      const transactions = await this.db.transactions
+        .orderBy('date')
+        .reverse()
+        .filter((transaction) => !transaction.isDeleted)
+        .limit(limit)
+        .toArray();
+
+      this.recentTransactionsSubject.next(transactions);
+      return transactions;
+    } catch (error) {
+      console.error('Error fetching recent transactions:', error);
+      throw new Error('Failed to fetch recent transactions');
+    }
+  }
+
   getTransactions$(): Observable<Transaction[]> {
-    this.getAllTransactions();
+    void this.getAllTransactions();
     return this.transactions$;
+  }
+
+  getRecentTransactions$(limit = this.recentTransactionsCacheSize): Observable<Transaction[]> {
+    void this.getRecentTransactions(Math.max(limit, this.recentTransactionsCacheSize));
+    return this.recentTransactions$.pipe(
+      map((transactions) => transactions.slice(0, limit))
+    );
   }
 
   async getDirtyTransactions(): Promise<Transaction[]> {
@@ -219,7 +246,7 @@ export class TransactionRepository {
         await this.db.transactions.where('id').anyOf(transactionIds).modify({ isDirty: false });
       });
 
-      await this.getAllTransactions();
+      await this.refreshTransactionStreams();
     } catch (error) {
       console.error('Error clearing transaction dirty flags:', error);
       throw new Error('Failed to clear transaction dirty flags');
@@ -237,7 +264,7 @@ export class TransactionRepository {
         });
       });
 
-      await this.getAllTransactions();
+      await this.refreshTransactionStreams();
     } catch (error) {
       console.error('Error upserting transaction from sheet:', error);
       throw new Error('Failed to upsert transaction from sheet');
@@ -247,5 +274,12 @@ export class TransactionRepository {
   private handleError(error: unknown): never {
     console.error('TransactionRepository error:', error);
     throw new Error('Transaction operation failed');
+  }
+
+  private async refreshTransactionStreams(): Promise<void> {
+    await Promise.all([
+      this.getAllTransactions(),
+      this.getRecentTransactions(this.recentTransactionsCacheSize)
+    ]);
   }
 }

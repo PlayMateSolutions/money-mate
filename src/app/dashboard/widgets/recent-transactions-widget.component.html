@@ -27,7 +27,7 @@
         class="transaction-item"
         lines="full"
         detail="false"
-        [class.transfer-row]="item.transactionType === 'transfer'"
+        [class.transfer-row]="item.transaction.type === 'transfer'"
         *ngFor="let item of items; trackBy: trackByItemId"
       >
         <ion-icon
@@ -37,23 +37,23 @@
         ></ion-icon>
 
         <ion-label>
-          <h3 class="description" *ngIf="item.transactionType !== 'transfer'">
-            {{ item.description || item.categoryName }}
+          <h3 class="description" *ngIf="item.transaction.type !== 'transfer'">
+            {{ item.transaction.description || item.categoryName }}
           </h3>
-          <h3 class="description" *ngIf="item.transactionType === 'transfer'">Transfer</h3>
+          <h3 class="description" *ngIf="item.transaction.type === 'transfer'">Transfer</h3>
 
-          <p class="meta" *ngIf="item.transactionType !== 'transfer'">
+          <p class="meta" *ngIf="item.transaction.type !== 'transfer'">
             {{ item.categoryName }} • {{ item.accountName }}
           </p>
 
-          <p class="transfer-subtitle" *ngIf="item.transactionType === 'transfer'">
+          <p class="transfer-subtitle" *ngIf="item.transaction.type === 'transfer'">
             {{ getTransferSubtitle(item) }}
           </p>
         </ion-label>
 
         <div slot="end" class="amount-block">
           <ion-note class="amount-note">
-            {{ getSignedAmountPrefix(item.amount) }}{{ formatAmount(item.amount) }}
+            {{ getSignedAmountPrefix(item.transaction.amount) }}{{ formatAmount(item.transaction.amount) }}
           </ion-note>
           <span class="date-note">{{ formatDate(item.date) }}</span>
         </div>

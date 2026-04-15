@@ -21,21 +21,19 @@ import {
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import * as ionicons from 'ionicons/icons';
 import { cloudUploadOutline, pricetagOutline, swapHorizontalOutline } from 'ionicons/icons';
 import { Account, Category, Transaction } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
-import { GoogleSheetService, SessionService } from '../core/services';
+import {
+  buildTransactionDisplayItem,
+  GoogleSheetService,
+  registerCategoryIcons,
+  SessionService,
+  TransactionDisplayItem,
+} from '../core/services';
 import { TransactionFormModalComponent } from './components/transaction-form-modal.component';
 
-interface TransactionListItem {
-  id: string;
-  transaction: Transaction;
-  accountName: string;
-  transferToAccountName?: string;
-  categoryName: string;
-  iconName: string;
-  iconColor: string;
+interface TransactionListItem extends TransactionDisplayItem {
   dateKey: string;
 }
 
@@ -211,30 +209,6 @@ export class TransactionsPage implements OnInit, OnDestroy {
     });
   }
 
-  private registerIconsFromCategories(categories: Category[]): void {
-    const iconsToRegister: Record<string, string> = {};
-
-    categories.forEach((category) => {
-      const iconName = category.icon?.trim();
-      if (!iconName || this.registeredIconNames.has(iconName)) {
-        return;
-      }
-
-      const exportName = iconName.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase());
-      const iconData = (ionicons as Record<string, string>)[exportName];
-      if (!iconData) {
-        return;
-      }
-
-      iconsToRegister[iconName] = iconData;
-      this.registeredIconNames.add(iconName);
-    });
-
-    if (Object.keys(iconsToRegister).length > 0) {
-      addIcons(iconsToRegister);
-    }
-  }
-
   private async initializeTransactionsStream(): Promise<void> {
     try {
       this.loading = true;
@@ -270,19 +244,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
     this.accountsMap = new Map<string, Account>(accounts.map(account => [account.id, account]));
     this.categoriesMap = new Map<string, Category>(categories.map(category => [category.id, category]));
-    this.registerIconsFromCategories(categories);
+    registerCategoryIcons(categories, this.registeredIconNames);
   }
 
   private buildGroupedItems(transactions: Transaction[]): void {
     const groupedMap = new Map<string, TransactionDateGroup>();
 
     transactions.forEach((transaction) => {
-      const sourceAccount = this.accountsMap.get(transaction.accountId);
-      const transferToAccount = transaction.transferToAccountId
-        ? this.accountsMap.get(transaction.transferToAccountId)
-        : undefined;
-      const category = transaction.categoryId ? this.categoriesMap.get(transaction.categoryId) : undefined;
-
       const date = new Date(transaction.date);
       const dateKey = this.getDateKey(date);
 
@@ -294,22 +262,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
         });
       }
 
-      const iconName = transaction.type === 'transfer'
-        ? 'swap-horizontal-outline'
-        : (category?.icon?.trim() || 'pricetag-outline');
-
       const item: TransactionListItem = {
-        id: transaction.id,
-        transaction,
-        accountName: sourceAccount?.name ?? 'Unknown account',
-        transferToAccountName: transferToAccount?.name,
-        categoryName: transaction.type === 'transfer'
-          ? 'Transfer'
-          : (category?.name ?? 'Uncategorized'),
-        iconName: this.registeredIconNames.has(iconName) ? iconName : 'pricetag-outline',
-        iconColor: transaction.type === 'transfer'
-          ? 'var(--ion-color-medium)'
-          : (category?.color || 'var(--ion-color-medium)'),
+        ...buildTransactionDisplayItem(
+          transaction,
+          this.accountsMap,
+          this.categoriesMap,
+          this.registeredIconNames,
+        ),
         dateKey
       };
 
