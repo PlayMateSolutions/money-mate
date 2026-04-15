@@ -33,6 +33,7 @@ import {
 } from '../core/services';
 import { TransactionFormModalComponent } from './components/transaction-form-modal.component';
 import { TransactionFilterModalComponent, TransactionFilterState } from './components/transaction-filter-modal.component';
+import { DateRangeFilterComponent, DateRange } from '../shared/date-range-filter/date-range-filter.component';
 
 interface TransactionListItem extends TransactionDisplayItem {
   dateKey: string;
@@ -65,6 +66,7 @@ interface TransactionDateGroup {
     IonIcon,
     IonSpinner,
     IonBadge,
+    DateRangeFilterComponent,
   ]
 })
 export class TransactionsPage implements OnInit, OnDestroy {
@@ -88,6 +90,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     'swap-horizontal-outline'
   ]);
   filters: TransactionFilterState = this.getDefaultFilters();
+  selectedDateRange: DateRange = this.getDefaultDateRange();
 
   constructor(
     private transactionRepository: TransactionRepository,
@@ -124,6 +127,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   ionViewWillLeave(): void {
     this.resetFilters();
+    this.selectedDateRange = this.getDefaultDateRange();
   }
 
   get hasTransactions(): boolean {
@@ -194,6 +198,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   getTransferSubtitle(item: TransactionListItem): string {
     return `${item.accountName} → ${item.transferToAccountName ?? 'Unknown account'}`;
+  }
+
+  onDateRangeChange(dateRange: DateRange): void {
+    this.selectedDateRange = dateRange;
+    this.buildGroupedItems(this.applyFilters(this.allTransactions));
   }
 
   async openEditModal(item: TransactionListItem): Promise<void> {
@@ -369,9 +378,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
     const hasCategoryFilter = selectedCategoryIds.size > 0;
     const hasAccountFilter = selectedAccountIds.size > 0;
     const hasTagFilter = selectedTags.size > 0;
+    const hasDateFilter = true; // Always apply date range filtering
 
     if (!hasTypeFilter && !hasCategoryFilter && !hasAccountFilter && !hasTagFilter) {
-      return transactions;
+      // Even if no other filters, still apply date range
+      return transactions.filter((transaction) =>
+        this.isTransactionInDateRange(transaction)
+      );
     }
 
     return transactions.filter((transaction) => {
@@ -402,8 +415,26 @@ export class TransactionsPage implements OnInit, OnDestroy {
         }
       }
 
+      // Apply date range filter
+      if (hasDateFilter && !this.isTransactionInDateRange(transaction)) {
+        return false;
+      }
+
       return true;
     });
+  }
+
+  private isTransactionInDateRange(transaction: Transaction): boolean {
+    const transactionDate = new Date(transaction.date);
+    transactionDate.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(this.selectedDateRange.startDate);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(this.selectedDateRange.endDate);
+    endDate.setHours(23, 59, 59, 999);
+
+    return transactionDate.getTime() >= startDate.getTime() && transactionDate.getTime() <= endDate.getTime();
   }
 
   private getDefaultFilters(): TransactionFilterState {
@@ -415,7 +446,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
     };
   }
 
-  private resetFilters(): void {
+  private getDefaultDateRange(): DateRange {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    return {
+      startDate: startOfMonth,
+      endDate: today,
+      period: 'monthly',
+    };
+  }  private resetFilters(): void {
     this.filters = this.getDefaultFilters();
   }
 

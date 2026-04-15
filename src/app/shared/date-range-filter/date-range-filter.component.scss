@@ -1,0 +1,11 @@
+.period-title {
+  text-align: center;
+  font-weight: 500;
+}
+
+// Only set text color to black for selected segment in light mode
+ion-segment-button.segment-button-checked,
+ion-segment-button.segment-button-checked ion-label {
+  color: #000 !important;
+  --color: #000 !important;
+}

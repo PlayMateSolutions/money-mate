@@ -1,0 +1,37 @@
+<ion-toolbar>
+  <ion-segment [(ngModel)]="selectedPeriod" (ionChange)="onPeriodChange($event)" mode="ios">
+    <ion-segment-button value="weekly" *ngIf="isPeriodAvailable('weekly')">
+      <ion-label>Weekly</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="monthly" *ngIf="isPeriodAvailable('monthly')">
+      <ion-label>Monthly</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="yearly" *ngIf="isPeriodAvailable('yearly')">
+      <ion-label>Yearly</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="custom" *ngIf="isPeriodAvailable('custom')" (click)="onCustomSegmentClick()">
+      <ion-label>Custom</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+</ion-toolbar>
+
+<ion-toolbar *ngIf="showNavigation">
+  <ion-buttons slot="start">
+    <ion-button fill="clear" (click)="goToPreviousPeriod()">
+      <ion-icon name="chevron-back-outline" slot="icon-only"></ion-icon>
+    </ion-button>
+  </ion-buttons>
+  
+  <ion-title size="small" class="period-title">
+    {{ getCurrentPeriodText() }}
+  </ion-title>
+  
+  <ion-buttons slot="end">
+    <ion-button 
+      fill="clear" 
+      [disabled]="!canGoToNextPeriod()"
+      (click)="goToNextPeriod()">
+      <ion-icon name="chevron-forward-outline" slot="icon-only"></ion-icon>
+    </ion-button>
+  </ion-buttons>
+</ion-toolbar>

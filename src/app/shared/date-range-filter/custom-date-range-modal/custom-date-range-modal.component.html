@@ -1,0 +1,97 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Select Date Range</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="onCancel()">Close</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- Preset Options as Radio List -->
+  <ion-list>
+    <ion-list-header>
+      <ion-label>Quick Select</ion-label>
+    </ion-list-header>
+    
+    <ion-radio-group [(ngModel)]="selectedOption" (ionChange)="onPresetChange($event)">
+      <ion-item>
+        <ion-label>Last 7 Days</ion-label>
+        <ion-radio slot="start" value="last7days"></ion-radio>
+      </ion-item>
+      
+      <ion-item>
+        <ion-label>This Week</ion-label>
+        <ion-radio slot="start" value="thisweek"></ion-radio>
+      </ion-item>
+      
+      <ion-item>
+        <ion-label>Last 30 Days</ion-label>
+        <ion-radio slot="start" value="last30days"></ion-radio>
+      </ion-item>
+      
+      <ion-item>
+        <ion-label>This Month</ion-label>
+        <ion-radio slot="start" value="thismonth"></ion-radio>
+      </ion-item>
+      
+      <ion-item>
+        <ion-label>This Year</ion-label>
+        <ion-radio slot="start" value="thisyear"></ion-radio>
+      </ion-item>
+      
+      <ion-item>
+        <ion-label>Last 12 Months</ion-label>
+        <ion-radio slot="start" value="last12months"></ion-radio>
+      </ion-item>
+      
+      <ion-item>
+        <ion-label>All Time</ion-label>
+        <ion-radio slot="start" value="all"></ion-radio>
+      </ion-item>
+    </ion-radio-group>
+  </ion-list>
+
+  <ion-item-divider class="ion-margin-top">
+    <ion-label>Custom Dates</ion-label>
+  </ion-item-divider>
+
+  <!-- Custom Date Picker -->
+  <ion-item>
+    <ion-input
+      [(ngModel)]="selectedStartDate"
+      label="Start Date"
+      label-placement="floating"
+      name="startDate"
+      type="date"
+      [value]="selectedStartDate">
+    </ion-input>
+  </ion-item>
+
+  <ion-item>
+    <ion-input
+      [(ngModel)]="selectedEndDate"
+      label="End Date"
+      label-placement="floating"
+      name="endDate"
+      type="date"
+      [value]="selectedEndDate">
+    </ion-input>
+  </ion-item>
+
+  <div class="ion-margin-top">
+    <ion-button 
+      expand="block" 
+      color="primary" 
+      (click)="onConfirm()" 
+      [disabled]="isConfirmDisabled()">
+      Confirm
+    </ion-button>
+    <ion-button 
+      expand="block" 
+      fill="outline"
+      (click)="onCancel()">
+      Cancel
+    </ion-button>
+  </div>
+</ion-content>

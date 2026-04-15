@@ -18,6 +18,12 @@
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
+  <app-date-range-filter
+    [selectedPeriod]="selectedDateRange.period"
+    [showNavigation]="true"
+    [availablePeriods]="['weekly', 'monthly', 'yearly', 'custom']"
+    (dateRangeChange)="onDateRangeChange($event)">
+  </app-date-range-filter>
 </ion-header>
 
 <ion-content [fullscreen]="true">
