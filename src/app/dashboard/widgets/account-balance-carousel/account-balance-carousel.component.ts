@@ -1,8 +1,9 @@
-import { Component, OnInit, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonCard, IonCardContent, IonIcon } from '@ionic/angular/standalone';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import { Subscription } from 'rxjs';
 import { Swiper } from 'swiper';
 import { Pagination } from 'swiper/modules';
 import { AccountRepository } from '../../../core/database/repositories';
@@ -34,6 +35,7 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
   loading = true;
   error: string | null = null;
   private swiper: Swiper | null = null;
+  private accountsSubscription?: Subscription;
 
   constructor(
     private accountRepository: AccountRepository,
@@ -42,18 +44,25 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadAccounts();
+    this.subscribeToAccounts();
   }
 
   ngAfterViewInit(): void {
-    // Initialize Swiper after view is initialized
     setTimeout(() => {
       this.initializeSwiper();
     }, 100);
   }
 
+  ngOnDestroy(): void {
+    this.accountsSubscription?.unsubscribe();
+    this.swiper?.destroy(true, true);
+    this.swiper = null;
+  }
+
   private initializeSwiper(): void {
     if (this.swiperContainer && this.cards.length > 0) {
+      this.swiper?.destroy(true, true);
+
       Swiper.use([Pagination]);
       this.swiper = new Swiper(this.swiperContainer.nativeElement, {
         modules: [Pagination],
@@ -70,61 +79,60 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
     }
   }
 
-  private async loadAccounts(): Promise<void> {
-    try {
-      this.loading = true;
-      this.error = null;
-      this.cdr.markForCheck();
+  private subscribeToAccounts(): void {
+    this.loading = true;
+    this.error = null;
+    this.cdr.markForCheck();
 
-      const accounts = await this.accountRepository.getAccounts();
+    this.accountsSubscription = this.accountRepository.accounts$.subscribe({
+      next: (accounts) => {
+        this.cards = this.buildCards(accounts);
+        this.loading = false;
+        this.error = null;
+        this.cdr.markForCheck();
 
-      if (!accounts || accounts.length === 0) {
-        this.cards = [];
+        setTimeout(() => {
+          this.initializeSwiper();
+        }, 100);
+      },
+      error: async (err) => {
+        this.error = 'Failed to load accounts';
         this.loading = false;
         this.cdr.markForCheck();
-        // No need to initialize Swiper if no cards
-        return;
+        console.error('Error streaming accounts:', err);
+        await this.presentToast('Error loading accounts');
       }
+    });
 
-      // Calculate total balance
-      const totalBalance = accounts.reduce((sum: number, account: Account) => sum + account.balance, 0);
+    void this.accountRepository.getAccounts();
+  }
 
-      // Create total card with gradient (no specific color, handled in CSS)
-      const totalCard: BalanceCard = {
-        id: 'total',
-        name: 'Total Balance',
-        balance: totalBalance,
-        type: null,
-        color: null,
-        isTotal: true
-      };
-
-      // Create individual account cards
-      const accountCards: BalanceCard[] = accounts.map((account: Account) => ({
-        id: account.id,
-        name: account.name,
-        balance: account.balance,
-        type: account.type,
-        color: account.color,
-        icon: account.icon
-      }));
-
-      // Combine: total card first, then individual accounts
-      this.cards = [totalCard, ...accountCards];
-      this.loading = false;
-      this.cdr.markForCheck();
-
-      // Reinitialize Swiper after cards are loaded
-      setTimeout(() => {
-        this.initializeSwiper();
-      }, 100);
-    } catch (err) {
-      this.error = 'Failed to load accounts';
-      this.loading = false;
-      this.cdr.markForCheck();
-      console.error('Error loading accounts:', err);
-      await this.presentToast('Error loading accounts');
+  private buildCards(accounts: Account[]): BalanceCard[] {
+    if (accounts.length === 0) {
+      return [];
     }
+
+    const totalBalance = accounts.reduce((sum: number, account: Account) => sum + account.balance, 0);
+
+    const totalCard: BalanceCard = {
+      id: 'total',
+      name: 'Total Balance',
+      balance: totalBalance,
+      type: null,
+      color: null,
+      isTotal: true
+    };
+
+    const accountCards: BalanceCard[] = accounts.map((account: Account) => ({
+      id: account.id,
+      name: account.name,
+      balance: account.balance,
+      type: account.type,
+      color: account.color,
+      icon: account.icon
+    }));
+
+    return [totalCard, ...accountCards];
   }
 
   private async presentToast(message: string): Promise<void> {

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { liveQuery } from 'dexie';
 import { BehaviorSubject, Observable, from, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { DatabaseService } from '../database.service';
@@ -12,7 +13,7 @@ export class AccountRepository {
   public accounts$ = this.accountsSubject.asObservable();
 
   constructor(private db: DatabaseService) {
-    this.loadAccounts();
+    this.watchAccounts();
   }
 
   /**
@@ -51,9 +52,7 @@ export class AccountRepository {
    * Get accounts as Observable
    */
   getAccounts$(): Observable<Account[]> {
-    return from(this.getAccounts()).pipe(
-      catchError(this.handleError)
-    );
+    return this.accounts$.pipe(catchError(this.handleError));
   }
 
   /**
@@ -267,10 +266,16 @@ export class AccountRepository {
     }
   }
 
-  private loadAccounts(): void {
-    this.getAccounts().catch(error => {
-      console.error('Error loading initial accounts:', error);
-    });
+  private watchAccounts(): void {
+    liveQuery(() => this.db.accounts.orderBy('createdAt').filter((account) => !account.isDeleted).toArray())
+      .subscribe({
+        next: (accounts) => {
+          this.accountsSubject.next(accounts);
+        },
+        error: (error) => {
+          console.error('Error watching accounts:', error);
+        }
+      });
   }
 
   private handleError(error: any): Observable<never> {
