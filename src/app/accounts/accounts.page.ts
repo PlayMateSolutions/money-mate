@@ -227,6 +227,7 @@ export class AccountsPage implements OnInit {
           ...currentAccount,
           name: data.name,
           type: data.type,
+          balance: data.balance,
           ownerName: data.ownerName,
           color: data.color,
           icon: data.icon,
@@ -242,6 +243,7 @@ export class AccountsPage implements OnInit {
       await this.accountRepository.updateAccount(account.id, {
         name: data.name,
         type: data.type,
+        balance: data.balance,
         ownerName: data.ownerName,
         color: data.color,
         icon: data.icon
@@ -264,6 +266,7 @@ export class AccountsPage implements OnInit {
     const draftAccount: Partial<Account> = {
       name: '',
       type: 'savings',
+      balance: 0,
       ownerName: '',
       color: this.accountTypeDefaults['savings'].color,
       icon: this.accountTypeDefaults['savings'].icon,
@@ -291,7 +294,7 @@ export class AccountsPage implements OnInit {
         ownerName: data.ownerName || 'Me',
         color: data.color || defaults.color,
         icon: data.icon || defaults.icon,
-        balance: 0,
+        balance: data.balance,
         notes: ''
       });
 

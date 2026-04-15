@@ -22,6 +22,7 @@ import { Account, AccountType } from '../../core/database/models';
 export interface AccountEditModalResult {
   name: string;
   type: AccountType;
+  balance: number;
   ownerName: string;
   color: string;
   icon: string;
@@ -58,6 +59,17 @@ export interface AccountEditModalResult {
             <ion-select-option value="savings">Savings</ion-select-option>
             <ion-select-option value="credit">Credit</ion-select-option>
           </ion-select>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Current Balance</ion-label>
+          <ion-input
+            type="number"
+            inputmode="decimal"
+            [ngModel]="form.balance"
+            (ngModelChange)="onBalanceChange($event)"
+            placeholder="0"
+          ></ion-input>
         </ion-item>
 
         <ion-item>
@@ -119,6 +131,7 @@ export class AccountEditModalComponent implements OnInit {
   form: AccountEditModalResult = {
     name: '',
     type: 'savings',
+    balance: 0,
     ownerName: '',
     color: '',
     icon: '',
@@ -132,6 +145,7 @@ export class AccountEditModalComponent implements OnInit {
       this.form = {
         name: this.account.name ?? '',
         type: this.account.type ?? 'savings',
+        balance: this.normalizeBalance(this.account.balance),
         ownerName: this.account.ownerName ?? '',
         color: this.normalizeColor(this.account.color ?? ''),
         icon: this.account.icon ?? '',
@@ -143,6 +157,7 @@ export class AccountEditModalComponent implements OnInit {
     this.form = {
       name: this.account?.name ?? '',
       type: this.account?.type ?? 'savings',
+      balance: this.normalizeBalance(this.account?.balance),
       ownerName: this.account?.ownerName ?? '',
       color: this.normalizeColor(this.account?.color ?? '') || this.generateRandomColor(),
       icon: this.account?.icon ?? '',
@@ -158,8 +173,17 @@ export class AccountEditModalComponent implements OnInit {
     return value.trim().toUpperCase();
   }
 
+  private normalizeBalance(value: number | string | null | undefined): number {
+    const normalizedValue = typeof value === 'number' ? value : Number(value ?? 0);
+    return Number.isFinite(normalizedValue) ? normalizedValue : 0;
+  }
+
   onColorChange(value: string | number | null | undefined): void {
     this.form.color = this.normalizeColor(String(value ?? ''));
+  }
+
+  onBalanceChange(value: string | number | null | undefined): void {
+    this.form.balance = this.normalizeBalance(value);
   }
 
   regenerateColor(): void {
@@ -183,6 +207,7 @@ export class AccountEditModalComponent implements OnInit {
       {
         name: this.form.name.trim(),
         type: this.form.type,
+        balance: this.form.balance,
         ownerName: this.form.ownerName.trim(),
         color: this.normalizeColor(this.form.color),
         icon: this.form.icon.trim(),
