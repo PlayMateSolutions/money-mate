@@ -14,7 +14,7 @@ import {
   IonText
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { settingsOutline } from 'ionicons/icons';
+import { appsOutline } from 'ionicons/icons';
 import { DashboardLayoutService } from './dashboard-layout.service';
 import {
   DASHBOARD_WIDGET_BY_ID,
@@ -47,7 +47,7 @@ export class DashboardPage implements OnInit, OnDestroy {
   private routerSubscription?: Subscription;
 
   constructor() {
-    addIcons({ settingsOutline });
+    addIcons({ appsOutline });
   }
 
   ngOnInit(): void {

@@ -38,24 +38,19 @@ ion-card-title {
 .app-logo {
   display: flex;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
-.logo-circle {
+.logo-image {
   width: 80px;
   height: 80px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5em;
-  box-shadow: 0 6px 16px rgba(var(--ion-color-primary-rgb), 0.35);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
   transition: transform 0.3s ease;
 }
 
-.logo-circle:active {
-  transform: scale(0.95);
+.logo-image:hover {
+  transform: scale(1.05);
 }
 
 .intro-text {
@@ -89,7 +84,7 @@ ion-button {
 }
 
 .google-button {
-  --background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
+  --background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(118, 75, 162) 100%);
   color: white;
 }
 

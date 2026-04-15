@@ -273,7 +273,7 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 
       &.total-card {
-        background: linear-gradient(135deg, var(--ion-color-primary, #667eea) 0%, var(--ion-color-secondary, #764ba2) 100%);
+        background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
       }
     }
   }

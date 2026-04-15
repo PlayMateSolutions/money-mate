@@ -16,13 +16,13 @@
   --swiper-pagination-bullet-inactive-color: var(--ion-color-primary-tint);
   --swiper-pagination-bullet-inactive-opacity: 1;
 
-  /** Secondary: Deep Purple **/
-  --ion-color-secondary: #764BA2;
-  --ion-color-secondary-rgb: 118, 75, 162;
-  --ion-color-secondary-contrast: #ffffff;
-  --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #68428f;
-  --ion-color-secondary-tint: #845db0;
+  /** Secondary: Compensating Teal **/
+  --ion-color-secondary: #2EC4B6;
+  --ion-color-secondary-rgb: 46, 196, 182;
+  --ion-color-secondary-contrast: #000000;
+  --ion-color-secondary-contrast-rgb: 0, 0, 0;
+  --ion-color-secondary-shade: #28aca0;
+  --ion-color-secondary-tint: #43cabd;
 
   /** Tertiary: Accent Violet **/
   --ion-color-tertiary: #8B5CF6;
@@ -61,7 +61,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /** Primary: Lighter Indigo for dark mode **/
-    --ion-color-primary: #7F93F2;
+    --ion-color-primary: #667EEA;
     --ion-color-primary-rgb: 127, 147, 242;
     --ion-color-primary-contrast: #ffffff;
     --ion-color-primary-contrast-rgb: 255, 255, 255;
@@ -73,13 +73,13 @@
     --swiper-pagination-bullet-inactive-color: var(--ion-color-primary-tint);
     --swiper-pagination-bullet-inactive-opacity: 1;
 
-    /** Secondary: Lighter Purple for dark mode **/
-    --ion-color-secondary: #9368BF;
-    --ion-color-secondary-rgb: 147, 104, 191;
-    --ion-color-secondary-contrast: #ffffff;
-    --ion-color-secondary-contrast-rgb: 255, 255, 255;
-    --ion-color-secondary-shade: #815ca8;
-    --ion-color-secondary-tint: #9f77c5;
+    /** Secondary: Brighter Teal for dark mode **/
+    --ion-color-secondary: #56D4C8;
+    --ion-color-secondary-rgb: 86, 212, 200;
+    --ion-color-secondary-contrast: #000000;
+    --ion-color-secondary-contrast-rgb: 0, 0, 0;
+    --ion-color-secondary-shade: #4cbbae;
+    --ion-color-secondary-tint: #67d9ce;
   }
 }
 
@@ -98,11 +98,11 @@
   --swiper-pagination-bullet-inactive-color: var(--ion-color-primary-tint);
   --swiper-pagination-bullet-inactive-opacity: 1;
 
-  /** Secondary: Lighter Purple for dark mode **/
-  --ion-color-secondary: #9368BF;
-  --ion-color-secondary-rgb: 147, 104, 191;
-  --ion-color-secondary-contrast: #ffffff;
-  --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #815ca8;
-  --ion-color-secondary-tint: #9f77c5;
+  /** Secondary: Brighter Teal for dark mode **/
+  --ion-color-secondary: #56D4C8;
+  --ion-color-secondary-rgb: 86, 212, 200;
+  --ion-color-secondary-contrast: #000000;
+  --ion-color-secondary-contrast-rgb: 0, 0, 0;
+  --ion-color-secondary-shade: #4cbbae;
+  --ion-color-secondary-tint: #67d9ce;
 }
