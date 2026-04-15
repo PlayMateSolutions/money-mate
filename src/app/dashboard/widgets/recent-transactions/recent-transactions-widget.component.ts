@@ -24,17 +24,17 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { pricetagOutline, swapHorizontalOutline } from 'ionicons/icons';
-import { Account, Category, Transaction } from '../../core/database/models';
+import { Account, Category, Transaction } from '../../../core/database/models';
 import {
   AccountRepository,
   CategoryRepository,
   TransactionRepository,
-} from '../../core/database/repositories';
+} from '../../../core/database/repositories';
 import {
   buildTransactionDisplayItem,
   registerCategoryIcons,
   TransactionDisplayItem,
-} from '../../core/services';
+} from '../../../core/services';
 
 @Component({
   selector: 'app-recent-transactions-widget',

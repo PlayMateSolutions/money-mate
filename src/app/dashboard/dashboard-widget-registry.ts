@@ -1,7 +1,7 @@
 import { Type } from '@angular/core';
 import { AccountBalanceCarouselComponent } from './widgets/account-balance-carousel/account-balance-carousel.component';
 import { ExpenseBreakdownWidgetComponent } from './widgets/expense-breakdown-widget.component';
-import { RecentTransactionsWidgetComponent } from './widgets/recent-transactions-widget.component';
+import { RecentTransactionsWidgetComponent } from './widgets/recent-transactions/recent-transactions-widget.component';
 
 export type DashboardWidgetId =
   | 'top-summary'
