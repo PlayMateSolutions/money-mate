@@ -8,14 +8,19 @@ import {
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import {
+  IonButton,
   IonCard,
   IonCardHeader,
   IonCardTitle,
   IonCardSubtitle,
   IonCardContent,
+  IonIcon,
   IonText,
 } from '@ionic/angular/standalone';
+import { AlertController } from '@ionic/angular';
 import { ChartType, GoogleChart } from 'angular-google-charts';
+import { addIcons } from 'ionicons';
+import { settings, settingsOutline } from 'ionicons/icons';
 import { Category, Transaction } from '../../../core/database/models';
 import {
   CategoryRepository,
@@ -29,16 +34,23 @@ interface ExpenseCategorySlice {
   color: string;
 }
 
+interface CategorySelectionOption {
+  id: string;
+  label: string;
+}
+
 @Component({
   selector: 'app-expense-breakdown-widget',
   standalone: true,
   imports: [
     CommonModule,
+    IonButton,
     IonCard,
     IonCardHeader,
     IonCardTitle,
     IonCardSubtitle,
     IonCardContent,
+    IonIcon,
     IonText,
     GoogleChart,
   ],
@@ -47,33 +59,32 @@ interface ExpenseCategorySlice {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
+  private static readonly STORAGE_KEY = 'dashboard.expenseBreakdown.visibleCategoryIds';
+  private static readonly UNCATEGORIZED_ID = '__uncategorized__';
+
   loading = true;
   error: string | null = null;
   chartLoadError = false;
+  hasSavedCategorySelection = false;
 
   readonly chartType = ChartType.PieChart;
   readonly chartColumns: string[] = ['Category', 'Amount'];
   chartData: Array<[string, number]> = [];
-  chartOptions: object = {
-    backgroundColor: 'transparent',
-    chartArea: { width: '88%', height: '78%' },
-    legend: {
-      position: 'right',
-      alignment: 'center',
-      textStyle: { color: 'var(--ion-text-color)', fontSize: 12 },
-    },
-    pieSliceText: 'percentage',
-    tooltip: { text: 'value' },
-  };
+  chartOptions: object = {};
 
   private categoriesMap = new Map<string, Category>();
+  private latestTransactions: Transaction[] = [];
+  private selectedCategoryIds: Set<string> | null = null;
   private transactionsSub?: Subscription;
 
   constructor(
     private readonly transactionRepository: TransactionRepository,
     private readonly categoryRepository: CategoryRepository,
+    private readonly alertController: AlertController,
     private readonly cdr: ChangeDetectorRef,
-  ) {}
+  ) {
+    addIcons({ settings, settingsOutline });
+  }
 
   ngOnInit(): void {
     void this.initialize();
@@ -85,6 +96,53 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
 
   get hasChartData(): boolean {
     return this.chartData.length > 0;
+  }
+
+  get settingsIconName(): string {
+    return this.hasSavedCategorySelection ? 'settings' : 'settings-outline';
+  }
+
+  async openCategorySettings(): Promise<void> {
+    const options = this.getCategorySelectionOptions();
+    const currentlySelected = this.selectedCategoryIds;
+
+    const alert = await this.alertController.create({
+      header: 'Visible categories',
+      inputs: options.map((option) => ({
+        type: 'checkbox' as const,
+        label: option.label,
+        value: option.id,
+        checked: currentlySelected ? currentlySelected.has(option.id) : true,
+      })),
+      buttons: [
+        {
+          text: 'Show all',
+          handler: () => {
+            this.selectedCategoryIds = null;
+            this.persistCategorySelection(null);
+            this.rebuildChart();
+          },
+        },
+        {
+          text: 'Cancel',
+          role: 'cancel',
+        },
+        {
+          text: 'Save',
+          handler: (selectedValues: unknown) => {
+            const selectedIds = Array.isArray(selectedValues)
+              ? selectedValues.filter((value): value is string => typeof value === 'string')
+              : [];
+
+            this.selectedCategoryIds = new Set<string>(selectedIds);
+            this.persistCategorySelection(this.selectedCategoryIds);
+            this.rebuildChart();
+          },
+        },
+      ],
+    });
+
+    await alert.present();
   }
 
   onChartError(): void {
@@ -99,12 +157,16 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
       this.chartLoadError = false;
       this.cdr.markForCheck();
 
+      this.loadSavedCategorySelection();
+
       await this.refreshCategories();
+      this.sanitizeSavedSelection();
 
       this.transactionsSub = this.transactionRepository.getTransactions$().subscribe({
         next: (transactions) => {
           this.error = null;
           this.chartLoadError = false;
+          this.latestTransactions = transactions;
           this.buildChart(transactions);
           this.loading = false;
           this.cdr.markForCheck();
@@ -136,15 +198,16 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
   private buildChart(transactions: Transaction[]): void {
     const currentMonthExpenses = transactions.filter((transaction) =>
       transaction.type === 'expense' &&
-      this.isInCurrentMonth(new Date(transaction.date))
+      this.isInCurrentMonth(new Date(transaction.date)) &&
+      this.isCategoryVisible(transaction.categoryId)
     );
 
     const groupedByCategory = new Map<string, ExpenseCategorySlice>();
     const fallbackColor = this.getMediumColor();
 
     currentMonthExpenses.forEach((transaction) => {
-      const category = this.categoriesMap.get(transaction.categoryId);
-      const key = transaction.categoryId || 'uncategorized';
+      const key = this.normalizeCategoryId(transaction.categoryId);
+      const category = this.categoriesMap.get(key);
       const existing = groupedByCategory.get(key);
 
       if (existing) {
@@ -163,11 +226,121 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
     const slices = Array.from(groupedByCategory.values())
       .sort((a, b) => b.amount - a.amount);
 
-    this.chartData = slices.map((slice) => [slice.categoryName, slice.amount]);
+    this.chartData = slices.map((slice) => [
+      `${slice.categoryName}`,
+      slice.amount,
+    ]);
+
+    const textColor = this.getComputedColor('--ion-text-color') || '#000000';
+
     this.chartOptions = {
-      ...this.chartOptions,
+      backgroundColor: 'transparent',
+      chartArea: { width: '88%', height: '78%' },
+      legend: {
+        position: 'right',
+        alignment: 'center',
+        textStyle: { color: textColor, fontSize: 12 },
+      },
+      pieSliceText: 'percentage',
+      tooltip: { text: 'value' },
       colors: slices.map((slice) => slice.color),
     };
+  }
+
+  private rebuildChart(): void {
+    this.buildChart(this.latestTransactions);
+    this.cdr.markForCheck();
+  }
+
+  private loadSavedCategorySelection(): void {
+    const savedValue = localStorage.getItem(ExpenseBreakdownWidgetComponent.STORAGE_KEY);
+
+    if (!savedValue) {
+      this.selectedCategoryIds = null;
+      this.hasSavedCategorySelection = false;
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(savedValue);
+
+      if (!Array.isArray(parsed)) {
+        throw new Error('Invalid category selection format');
+      }
+
+      const selectedIds = parsed.filter((value): value is string => typeof value === 'string');
+      this.selectedCategoryIds = new Set<string>(selectedIds);
+      this.hasSavedCategorySelection = true;
+    } catch {
+      localStorage.removeItem(ExpenseBreakdownWidgetComponent.STORAGE_KEY);
+      this.selectedCategoryIds = null;
+      this.hasSavedCategorySelection = false;
+    }
+  }
+
+  private persistCategorySelection(selectedCategoryIds: Set<string> | null): void {
+    if (!selectedCategoryIds) {
+      localStorage.removeItem(ExpenseBreakdownWidgetComponent.STORAGE_KEY);
+      this.hasSavedCategorySelection = false;
+      return;
+    }
+
+    localStorage.setItem(
+      ExpenseBreakdownWidgetComponent.STORAGE_KEY,
+      JSON.stringify(Array.from(selectedCategoryIds))
+    );
+    this.hasSavedCategorySelection = true;
+  }
+
+  private sanitizeSavedSelection(): void {
+    if (!this.selectedCategoryIds) {
+      return;
+    }
+
+    const validCategoryIds = new Set<string>([
+      ...Array.from(this.categoriesMap.keys()),
+      ExpenseBreakdownWidgetComponent.UNCATEGORIZED_ID,
+    ]);
+
+    const sanitizedSelection = new Set<string>(
+      Array.from(this.selectedCategoryIds).filter((id) => validCategoryIds.has(id))
+    );
+
+    if (sanitizedSelection.size === this.selectedCategoryIds.size) {
+      return;
+    }
+
+    this.selectedCategoryIds = sanitizedSelection;
+    this.persistCategorySelection(this.selectedCategoryIds);
+  }
+
+  private getCategorySelectionOptions(): CategorySelectionOption[] {
+    const categoryOptions = Array.from(this.categoriesMap.values())
+      .sort((first, second) => first.name.localeCompare(second.name))
+      .map((category) => ({
+        id: category.id,
+        label: category.name,
+      }));
+
+    return [
+      ...categoryOptions,
+      {
+        id: ExpenseBreakdownWidgetComponent.UNCATEGORIZED_ID,
+        label: 'Uncategorized',
+      },
+    ];
+  }
+
+  private normalizeCategoryId(categoryId: string): string {
+    return categoryId || ExpenseBreakdownWidgetComponent.UNCATEGORIZED_ID;
+  }
+
+  private isCategoryVisible(categoryId: string): boolean {
+    if (!this.selectedCategoryIds) {
+      return true;
+    }
+
+    return this.selectedCategoryIds.has(this.normalizeCategoryId(categoryId));
   }
 
   private isInCurrentMonth(date: Date): boolean {
@@ -175,9 +348,13 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
     return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
   }
 
-  private getMediumColor(): string {
+  private getComputedColor(variable: string): string {
     return getComputedStyle(document.documentElement)
-      .getPropertyValue('--ion-color-medium')
+      .getPropertyValue(variable)
       .trim();
+  }
+
+  private getMediumColor(): string {
+    return this.getComputedColor('--ion-color-medium');
   }
 }
