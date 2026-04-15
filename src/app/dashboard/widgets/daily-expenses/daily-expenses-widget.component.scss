@@ -1,0 +1,63 @@
+.daily-expenses-card {
+  margin: 12px 8px;
+
+  ion-card-header {
+    padding: 16px 12px 8px;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .settings-button {
+    margin: -6px -8px 0 0;
+    --color: var(--ion-color-medium);
+
+    &.has-saved-selection {
+      --color: var(--ion-color-primary);
+    }
+  }
+
+  ion-card-content {
+    padding: 0 12px 12px;
+  }
+
+  .state-text {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .chart-container {
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  google-chart {
+    width: 100%;
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .daily-expenses-card {
+    margin: 10px 6px;
+
+    ion-card-header {
+      padding: 14px 10px 8px;
+    }
+
+    ion-card-content {
+      padding: 0 10px 10px;
+    }
+
+    .chart-container {
+      min-height: 250px;
+    }
+  }
+}

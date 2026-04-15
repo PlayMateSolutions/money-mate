@@ -213,6 +213,22 @@ export class TransactionRepository {
     }
   }
 
+  async getTransactionsByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
+    try {
+      const transactions = await this.db.transactions
+        .where('date')
+        .between(startDate, endDate, true, true)
+        .filter((transaction) => !transaction.isDeleted)
+        .toArray();
+
+      transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      return transactions;
+    } catch (error) {
+      console.error('Error fetching transactions by date range:', error);
+      throw new Error('Failed to fetch transactions for date range');
+    }
+  }
+
   getTransactions$(): Observable<Transaction[]> {
     void this.getAllTransactions();
     return this.transactions$;

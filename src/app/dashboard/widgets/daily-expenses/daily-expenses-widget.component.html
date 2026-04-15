@@ -1,0 +1,49 @@
+<ion-card class="daily-expenses-card">
+  <ion-card-header>
+    <div class="header-row">
+      <div>
+        <ion-card-title>Daily Expenses Trends</ion-card-title>
+        <ion-card-subtitle>Day-wise expenses: this month vs last month</ion-card-subtitle>
+      </div>
+
+      <ion-button
+        fill="clear"
+        class="settings-button"
+        [class.has-saved-selection]="hasSavedCategorySelection"
+        [attr.aria-label]="hasSavedCategorySelection ? 'Edit saved category filter' : 'Choose visible categories'"
+        (click)="openCategorySettings()"
+      >
+        <ion-icon slot="icon-only" [name]="settingsIconName"></ion-icon>
+      </ion-button>
+    </div>
+  </ion-card-header>
+
+  <ion-card-content>
+    <ion-text color="medium" *ngIf="loading">
+      <p class="state-text">Loading daily expenses...</p>
+    </ion-text>
+
+    <ion-text color="danger" *ngIf="!loading && error">
+      <p class="state-text">{{ error }}</p>
+    </ion-text>
+
+    <ion-text color="medium" *ngIf="!loading && !error && chartLoadError">
+      <p class="state-text">Chart is unavailable. Please check your internet connection.</p>
+    </ion-text>
+
+    <ion-text color="medium" *ngIf="!loading && !error && !chartLoadError && !hasChartData">
+      <p class="state-text">No expense transactions found for this or last month.</p>
+    </ion-text>
+
+    <div class="chart-container" *ngIf="!loading && !error && !chartLoadError && hasChartData">
+      <google-chart
+        [type]="chartType"
+        [columns]="chartColumns"
+        [data]="chartData"
+        [options]="chartOptions"
+        [height]="280"
+        (error)="onChartError()"
+      ></google-chart>
+    </div>
+  </ion-card-content>
+</ion-card>

@@ -1,10 +1,12 @@
 import { Type } from '@angular/core';
 import { AccountBalanceCarouselComponent } from './widgets/account-balance-carousel/account-balance-carousel.component';
+import { DailyExpensesWidgetComponent } from './widgets/daily-expenses/daily-expenses-widget.component';
 import { ExpenseBreakdownWidgetComponent } from './widgets/expense-breakdown/expense-breakdown-widget.component';
 import { RecentTransactionsWidgetComponent } from './widgets/recent-transactions/recent-transactions-widget.component';
 
 export type DashboardWidgetId =
   | 'top-summary'
+  | 'daily-expenses'
   | 'expense-breakdown'
   | 'recent-transactions';
 
@@ -27,6 +29,12 @@ export const DASHBOARD_WIDGET_DEFINITIONS: DashboardWidgetDefinition[] = [
     title: 'Expense Breakdown',
     subtitle: 'Category-wise expense overview',
     component: ExpenseBreakdownWidgetComponent
+  },
+  {
+    id: 'daily-expenses',
+    title: 'Daily Expenses Trends',
+    subtitle: 'Day-wise expenses: this month vs last month',
+    component: DailyExpensesWidgetComponent
   },
   {
     id: 'recent-transactions',
