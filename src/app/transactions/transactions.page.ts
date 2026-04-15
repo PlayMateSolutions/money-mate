@@ -132,8 +132,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
     return item.id;
   }
 
-  getSignedAmountPrefix(amount: number): string {
-    return amount > 0 ? '+' : '';
+  getDisplayAmount(amount: number): number {
+    return Math.abs(amount);
   }
 
   getTransferSubtitle(item: TransactionListItem): string {

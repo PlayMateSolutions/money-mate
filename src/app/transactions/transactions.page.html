@@ -66,8 +66,12 @@
           </p>
         </ion-label>
 
-        <ion-note slot="end" class="amount-note">
-          {{ getSignedAmountPrefix(item.transaction.amount) }}{{ item.transaction.amount | currency }}
+        <ion-note
+          slot="end"
+          class="amount-note"
+          [class.positive-amount]="item.transaction.amount > 0"
+        >
+          {{ getDisplayAmount(item.transaction.amount) | currency }}
         </ion-note>
       </ion-item>
     </ng-container>

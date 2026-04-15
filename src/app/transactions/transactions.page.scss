@@ -34,6 +34,10 @@ ion-item p {
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--ion-text-color);
+
+  &.positive-amount {
+    color: var(--ion-color-success);
+  }
 }
 
 ion-item ion-icon[slot='start'] {
