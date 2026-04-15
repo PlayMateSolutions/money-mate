@@ -120,7 +120,7 @@ export class SettingsPage implements OnInit, OnDestroy {
   }
 
   loadCurrencies(): void {
-    this.http.get<CurrencyItem[]>('/assets/assets/countries.json')
+    this.http.get<CurrencyItem[]>('assets/assets/countries.json')
       .pipe(takeUntil(this.destroy$))
       .subscribe((data) => {
         this.currencies = data ?? [];
