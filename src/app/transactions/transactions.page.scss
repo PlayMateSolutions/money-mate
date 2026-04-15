@@ -8,6 +8,17 @@
   font-size: 16px;
 }
 
+.filter-summary {
+  padding: 10px 16px 0;
+  color: var(--ion-color-medium-shade);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+ion-toolbar ion-button ion-badge {
+  margin-left: 6px;
+}
+
 ion-list {
   padding-top: 8px;
 }

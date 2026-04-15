@@ -1,0 +1,100 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Filter Transactions</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="cancel()" aria-label="Cancel">
+        <ion-icon name="close" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-list>
+    <ion-item lines="none">
+      <ion-label position="stacked">Type</ion-label>
+      <div class="type-chips">
+        <ion-chip
+          [color]="isTypeSelected('expense') ? 'primary' : 'medium'"
+          [outline]="!isTypeSelected('expense')"
+          (click)="toggleType('expense')"
+        >
+          Expense
+        </ion-chip>
+        <ion-chip
+          [color]="isTypeSelected('income') ? 'primary' : 'medium'"
+          [outline]="!isTypeSelected('income')"
+          (click)="toggleType('income')"
+        >
+          Income
+        </ion-chip>
+        <ion-chip
+          [color]="isTypeSelected('transfer') ? 'primary' : 'medium'"
+          [outline]="!isTypeSelected('transfer')"
+          (click)="toggleType('transfer')"
+        >
+          Transfer
+        </ion-chip>
+      </div>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="stacked">Categories</ion-label>
+      <ion-select
+        [(ngModel)]="form.categoryIds"
+        interface="alert"
+        [multiple]="true"
+        placeholder="All categories"
+      >
+        <ion-select-option *ngFor="let category of categories" [value]="category.id">
+          {{ category.name }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="stacked">Accounts</ion-label>
+      <ion-select
+        [(ngModel)]="form.accountIds"
+        interface="alert"
+        [multiple]="true"
+        placeholder="All accounts"
+      >
+        <ion-select-option *ngFor="let account of accounts" [value]="account.id">
+          {{ account.name }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="stacked">Tags</ion-label>
+      <ion-select
+        [(ngModel)]="form.tags"
+        interface="alert"
+        [multiple]="true"
+        placeholder="All tags"
+      >
+        <ion-select-option *ngFor="let tag of availableTags" [value]="tag">
+          {{ tag }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+  </ion-list>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <ion-buttons slot="start" style="width: 50%;">
+      <ion-button expand="block" (click)="clearAll()" aria-label="Clear all filters">
+        <ion-icon name="trash" slot="start"></ion-icon>
+        Clear
+      </ion-button>
+    </ion-buttons>
+    <ion-buttons slot="end" style="width: 50%;">
+      <ion-button expand="block" color="primary" (click)="apply()" aria-label="Apply filters">
+        <ion-icon name="checkmark" slot="start"></ion-icon>
+        Apply
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-footer>

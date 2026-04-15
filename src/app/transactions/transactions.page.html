@@ -4,6 +4,12 @@
     <ion-title>
       Transactions
     </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="openFilterModal()" aria-label="Filter transactions">
+        <ion-icon name="filter-outline" slot="start"></ion-icon>
+        <ion-badge *ngIf="activeFilterCount > 0" color="primary" slot="end">{{ activeFilterCount }}</ion-badge>
+      </ion-button>
+    </ion-buttons>
     <ion-buttons slot="end" *ngIf="canSync">
       <ion-button (click)="syncTransactions()">
         <ion-spinner *ngIf="syncing" name="crescent"></ion-spinner>
@@ -30,8 +36,12 @@
     <p>{{ error }}</p>
   </div>
 
+  <div class="filter-summary" *ngIf="!loading && !error && hasActiveFilters">
+    Showing {{ filteredTransactionsCount }} of {{ totalTransactions }} transactions
+  </div>
+
   <div class="container" *ngIf="!loading && !error && !hasTransactions">
-    <p>No transactions yet</p>
+    <p>{{ emptyStateMessage }}</p>
   </div>
 
   <ion-list *ngIf="!loading && !error && hasTransactions">

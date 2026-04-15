@@ -21,8 +21,8 @@ import {
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { syncOutline, pricetagOutline, swapHorizontalOutline } from 'ionicons/icons';
-import { Account, Category, Transaction } from '../core/database/models';
+import { syncOutline, pricetagOutline, swapHorizontalOutline, filterOutline } from 'ionicons/icons';
+import { Account, Category, Transaction, TransactionType } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
 import {
   buildTransactionDisplayItem,
@@ -32,6 +32,7 @@ import {
   TransactionDisplayItem,
 } from '../core/services';
 import { TransactionFormModalComponent } from './components/transaction-form-modal.component';
+import { TransactionFilterModalComponent, TransactionFilterState } from './components/transaction-filter-modal.component';
 
 interface TransactionListItem extends TransactionDisplayItem {
   dateKey: string;
@@ -68,18 +69,25 @@ interface TransactionDateGroup {
 })
 export class TransactionsPage implements OnInit, OnDestroy {
   private readonly CURRENCY_KEY = 'money-mate-currency';
+  private readonly allTransactionTypes: TransactionType[] = ['expense', 'income', 'transfer'];
   selectedCurrency = 'USD';
   loading = true;
   syncing = false;
   error: string | null = null;
   groupedItems: TransactionDateGroup[] = [];
+  totalTransactions = 0;
+  availableTags: string[] = [];
+  private allTransactions: Transaction[] = [];
   private accountsMap = new Map<string, Account>();
   private categoriesMap = new Map<string, Category>();
+  private accounts: Account[] = [];
+  private categories: Category[] = [];
   private transactionsSub?: Subscription;
   private registeredIconNames = new Set<string>([
     'pricetag-outline',
     'swap-horizontal-outline'
   ]);
+  filters: TransactionFilterState = this.getDefaultFilters();
 
   constructor(
     private transactionRepository: TransactionRepository,
@@ -94,6 +102,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       pricetagOutline,
       swapHorizontalOutline,
       syncOutline,
+      filterOutline,
     });
   }
 
@@ -108,16 +117,59 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   async ionViewWillEnter(): Promise<void> {
     this.loadSelectedCurrency();
+    this.resetFilters();
     await this.refreshLookups();
     await this.transactionRepository.getAllTransactions();
+  }
+
+  ionViewWillLeave(): void {
+    this.resetFilters();
   }
 
   get hasTransactions(): boolean {
     return this.groupedItems.length > 0;
   }
 
+  get filteredTransactionsCount(): number {
+    return this.groupedItems.reduce((total, group) => total + group.items.length, 0);
+  }
+
+  get activeFilterCount(): number {
+    let count = 0;
+
+    if (this.filters.types.length !== this.allTransactionTypes.length) {
+      count += 1;
+    }
+
+    if (this.filters.categoryIds.length > 0) {
+      count += 1;
+    }
+
+    if (this.filters.accountIds.length > 0) {
+      count += 1;
+    }
+
+    if (this.filters.tags.length > 0) {
+      count += 1;
+    }
+
+    return count;
+  }
+
+  get hasActiveFilters(): boolean {
+    return this.activeFilterCount > 0;
+  }
+
+  get emptyStateMessage(): string {
+    if (this.hasActiveFilters && this.totalTransactions > 0) {
+      return 'No transactions match your filters';
+    }
+
+    return 'No transactions yet';
+  }
+
   get hasDirtyTransactions(): boolean {
-    return this.groupedItems.some((group) => group.items.some((item) => !!item.transaction.isDirty));
+    return this.allTransactions.some((transaction) => !!transaction.isDirty);
   }
 
   get canSync(): boolean {
@@ -154,6 +206,34 @@ export class TransactionsPage implements OnInit, OnDestroy {
     if (role === 'saved') {
       await this.refreshLookups();
     }
+  }
+
+  async openFilterModal(): Promise<void> {
+    const modal = await this.modalController.create({
+      component: TransactionFilterModalComponent,
+      componentProps: {
+        initialFilters: this.filters,
+        accounts: this.accounts,
+        categories: this.categories,
+        availableTags: this.availableTags,
+      },
+    });
+
+    await modal.present();
+    const { data, role } = await modal.onWillDismiss<TransactionFilterState>();
+
+    if (role !== 'apply' || !data) {
+      return;
+    }
+
+    this.filters = {
+      types: [...data.types],
+      categoryIds: [...data.categoryIds],
+      accountIds: [...data.accountIds],
+      tags: [...data.tags],
+    };
+
+    this.buildGroupedItems(this.applyFilters(this.allTransactions));
   }
 
   async syncTransactions(): Promise<void> {
@@ -222,7 +302,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
       this.transactionsSub = this.transactionRepository.getTransactions$().subscribe({
         next: (transactions) => {
           this.error = null;
-          this.buildGroupedItems(transactions);
+          this.allTransactions = transactions;
+          this.totalTransactions = transactions.length;
+          this.updateAvailableTags(transactions);
+          this.buildGroupedItems(this.applyFilters(transactions));
           this.loading = false;
         },
         error: (error) => {
@@ -246,9 +329,94 @@ export class TransactionsPage implements OnInit, OnDestroy {
       this.categoryRepository.getCategoriesForSettings()
     ]);
 
+    this.accounts = accounts;
+    this.categories = categories;
+
     this.accountsMap = new Map<string, Account>(accounts.map(account => [account.id, account]));
     this.categoriesMap = new Map<string, Category>(categories.map(category => [category.id, category]));
     registerCategoryIcons(categories, this.registeredIconNames);
+  }
+
+  private updateAvailableTags(transactions: Transaction[]): void {
+    const tagsMap = new Map<string, string>();
+
+    transactions.forEach((transaction) => {
+      (transaction.tags ?? []).forEach((tag) => {
+        const trimmedTag = tag.trim();
+        if (!trimmedTag) {
+          return;
+        }
+
+        const key = trimmedTag.toLowerCase();
+        if (!tagsMap.has(key)) {
+          tagsMap.set(key, trimmedTag);
+        }
+      });
+    });
+
+    this.availableTags = Array.from(tagsMap.values()).sort((first, second) =>
+      first.localeCompare(second, undefined, { sensitivity: 'base' })
+    );
+  }
+
+  private applyFilters(transactions: Transaction[]): Transaction[] {
+    const selectedTypes = new Set(this.filters.types);
+    const selectedCategoryIds = new Set(this.filters.categoryIds);
+    const selectedAccountIds = new Set(this.filters.accountIds);
+    const selectedTags = new Set(this.filters.tags.map((tag) => tag.toLowerCase()));
+
+    const hasTypeFilter = selectedTypes.size !== this.allTransactionTypes.length;
+    const hasCategoryFilter = selectedCategoryIds.size > 0;
+    const hasAccountFilter = selectedAccountIds.size > 0;
+    const hasTagFilter = selectedTags.size > 0;
+
+    if (!hasTypeFilter && !hasCategoryFilter && !hasAccountFilter && !hasTagFilter) {
+      return transactions;
+    }
+
+    return transactions.filter((transaction) => {
+      if (hasTypeFilter && !selectedTypes.has(transaction.type)) {
+        return false;
+      }
+
+      if (hasCategoryFilter && !selectedCategoryIds.has(transaction.categoryId)) {
+        return false;
+      }
+
+      if (hasAccountFilter) {
+        const matchesAccount = transaction.type === 'transfer'
+          ? selectedAccountIds.has(transaction.accountId) || !!transaction.transferToAccountId && selectedAccountIds.has(transaction.transferToAccountId)
+          : selectedAccountIds.has(transaction.accountId);
+
+        if (!matchesAccount) {
+          return false;
+        }
+      }
+
+      if (hasTagFilter) {
+        const transactionTags = (transaction.tags ?? []).map((tag) => tag.toLowerCase());
+        const matchesAnyTag = transactionTags.some((tag) => selectedTags.has(tag));
+
+        if (!matchesAnyTag) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  private getDefaultFilters(): TransactionFilterState {
+    return {
+      types: [...this.allTransactionTypes],
+      categoryIds: [],
+      accountIds: [],
+      tags: [],
+    };
+  }
+
+  private resetFilters(): void {
+    this.filters = this.getDefaultFilters();
   }
 
   private buildGroupedItems(transactions: Transaction[]): void {
