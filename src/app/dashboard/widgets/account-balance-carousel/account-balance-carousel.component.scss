@@ -1,0 +1,282 @@
+@import '@ionic/angular/css/core.css';
+
+.carousel-container {
+  padding: 12px 0;
+  width: 100%;
+
+  .swiper {
+    width: 100%;
+    padding-bottom: 40px; // Space for pagination dots
+    display: flex;
+    flex-direction: column;
+  }
+
+  .swiper-wrapper {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .swiper-slide {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .balance-card {
+    --background: transparent;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    margin: 16px;
+    height: 240px;
+    position: relative;
+    border: none;
+    width: 100%;
+    max-width: calc(100vw - 32px);
+
+    &.total-card {
+      // background handled by inline style
+    }
+
+    .card-content {
+      padding: 24px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: white;
+
+      .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+
+        .account-name {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.9);
+          flex: 1;
+        }
+
+        .account-type {
+          font-size: 12px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.7);
+          background: rgba(255, 255, 255, 0.2);
+          padding: 4px 8px;
+          border-radius: 12px;
+          white-space: nowrap;
+          margin-left: 8px;
+        }
+      }
+
+      .card-middle {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .balance {
+          margin: 0;
+          font-size: 42px;
+          font-weight: 700;
+          color: white;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+      }
+
+      .card-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+
+        .card-number {
+          font-size: 14px;
+          font-weight: 400;
+          color: rgba(255, 255, 255, 0.8);
+          letter-spacing: 2px;
+          font-family: 'Courier New', monospace;
+        }
+
+        .account-icon {
+          font-size: 32px;
+          color: white;
+        }
+
+        .payment-icon {
+          font-size: 36px;
+          color: white;
+          opacity: 0.9;
+        }
+      }
+    }
+
+    &:deep(ion-card-content) {
+      padding: 24px;
+    }
+  }
+
+  // Pagination dots styling handled by CSS variables above
+  .swiper-pagination {
+    position: relative;
+    bottom: 0 !important;
+    margin-top: 16px;
+  }
+}
+
+// Loading state with skeleton
+.loading-state {
+  padding: 12px 0;
+
+  .balance-card {
+    height: 240px;
+    margin: 16px;
+
+    .card-content {
+      padding: 24px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      .skeleton-line {
+        height: 12px;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.25) 25%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0.25) 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 4px;
+
+        &.large {
+          height: 48px;
+          flex: 1;
+          margin: 8px 0;
+        }
+      }
+    }
+  }
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// Error state
+.error-state {
+  padding: 12px 0;
+
+  ion-card {
+    margin: 16px;
+    background: var(--ion-color-danger-tint, #fce4ec);
+    border-radius: 12px;
+
+    ion-card-content {
+      color: var(--ion-color-danger, #eb445a);
+      padding: 16px;
+      text-align: center;
+      font-size: 14px;
+    }
+  }
+}
+
+// Empty state
+.empty-state {
+  padding: 12px 0;
+
+  ion-card {
+    margin: 16px;
+    text-align: center;
+    background: var(--ion-color-light, #f4f5f8);
+    border-radius: 12px;
+
+    ion-card-content {
+      padding: 24px;
+      color: var(--ion-text-color, #424242);
+      font-size: 14px;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 480px) {
+  .carousel-container {
+    .balance-card {
+      height: 220px;
+      margin: 12px;
+
+      .card-content {
+        padding: 20px;
+
+        .card-top {
+          .account-name {
+            font-size: 14px;
+          }
+
+          .account-type {
+            font-size: 10px;
+            padding: 3px 6px;
+          }
+        }
+
+        .card-middle {
+          .balance {
+            font-size: 32px;
+          }
+        }
+
+        .card-bottom {
+          .card-number {
+            font-size: 12px;
+          }
+
+          .account-icon {
+            font-size: 28px;
+          }
+
+          .payment-icon {
+            font-size: 32px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .carousel-container {
+    .balance-card {
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+
+      &.total-card {
+        background: linear-gradient(135deg, var(--ion-color-primary, #667eea) 0%, var(--ion-color-secondary, #764ba2) 100%);
+      }
+    }
+  }
+
+  .error-state {
+    ion-card {
+      background: var(--ion-color-danger-tint, #1a0000);
+
+      ion-card-content {
+        color: var(--ion-color-danger, #ff5578);
+      }
+    }
+  }
+
+  .empty-state {
+    ion-card {
+      background: var(--ion-color-dark, #222428);
+
+      ion-card-content {
+        color: var(--ion-text-color, #ffffff);
+      }
+    }
+  }
+}

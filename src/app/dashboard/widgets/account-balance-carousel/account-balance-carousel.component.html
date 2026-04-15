@@ -1,0 +1,64 @@
+<div class="carousel-container" *ngIf="!loading && !error && cards.length > 0">
+  <div class="swiper" #swiperContainer>
+    <div class="swiper-wrapper">
+      <div class="swiper-slide" *ngFor="let card of cards; trackBy: trackByCardId">
+        <ion-card 
+          class="balance-card" 
+          [ngClass]="{ 'total-card': card.isTotal }"
+          [style.background]="card.isTotal ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : card.color">
+          <ion-card-content class="card-content">
+            <!-- Top section: Account name and type badge -->
+            <div class="card-top">
+              <h3 class="account-name">{{ card.name }}</h3>
+              <span class="account-type" *ngIf="card.type">{{ capitalizeType(card.type) }}</span>
+            </div>
+
+            <!-- Middle section: Large balance -->
+            <div class="card-middle">
+              <p class="balance">{{ formatBalance(card.balance) }}</p>
+            </div>
+
+            <!-- Bottom section: Card number and icon -->
+            <div class="card-bottom">
+              <span class="card-number">{{ getCardNumber(card.id) }}</span>
+              <ion-icon *ngIf="card.icon && !card.isTotal" [name]="card.icon" class="account-icon"></ion-icon>
+              <ion-icon *ngIf="card.isTotal" name="card-outline" class="payment-icon"></ion-icon>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+    </div>
+
+    <!-- Pagination dots -->
+    <div class="swiper-pagination"></div>
+  </div>
+</div>
+
+<!-- Loading state -->
+<div class="loading-state" *ngIf="loading">
+  <ion-card class="balance-card skeleton">
+    <ion-card-content class="card-content">
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line large"></div>
+      <div class="skeleton-line"></div>
+    </ion-card-content>
+  </ion-card>
+</div>
+
+<!-- Error state -->
+<div class="error-state" *ngIf="!loading && error">
+  <ion-card>
+    <ion-card-content>
+      <p>{{ error }}</p>
+    </ion-card-content>
+  </ion-card>
+</div>
+
+<!-- Empty state -->
+<div class="empty-state" *ngIf="!loading && !error && cards.length === 0">
+  <ion-card>
+    <ion-card-content>
+      <p>No accounts available</p>
+    </ion-card-content>
+  </ion-card>
+</div>

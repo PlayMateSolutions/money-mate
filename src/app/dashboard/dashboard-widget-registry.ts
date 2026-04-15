@@ -1,7 +1,7 @@
 import { Type } from '@angular/core';
+import { AccountBalanceCarouselComponent } from './widgets/account-balance-carousel/account-balance-carousel.component';
 import { ExpenseBreakdownWidgetComponent } from './widgets/expense-breakdown-widget.component';
 import { RecentTransactionsWidgetComponent } from './widgets/recent-transactions-widget.component';
-import { TopSummaryWidgetComponent } from './widgets/top-summary-widget.component';
 
 export type DashboardWidgetId =
   | 'top-summary'
@@ -18,9 +18,9 @@ export interface DashboardWidgetDefinition {
 export const DASHBOARD_WIDGET_DEFINITIONS: DashboardWidgetDefinition[] = [
   {
     id: 'top-summary',
-    title: 'Top Summary',
-    subtitle: 'Total balance and current month expenses',
-    component: TopSummaryWidgetComponent
+    title: 'Account Balance',
+    subtitle: 'All your account balances',
+    component: AccountBalanceCarouselComponent
   },
   {
     id: 'expense-breakdown',
