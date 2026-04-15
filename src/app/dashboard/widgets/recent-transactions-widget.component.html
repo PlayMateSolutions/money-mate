@@ -1,0 +1,63 @@
+<ion-card class="recent-transactions-card">
+  <ion-card-header>
+    <div class="header-row">
+      <div>
+        <ion-card-title>Transaction</ion-card-title>
+        <ion-card-subtitle>Latest 5 transactions</ion-card-subtitle>
+      </div>
+      <ion-button fill="clear" size="small" (click)="viewAll()">View All</ion-button>
+    </div>
+  </ion-card-header>
+
+  <ion-card-content>
+    <ion-text color="medium" *ngIf="loading">
+      <p class="state-text">Loading transactions...</p>
+    </ion-text>
+
+    <ion-text color="danger" *ngIf="!loading && error">
+      <p class="state-text">{{ error }}</p>
+    </ion-text>
+
+    <ion-text color="medium" *ngIf="!loading && !error && items.length === 0">
+      <p class="state-text">No recent transactions</p>
+    </ion-text>
+
+    <ion-list class="transaction-list" *ngIf="!loading && !error && items.length > 0">
+      <ion-item
+        class="transaction-item"
+        lines="full"
+        detail="false"
+        [class.transfer-row]="item.transactionType === 'transfer'"
+        *ngFor="let item of items; trackBy: trackByItemId"
+      >
+        <ion-icon
+          slot="start"
+          [name]="item.iconName"
+          [style.color]="item.iconColor"
+        ></ion-icon>
+
+        <ion-label>
+          <h3 class="description" *ngIf="item.transactionType !== 'transfer'">
+            {{ item.description || item.categoryName }}
+          </h3>
+          <h3 class="description" *ngIf="item.transactionType === 'transfer'">Transfer</h3>
+
+          <p class="meta" *ngIf="item.transactionType !== 'transfer'">
+            {{ item.categoryName }} • {{ item.accountName }}
+          </p>
+
+          <p class="transfer-subtitle" *ngIf="item.transactionType === 'transfer'">
+            {{ getTransferSubtitle(item) }}
+          </p>
+        </ion-label>
+
+        <div slot="end" class="amount-block">
+          <ion-note class="amount-note">
+            {{ getSignedAmountPrefix(item.amount) }}{{ formatAmount(item.amount) }}
+          </ion-note>
+          <span class="date-note">{{ formatDate(item.date) }}</span>
+        </div>
+      </ion-item>
+    </ion-list>
+  </ion-card-content>
+</ion-card>
