@@ -8,6 +8,7 @@ import {
   IonButtons,
   IonBackButton,
   IonButton,
+  IonIcon,
   IonList,
   IonItem,
   IonLabel,
@@ -18,6 +19,8 @@ import {
   IonCardContent,
   ItemReorderEventDetail
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { saveOutline } from 'ionicons/icons';
 import { Router } from '@angular/router';
 import {
   DashboardWidgetLayout
@@ -50,6 +53,7 @@ interface DashboardWidgetDraft {
     IonButtons,
     IonBackButton,
     IonButton,
+    IonIcon,
     IonList,
     IonItem,
     IonLabel,
@@ -64,6 +68,10 @@ export class DashboardCustomizePage {
   widgets: DashboardWidgetDraft[] = [];
   private readonly layoutService = inject(DashboardLayoutService);
   private readonly router = inject(Router);
+
+  constructor() {
+    addIcons({ saveOutline });
+  }
 
   ionViewWillEnter(): void {
     this.loadDraft();

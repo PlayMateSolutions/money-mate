@@ -10,8 +10,11 @@ import {
   IonMenuButton,
   IonButtons,
   IonButton,
+  IonIcon,
   IonText
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { settingsOutline } from 'ionicons/icons';
 import { DashboardLayoutService } from './dashboard-layout.service';
 import {
   DASHBOARD_WIDGET_BY_ID,
@@ -33,6 +36,7 @@ import {
     IonMenuButton,
     IonButtons,
     IonButton,
+    IonIcon,
     IonText
   ],
 })
@@ -41,6 +45,10 @@ export class DashboardPage implements OnInit, OnDestroy {
   private readonly layoutService = inject(DashboardLayoutService);
   private readonly router = inject(Router);
   private routerSubscription?: Subscription;
+
+  constructor() {
+    addIcons({ settingsOutline });
+  }
 
   ngOnInit(): void {
     this.refreshVisibleWidgets();

@@ -5,7 +5,9 @@
     </ion-buttons>
     <ion-title>Customize Dashboard</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="save()">Save</ion-button>
+      <ion-button aria-label="Save dashboard layout" (click)="save()">
+        <ion-icon slot="icon-only" name="save-outline"></ion-icon>
+      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>

@@ -376,7 +376,10 @@ export class DailyExpensesWidgetComponent implements OnInit, OnDestroy {
 
   private async loadTransactionsForComparison(): Promise<void> {
     const [rangeStart, rangeEnd] = this.getComparisonRange();
-    const transactions = await this.transactionRepository.getTransactionsByDateRange(rangeStart, rangeEnd);
+    const transactions = await this.transactionRepository.queryTransactions(
+      {},
+      { dateRange: { startDate: rangeStart, endDate: rangeEnd } }
+    );
 
     this.error = null;
     this.chartLoadError = false;

@@ -19,6 +19,24 @@ export interface UpdateTransactionInput extends CreateTransactionInput {
   id: string;
 }
 
+export interface TransactionQueryFilters {
+  accountIds?: string[];
+  types?: TransactionType[];
+  categoryIds?: string[];
+}
+
+export interface TransactionDateRange {
+  startDate: Date;
+  endDate: Date;
+}
+
+export interface TransactionQueryOptions {
+  limit?: number;
+  dateRange?: TransactionDateRange;
+  includeDeleted?: boolean;
+  sortDirection?: 'asc' | 'desc';
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -171,11 +189,10 @@ export class TransactionRepository {
 
   async getTransactionsByAccount(accountId: string): Promise<Transaction[]> {
     try {
-      return await this.db.transactions
-        .where('accountId')
-        .equals(accountId)
-        .filter(t => !t.isDeleted)
-        .sortBy('date');
+      return await this.queryTransactions(
+        { accountIds: [accountId] },
+        { sortDirection: 'asc' }
+      );
     } catch (error) {
       console.error('Error fetching transactions by account:', error);
       throw new Error('Failed to fetch transactions');
@@ -184,10 +201,7 @@ export class TransactionRepository {
 
   async getAllTransactions(): Promise<Transaction[]> {
     try {
-      const transactions = await this.db.transactions
-        .filter(t => !t.isDeleted)
-        .toArray();
-      transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const transactions = await this.queryTransactions();
       this.transactionsSubject.next(transactions);
       return transactions;
     } catch (error) {
@@ -198,12 +212,8 @@ export class TransactionRepository {
 
   async getRecentTransactions(limit = this.recentTransactionsCacheSize): Promise<Transaction[]> {
     try {
-      const transactions = await this.db.transactions
-        .orderBy('date')
-        .reverse()
-        .filter((transaction) => !transaction.isDeleted)
-        .limit(limit)
-        .toArray();
+      const normalizedLimit = Math.max(1, limit);
+      const transactions = await this.queryTransactions({}, { limit: normalizedLimit });
 
       this.recentTransactionsSubject.next(transactions);
       return transactions;
@@ -215,17 +225,78 @@ export class TransactionRepository {
 
   async getTransactionsByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
     try {
-      const transactions = await this.db.transactions
-        .where('date')
-        .between(startDate, endDate, true, true)
-        .filter((transaction) => !transaction.isDeleted)
-        .toArray();
-
-      transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      return transactions;
+      return await this.queryTransactions({}, { dateRange: { startDate, endDate } });
     } catch (error) {
       console.error('Error fetching transactions by date range:', error);
       throw new Error('Failed to fetch transactions for date range');
+    }
+  }
+
+  async queryTransactions(
+    filters: TransactionQueryFilters = {},
+    options: TransactionQueryOptions = {}
+  ): Promise<Transaction[]> {
+    try {
+      const {
+        accountIds,
+        types,
+        categoryIds,
+      } = filters;
+      const {
+        limit,
+        dateRange,
+        includeDeleted = false,
+        sortDirection = 'desc',
+      } = options;
+
+      const accountIdSet = accountIds?.length ? new Set(accountIds) : null;
+      const typeSet = types?.length ? new Set(types) : null;
+      const categoryIdSet = categoryIds?.length ? new Set(categoryIds) : null;
+
+      const collection = dateRange
+        ? this.db.transactions.where('date').between(dateRange.startDate, dateRange.endDate, true, true)
+        : this.db.transactions.toCollection();
+
+      const transactions = await collection
+        .and((transaction) => {
+          if (!includeDeleted && transaction.isDeleted) {
+            return false;
+          }
+
+          if (accountIdSet && !accountIdSet.has(transaction.accountId)) {
+            return false;
+          }
+
+          if (typeSet && !typeSet.has(transaction.type)) {
+            return false;
+          }
+
+          if (categoryIdSet && !categoryIdSet.has(transaction.categoryId)) {
+            return false;
+          }
+
+          return true;
+        })
+        .toArray();
+
+      transactions.sort((first, second) => {
+        const firstDate = new Date(first.date).getTime();
+        const secondDate = new Date(second.date).getTime();
+        return sortDirection === 'asc' ? firstDate - secondDate : secondDate - firstDate;
+      });
+
+      if (typeof limit === 'number') {
+        if (limit <= 0) {
+          return [];
+        }
+
+        return transactions.slice(0, limit);
+      }
+
+      return transactions;
+    } catch (error) {
+      console.error('Error querying transactions:', error);
+      throw new Error('Failed to query transactions');
     }
   }
 
