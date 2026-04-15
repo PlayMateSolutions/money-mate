@@ -25,7 +25,6 @@ import {
   createOutline,
   pricetagOutline,
   add,
-  cloudUploadOutline,
   syncOutline,
 } from 'ionicons/icons';
 import * as ionicons from 'ionicons/icons';
@@ -80,7 +79,6 @@ export class CategoriesPage implements OnInit {
       createOutline,
       pricetagOutline,
       add,
-      cloudUploadOutline,
       syncOutline,
     });
   }
@@ -103,10 +101,6 @@ export class CategoriesPage implements OnInit {
 
   get canSync(): boolean {
     return !!this.sessionService.currentSession?.accessToken && !!this.sessionService.linkedSpreadsheet?.id;
-  }
-
-  get syncEnabled(): boolean {
-    return this.canSync && this.hasDirtyCategories && !this.syncing;
   }
 
   trackByCategoryId(_: number, category: Category): string {
@@ -167,7 +161,7 @@ export class CategoriesPage implements OnInit {
   }
 
   async syncCategories(): Promise<void> {
-    if (!this.syncEnabled) {
+    if (this.syncing) {
       return;
     }
 

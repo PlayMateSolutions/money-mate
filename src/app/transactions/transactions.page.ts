@@ -21,7 +21,7 @@ import {
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { cloudUploadOutline, pricetagOutline, swapHorizontalOutline } from 'ionicons/icons';
+import { syncOutline, pricetagOutline, swapHorizontalOutline } from 'ionicons/icons';
 import { Account, Category, Transaction } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
 import {
@@ -93,7 +93,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     addIcons({
       pricetagOutline,
       swapHorizontalOutline,
-      cloudUploadOutline,
+      syncOutline,
     });
   }
 
@@ -122,10 +122,6 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   get canSync(): boolean {
     return !!this.sessionService.currentSession?.accessToken && !!this.sessionService.linkedSpreadsheet?.id;
-  }
-
-  get syncEnabled(): boolean {
-    return this.canSync && this.hasDirtyTransactions && !this.syncing;
   }
 
   trackByDateGroup(_: number, group: TransactionDateGroup): string {
@@ -161,7 +157,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   async syncTransactions(): Promise<void> {
-    if (!this.syncEnabled) {
+    if (this.syncing) {
       return;
     }
 

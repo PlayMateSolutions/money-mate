@@ -25,7 +25,6 @@ import {
   createOutline,
   pricetagOutline,
   add,
-  cloudUploadOutline,
   syncOutline,
 } from 'ionicons/icons';
 import * as ionicons from 'ionicons/icons';
@@ -88,7 +87,6 @@ export class AccountsPage implements OnInit {
       createOutline,
       pricetagOutline,
       add,
-      cloudUploadOutline,
       syncOutline,
     });
   }
@@ -117,10 +115,6 @@ export class AccountsPage implements OnInit {
 
   get canSync(): boolean {
     return !!this.sessionService.currentSession?.accessToken && !!this.sessionService.linkedSpreadsheet?.id;
-  }
-
-  get syncEnabled(): boolean {
-    return this.canSync && this.hasDirtyAccounts && !this.syncing;
   }
 
   trackByAccountId(_: number, account: Account): string {
@@ -181,7 +175,7 @@ export class AccountsPage implements OnInit {
   }
 
   async syncAccounts(): Promise<void> {
-    if (!this.syncEnabled) {
+    if (this.syncing) {
       return;
     }
 
