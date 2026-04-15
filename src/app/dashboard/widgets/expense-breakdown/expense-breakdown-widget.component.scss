@@ -1,0 +1,47 @@
+.expense-breakdown-card {
+  margin: 12px 8px;
+
+  ion-card-header {
+    padding: 16px 12px 8px;
+  }
+
+  ion-card-content {
+    padding: 0 12px 12px;
+  }
+
+  .state-text {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .chart-container {
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  google-chart {
+    width: 100%;
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .expense-breakdown-card {
+    margin: 10px 6px;
+
+    ion-card-header {
+      padding: 14px 10px 8px;
+    }
+
+    ion-card-content {
+      padding: 0 10px 10px;
+    }
+
+    .chart-container {
+      min-height: 240px;
+    }
+  }
+}
