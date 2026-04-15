@@ -16,6 +16,9 @@
             <!-- Middle section: Large balance -->
             <div class="card-middle">
               <p class="balance">{{ formatBalance(card.balance) }}</p>
+              <p class="credit-due" *ngIf="card.isTotal">
+                Due: {{ formatBalance(card.creditDue ?? 0) }}
+              </p>
             </div>
 
             <!-- Bottom section: Card number and icon -->

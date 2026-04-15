@@ -14,6 +14,7 @@ interface BalanceCard {
   id: string;
   name: string;
   balance: number;
+  creditDue?: number;
   type: Account['type'] | null;
   color: string | null;
   icon?: string;
@@ -124,12 +125,21 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
       }];
     }
 
-    const totalBalance = accounts.reduce((sum: number, account: Account) => sum + account.balance, 0);
+    const totalBalance = accounts
+      .filter((account: Account) => account.type !== 'credit')
+      .reduce((sum: number, account: Account) => sum + account.balance, 0);
+
+    const creditDue = Math.abs(
+      accounts
+        .filter((account: Account) => account.type === 'credit')
+        .reduce((sum: number, account: Account) => sum + account.balance, 0)
+    );
 
     const totalCard: BalanceCard = {
       id: 'total',
       name: 'Total Balance',
       balance: totalBalance,
+      creditDue,
       type: null,
       color: null,
       isTotal: true

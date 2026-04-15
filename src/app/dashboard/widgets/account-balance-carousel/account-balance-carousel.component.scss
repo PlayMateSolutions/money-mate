@@ -75,6 +75,7 @@
       .card-middle {
         flex: 1;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
 
@@ -84,6 +85,13 @@
           font-weight: 700;
           color: white;
           text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .credit-due {
+          margin: 6px 0 0;
+          font-size: 13px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.9);
         }
       }
 
