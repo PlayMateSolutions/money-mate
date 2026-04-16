@@ -7,6 +7,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
 }
 
 ion-item {
@@ -34,10 +35,99 @@ ion-button {
   margin: 0;
 }
 
+.helper-text {
+  color: var(--ion-color-medium-shade);
+}
+
+.status-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.processing-card ion-spinner {
+  flex-shrink: 0;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summary-box {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--ion-color-light);
+}
+
+.summary-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--ion-color-primary);
+}
+
+.summary-label {
+  color: var(--ion-color-medium-shade);
+  font-size: 0.95rem;
+}
+
+.transaction-end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 96px;
+  margin-left: 8px;
+}
+
+.transaction-amount {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  text-align: right;
+}
+
+.transaction-date {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium-shade);
+  text-align: right;
+}
+
+.warning-text {
+  color: var(--ion-color-warning-shade);
+  font-weight: 500;
+}
+
+.floating-import {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom));
+  background: var(--ion-color-light);
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  z-index: 20;
+  padding: 16px;
+}
+
+.floating-import ion-button {
+  flex: 1;
+  max-width: 280px;
+}
+
+.floating-import.single-action ion-button {
+  max-width: 420px;
+}
+
 @media (min-width: 768px) {
   .page-container {
     max-width: 840px;
     margin: 0 auto;
     padding: 24px;
+  }
+
+  .quick-entry-box {
+    height: 320px;
   }
 }

@@ -101,6 +101,68 @@ export class CsvImportService {
     private readonly transactionRepository: TransactionRepository,
   ) {}
 
+  async buildQuickAddPreview(quickAddText: string, accountId: string): Promise<CsvImportPreviewResult> {
+    const lines = this.parseQuickAddLines(quickAddText);
+    if (lines.length === 0) {
+      throw new Error('Enter at least one transaction line to preview.');
+    }
+
+    const selectedAccount = await this.accountRepository.getAccountByIdForSettings(accountId);
+    if (!selectedAccount) {
+      throw new Error('Select a valid account before previewing entries.');
+    }
+
+    const transactionsToImport: CsvImportTransactionPreview[] = [];
+    const invalidRows: CsvImportInvalidRow[] = [];
+    const referenceDate = new Date();
+
+    lines.forEach((line, index) => {
+      const rowNumber = index + 1;
+      const parsedLine = this.parseQuickAddLine(line, referenceDate);
+
+      if (parsedLine.reasons.length > 0 || !parsedLine.date || parsedLine.amount === null || !parsedLine.description) {
+        invalidRows.push({
+          rowNumber,
+          reasons: parsedLine.reasons,
+          rawValues: [line],
+        });
+        return;
+      }
+
+      transactionsToImport.push({
+        rowNumber,
+        date: parsedLine.date,
+        description: parsedLine.description,
+        amount: Math.abs(parsedLine.amount),
+        type: 'expense',
+        fromAccountName: selectedAccount.name,
+        toAccountName: undefined,
+        categoryName: undefined,
+        createsAccounts: [],
+        createsCategories: [],
+        warnings: [],
+        duplicate: false,
+      });
+    });
+
+    return {
+      summary: {
+        totalRows: lines.length,
+        importableTransactions: transactionsToImport.length,
+        invalidRows: invalidRows.length,
+        accountsToCreate: 0,
+        categoriesToCreate: 0,
+        warningRows: 0,
+        duplicateWarnings: 0,
+      },
+      accountsToCreate: [],
+      categoriesToCreate: [],
+      transactionsToImport,
+      duplicateWarnings: [],
+      invalidRows,
+    };
+  }
+
   async buildPreview(csvText: string): Promise<CsvImportPreviewResult> {
     const rows = this.parseRows(csvText);
     if (rows.length < 2) {
@@ -370,6 +432,96 @@ export class CsvImportService {
     return result.data.map((row) => row.map((cell) => this.cleanCell(cell)));
   }
 
+  private parseQuickAddLines(quickAddText: string): string[] {
+    return quickAddText
+      .split(/\r?\n/)
+      .map((line) => this.cleanCell(line))
+      .filter((line) => !!line);
+  }
+
+  private parseQuickAddLine(line: string, referenceDate: Date): {
+    date: Date | null;
+    description: string;
+    amount: number | null;
+    reasons: string[];
+  } {
+    const reasons: string[] = [];
+    const trimmedLine = this.cleanCell(line);
+
+    if (!trimmedLine) {
+      return {
+        date: null,
+        description: '',
+        amount: null,
+        reasons: ['Line is empty.'],
+      };
+    }
+
+    const tokens = trimmedLine.split(/\s+/).filter((token) => !!token);
+    if (tokens.length < 2) {
+      return {
+        date: null,
+        description: '',
+        amount: null,
+        reasons: ['Each line must include a description and an amount.'],
+      };
+    }
+
+    let tokenStartIndex = 0;
+    let date = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+
+    if (tokens.length >= 3) {
+      const dayMonthMatch = /^(\d{1,2})\/(\d{1,2})$/.exec(tokens[0]);
+      if (dayMonthMatch) {
+        tokenStartIndex = 1;
+        const day = Number(dayMonthMatch[1]);
+        const month = Number(dayMonthMatch[2]);
+        const parsedQuickDate = this.buildDateFromDayAndMonth(day, month, referenceDate);
+        if (!parsedQuickDate) {
+          reasons.push('Invalid day/month date. Use values like 14/3.');
+        } else {
+          date = parsedQuickDate;
+        }
+      } else if (/^\d{1,2}$/.test(tokens[0])) {
+        tokenStartIndex = 1;
+        const day = Number(tokens[0]);
+        const parsedQuickDate = this.buildCurrentMonthDate(day, referenceDate);
+        if (!parsedQuickDate) {
+          reasons.push('Invalid day for the current month.');
+        } else {
+          date = parsedQuickDate;
+        }
+      }
+    }
+
+    const amountToken = tokens[tokens.length - 1] || '';
+    const amount = this.parseAmount(amountToken);
+    if (amount === null || amount === 0) {
+      reasons.push('Amount must be a non-zero number at the end of the line.');
+    }
+
+    const rawDescription = tokens.slice(tokenStartIndex, -1).join(' ').trim();
+    const description = this.capitalizeDescription(rawDescription);
+    if (!description) {
+      reasons.push('Description is required before the amount.');
+    }
+
+    return {
+      date,
+      description,
+      amount,
+      reasons,
+    };
+  }
+
+  private capitalizeDescription(value: string): string {
+    return this.cleanCell(value)
+      .split(/\s+/)
+      .filter((part) => !!part)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(' ');
+  }
+
   private buildHeaderIndexMap(headerRow: string[]): CsvHeaderIndexMap {
     const normalizedHeaderMap = new Map<string, number>();
     headerRow.forEach((value, index) => {
@@ -433,6 +585,33 @@ export class CsvImportService {
     }
 
     return [...row, ...Array.from({ length: length - row.length }, () => '')];
+  }
+
+  private buildCurrentMonthDate(day: number, referenceDate: Date): Date | null {
+    if (!Number.isInteger(day) || day <= 0) {
+      return null;
+    }
+
+    const lastDayOfMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate();
+    if (day > lastDayOfMonth) {
+      return null;
+    }
+
+    return new Date(referenceDate.getFullYear(), referenceDate.getMonth(), day);
+  }
+
+  private buildDateFromDayAndMonth(day: number, month: number, referenceDate: Date): Date | null {
+    if (!Number.isInteger(day) || !Number.isInteger(month) || day <= 0 || month <= 0 || month > 12) {
+      return null;
+    }
+
+    const year = referenceDate.getFullYear();
+    const lastDayOfMonth = new Date(year, month, 0).getDate();
+    if (day > lastDayOfMonth) {
+      return null;
+    }
+
+    return new Date(year, month - 1, day);
   }
 
   private parseDate(value: string): Date | null {

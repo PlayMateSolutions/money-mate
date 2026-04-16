@@ -46,8 +46,88 @@
       (ngModelChange)="onFormChanged()"
     ></ion-textarea>
 
-    <ion-button expand="block" size="large" (click)="previewQuickAdd()" [disabled]="!canPreview">
-      Preview Entries
+    <ion-button expand="block" size="large" (click)="previewQuickAdd()" [disabled]="!canPreview || processing || importing">
+      <ion-spinner *ngIf="processing" name="crescent"></ion-spinner>
+      <span *ngIf="!processing">Preview Entries</span>
     </ion-button>
+
+    <ion-card *ngIf="processing">
+      <ion-card-content class="status-card processing-card">
+        <ion-spinner name="crescent"></ion-spinner>
+        <div>
+          <h3>Processing entries</h3>
+          <p>Building the transaction preview from your quick add lines.</p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="preview as review">
+      <ion-card-header>
+        <ion-card-title>Preview</ion-card-title>
+      </ion-card-header>
+      <ion-card-content *ngIf="hasTruncatedTransactionPreview" class="helper-text">
+        Showing first {{ displayedPreviewRows.length }} rows for preview. All valid rows will still be imported.
+      </ion-card-content>
+      <ion-list>
+        <ion-item *ngFor="let transaction of displayedPreviewRows; trackBy: trackByPreviewRow">
+          <ion-label>
+            <ng-container *ngIf="!isSkippedRow(transaction.rowNumber); else invalidRowTemplate">
+              <h2>{{ transaction.description }}</h2>
+              <p>{{ transaction.fromAccountName }} • Uncategorized</p>
+              <p *ngIf="transaction.warnings.length > 0" class="warning-text">{{ transaction.warnings.join(' ') }}</p>
+            </ng-container>
+
+            <ng-template #invalidRowTemplate>
+              <h2>{{ transaction.description }}</h2>
+              <p class="warning-text" *ngIf="transaction.warnings.length > 0">{{ transaction.warnings.join(' ') }}</p>
+            </ng-template>
+          </ion-label>
+          <div *ngIf="!isSkippedRow(transaction.rowNumber); else invalidRowBadge" slot="end" class="transaction-end">
+            <div class="transaction-amount">{{ transaction.amount | currency:selectedCurrency }}</div>
+            <div class="transaction-date">{{ transaction.date | date:'dd-MMM-yyyy' }}</div>
+          </div>
+          <ng-template #invalidRowBadge>
+            <ion-badge slot="end" color="danger">Skipped</ion-badge>
+          </ng-template>
+        </ion-item>
+      </ion-list>
+    </ion-card>
+
+    <ion-card *ngIf="importResult">
+      <ion-card-header>
+        <ion-card-title>Import complete</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="summary-grid">
+          <div class="summary-box">
+            <div class="summary-value">{{ importResult.importedCount }}</div>
+            <div class="summary-label">Transactions imported</div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-value">{{ importResult.skippedInvalidRows }}</div>
+            <div class="summary-label">Rows skipped</div>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+  </div>
+
+  <div class="floating-import" [class.single-action]="!!importResult" *ngIf="preview as review">
+    <ng-container *ngIf="!importResult; else importAnotherAction">
+      <ion-button fill="outline" color="medium" (click)="clearAndStartOver()" [disabled]="processing || importing">
+        Clear & Start Over
+      </ion-button>
+      <ion-button color="primary" (click)="importTransactions()" [disabled]="!canImport || importing">
+        <ion-spinner *ngIf="importing" name="crescent"></ion-spinner>
+        <span *ngIf="!importing">Import {{ review.summary.importableTransactions }} Transactions</span>
+      </ion-button>
+    </ng-container>
+
+    <ng-template #importAnotherAction>
+      <ion-button color="primary" (click)="clearAndStartOver()" [disabled]="processing || importing">
+        Import Another Batch
+      </ion-button>
+    </ng-template>
   </div>
 </ion-content>
