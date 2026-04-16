@@ -6,7 +6,6 @@ import {
   IonTitle,
   IonContent,
   IonMenuButton,
-  IonButtons,
   IonButton,
   IonCard,
   IonCardHeader,
@@ -50,7 +49,6 @@ import {
     IonTitle,
     IonContent,
     IonMenuButton,
-    IonButtons,
     IonButton,
     IonCard,
     IonCardHeader,
@@ -164,17 +162,37 @@ export class TransactionCsvImportPage implements OnInit {
 
     this.importing = true;
     this.error = null;
+    this.cdr.markForCheck();
 
     try {
       this.importResult = await this.csvImportService.importPreview(this.preview);
+      this.importing = false;
+      this.cdr.markForCheck();
       await this.presentToast(`Imported ${this.importResult.importedCount} transactions`, 'success');
     } catch (error) {
       console.error('Error importing CSV transactions:', error);
       this.error = error instanceof Error ? error.message : 'Failed to import the processed CSV file.';
+      this.importing = false;
+      this.cdr.markForCheck();
       await this.presentToast(this.error, 'danger');
     } finally {
       this.importing = false;
+      this.cdr.markForCheck();
     }
+  }
+
+  clearAndStartOver(): void {
+    if (this.processing || this.importing) {
+      return;
+    }
+
+    this.preview = null;
+    this.importResult = null;
+    this.error = null;
+    this.fileName = '';
+    this.processing = false;
+    this.importing = false;
+    this.cdr.markForCheck();
   }
 
   trackByTransactionRow(_: number, transaction: CsvImportTransactionPreview): number {

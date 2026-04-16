@@ -2,14 +2,6 @@
   <ion-toolbar>
     <ion-menu-button slot="start"></ion-menu-button>
     <ion-title>Import Transactions</ion-title>
-    <ion-buttons slot="end" *ngIf="hasPreview">
-      <ion-button fill="clear" [disabled]="processing || importing">
-        <label class="upload-label" for="csv-import-input">
-          <ion-icon name="refresh-outline" slot="start"></ion-icon>
-          Choose Another File
-        </label>
-      </ion-button>
-    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -23,7 +15,7 @@
   />
 
   <div class="page-container">
-    <ion-card>
+    <ion-card *ngIf="!hasPreview">
       <ion-card-header>
         <ion-card-title>Upload CSV</ion-card-title>
       </ion-card-header>
@@ -107,7 +99,7 @@
             <ion-label>
               <p class="compact-row">{{ account.name }} • {{ account.recordCount }} record{{ account.recordCount === 1 ? '' : 's' }}</p>
             </ion-label>
-            <ion-badge slot="end" color="tertiary">New</ion-badge>
+            <ion-badge slot="end" color="primary">New</ion-badge>
           </ion-item>
         </ion-list>
       </ion-card>
@@ -131,7 +123,7 @@
             <ion-label>
               <p class="compact-row">{{ category.name }} • {{ category.recordCount }} record{{ category.recordCount === 1 ? '' : 's' }}</p>
             </ion-label>
-            <ion-badge slot="end" color="secondary">New</ion-badge>
+            <ion-badge slot="end" color="primary">New</ion-badge>
           </ion-item>
         </ion-list>
       </ion-card>
@@ -240,12 +232,24 @@
         </ion-card-content>
       </ion-card>
 
-      <div class="action-row">
-        <ion-button color="primary" (click)="importTransactions()" [disabled]="!canImport || importing">
-          <ion-spinner *ngIf="importing" name="crescent"></ion-spinner>
-          <span *ngIf="!importing">Import {{ review.summary.importableTransactions }} Transactions</span>
-        </ion-button>
-      </div>
     </ng-container>
+  </div>
+
+  <div class="floating-import" [class.single-action]="!!importResult" *ngIf="preview as review">
+    <ng-container *ngIf="!importResult; else importAnotherAction">
+      <ion-button fill="outline" color="medium" (click)="clearAndStartOver()" [disabled]="processing || importing">
+        Clear & Start Over
+      </ion-button>
+      <ion-button color="primary" (click)="importTransactions()" [disabled]="!canImport || importing">
+        <ion-spinner *ngIf="importing" name="crescent"></ion-spinner>
+        <span *ngIf="!importing">Import {{ review.summary.importableTransactions }} Transactions</span>
+      </ion-button>
+    </ng-container>
+
+    <ng-template #importAnotherAction>
+      <ion-button color="primary" (click)="clearAndStartOver()" [disabled]="processing || importing">
+        Import Another File
+      </ion-button>
+    </ng-template>
   </div>
 </ion-content>

@@ -8,7 +8,7 @@ ion-content {
 
 .page-container {
   padding: 16px;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -123,6 +123,28 @@ ion-content {
   display: flex;
   justify-content: flex-end;
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+.floating-import {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom));
+  background: var(--ion-color-light);
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  z-index: 20;
+  padding: 16px;
+}
+
+.floating-import ion-button {
+  flex: 1;
+  max-width: 280px;
+}
+
+.floating-import.single-action ion-button {
+  max-width: 420px;
 }
 
 .result-grid div {

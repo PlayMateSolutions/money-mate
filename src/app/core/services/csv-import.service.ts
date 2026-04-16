@@ -88,11 +88,11 @@ interface PendingCategoryState {
 })
 export class CsvImportService {
   private readonly requiredHeaders = ['Date', 'Description', 'Amount', 'From Account', 'To Account', 'Category'] as const;
-  private readonly accountDefaultsByType: Record<AccountType, Pick<CsvImportAccountPreview, 'color' | 'icon'>> = {
-    cash: { color: '#FFB300', icon: 'cash-outline' },
-    checking: { color: '#4CAF50', icon: 'card-outline' },
-    savings: { color: '#2196F3', icon: 'wallet-outline' },
-    credit: { color: '#9C27B0', icon: 'card-outline' },
+  private readonly accountDefaultsByType: Record<AccountType, Pick<CsvImportAccountPreview, 'icon'>> = {
+    cash: { icon: 'cash-outline' },
+    checking: { icon: 'card-outline' },
+    savings: { icon: 'wallet-outline' },
+    credit: { icon: 'card-outline' },
   };
 
   constructor(
@@ -425,6 +425,8 @@ export class CsvImportService {
     };
   }
 
+  // Ensure a parsed CSV row has at least the expected number of columns,
+  // filling missing trailing values with empty strings for safe header-index access.
   private padRow(row: string[], length: number): string[] {
     if (row.length >= length) {
       return row;
