@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import {
   IonHeader,
@@ -17,11 +18,13 @@ import {
   IonIcon,
   IonSpinner,
   IonBadge,
+  IonFab,
+  IonFabButton,
   ModalController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { syncOutline, pricetagOutline, swapHorizontalOutline, filterOutline } from 'ionicons/icons';
+import { syncOutline, pricetagOutline, swapHorizontalOutline, filterOutline, flashOutline } from 'ionicons/icons';
 import { Account, Category, Transaction, TransactionType } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
 import {
@@ -66,6 +69,9 @@ interface TransactionDateGroup {
     IonIcon,
     IonSpinner,
     IonBadge,
+    IonFab,
+    IonFabButton,
+    RouterLink,
     DateRangeFilterComponent,
   ]
 })
@@ -106,6 +112,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       swapHorizontalOutline,
       syncOutline,
       filterOutline,
+      flashOutline,
     });
   }
 

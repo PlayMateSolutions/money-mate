@@ -1,0 +1,43 @@
+:host {
+  display: block;
+}
+
+.page-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+ion-item {
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
+  --border-radius: 12px;
+  --background: var(--ion-color-step-50, var(--ion-color-light));
+}
+
+.quick-entry-box {
+  margin-top: 4px;
+  height: 200px;
+  --highlight-color: var(--ion-color-primary);
+  --highlight-color-focused: var(--ion-color-primary);
+}
+
+.quick-entry-box::part(native) {
+  height: 100%;
+  min-height: 640px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+ion-button {
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .page-container {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+}

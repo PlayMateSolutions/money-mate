@@ -36,6 +36,10 @@ export const routes: Routes = [
     loadComponent: () => import('./imports').then((m) => m.TransactionCsvImportPage),
   },
   {
+    path: 'imports/transactions/quick-add',
+    loadComponent: () => import('./imports').then((m) => m.TransactionQuickAddPage),
+  },
+  {
     path: 'dashboard/customize',
     loadComponent: () => import('./dashboard/dashboard-customize.page').then((m) => m.DashboardCustomizePage),
   },

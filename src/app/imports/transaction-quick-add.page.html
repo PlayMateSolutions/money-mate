@@ -1,0 +1,53 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/imports/transactions/csv"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Quick Add</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="showHelp()" aria-label="Show quick add help">
+        <ion-icon name="help-circle-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="page-container">
+    <ion-item>
+      <ion-label position="stacked">Account</ion-label>
+      <ion-select
+        interface="popover"
+        placeholder="Select an account"
+        [(ngModel)]="selectedAccountId"
+        (ngModelChange)="onFormChanged()"
+        [disabled]="loadingAccounts"
+      >
+        <ion-select-option *ngFor="let account of accounts; trackBy: trackByAccount" [value]="account.id">
+          {{ account.name }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-note color="danger" *ngIf="error">{{ error }}</ion-note>
+    <ion-note *ngIf="!error && !loadingAccounts && accounts.length === 0">
+      No accounts found. Create an account first.
+    </ion-note>
+
+    <ion-textarea
+      class="quick-entry-box"
+      autoGrow="false"
+      fill="outline"
+      label="Entries"
+      labelPlacement="stacked"
+      rows="20"
+      placeholder="14 Milk 32&#10;15 Tea 12&#10;1 Petrol 200"
+      [(ngModel)]="quickEntryText"
+      (ngModelChange)="onFormChanged()"
+    ></ion-textarea>
+
+    <ion-button expand="block" size="large" (click)="previewQuickAdd()" [disabled]="!canPreview">
+      Preview Entries
+    </ion-button>
+  </div>
+</ion-content>
