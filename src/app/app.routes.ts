@@ -32,6 +32,10 @@ export const routes: Routes = [
     loadComponent: () => import('./settings/settings.page').then((m) => m.SettingsPage),
   },
   {
+    path: 'imports/transactions/csv',
+    loadComponent: () => import('./imports').then((m) => m.TransactionCsvImportPage),
+  },
+  {
     path: 'dashboard/customize',
     loadComponent: () => import('./dashboard/dashboard-customize.page').then((m) => m.DashboardCustomizePage),
   },

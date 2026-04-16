@@ -1,0 +1,251 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-menu-button slot="start"></ion-menu-button>
+    <ion-title>Import Transactions</ion-title>
+    <ion-buttons slot="end" *ngIf="hasPreview">
+      <ion-button fill="clear" [disabled]="processing || importing">
+        <label class="upload-label" for="csv-import-input">
+          <ion-icon name="refresh-outline" slot="start"></ion-icon>
+          Choose Another File
+        </label>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <input
+    id="csv-import-input"
+    class="hidden-input"
+    type="file"
+    accept=".csv,text/csv"
+    (change)="onFileSelected($event)"
+  />
+
+  <div class="page-container">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Upload CSV</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>Select a transaction CSV with these columns:</p>
+        <p class="columns">Date • Description • Amount • From Account • To Account • Category</p>
+
+        <div class="upload-actions">
+          <ion-button [disabled]="processing || importing">
+            <label class="upload-label" for="csv-import-input">
+              <ion-icon name="cloud-upload-outline" slot="start"></ion-icon>
+              Select CSV File
+            </label>
+          </ion-button>
+          <ion-note *ngIf="fileName">{{ fileName }}</ion-note>
+        </div>
+
+        <p class="helper-text">
+          After processing, Money Mate will show the accounts, categories, and transactions that will be created before anything is imported.
+        </p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="processing">
+      <ion-card-content class="status-card processing-card">
+        <ion-spinner name="crescent"></ion-spinner>
+        <div>
+          <h3>Processing CSV</h3>
+          <p>Checking rows, matching accounts/categories, and building the import summary.</p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="error">
+      <ion-card-content class="status-card error-card">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <div>
+          <h3>Could not process the file</h3>
+          <p>{{ error }}</p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ng-container *ngIf="preview as review">
+      <div class="summary-grid">
+        <ion-card>
+          <ion-card-content>
+            <div class="summary-value">{{ review.summary.importableTransactions }}</div>
+            <div class="summary-label">Transactions to import</div>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card>
+          <ion-card-content>
+            <div class="summary-value">{{ review.summary.accountsToCreate }}</div>
+            <div class="summary-label">Accounts to create</div>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card>
+          <ion-card-content>
+            <div class="summary-value">{{ review.summary.categoriesToCreate }}</div>
+            <div class="summary-label">Categories to create</div>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card>
+          <ion-card-content>
+            <div class="summary-value">{{ review.summary.invalidRows }}</div>
+            <div class="summary-label">Invalid rows</div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <ion-card *ngIf="review.accountsToCreate.length > 0">
+        <ion-card-header>
+          <ion-card-title>Accounts that will be created</ion-card-title>
+        </ion-card-header>
+        <ion-list class="compact-create-list">
+          <ion-item *ngFor="let account of review.accountsToCreate">
+            <ion-label>
+              <p class="compact-row">{{ account.name }} • {{ account.recordCount }} record{{ account.recordCount === 1 ? '' : 's' }}</p>
+            </ion-label>
+            <ion-badge slot="end" color="tertiary">New</ion-badge>
+          </ion-item>
+        </ion-list>
+      </ion-card>
+
+      <ion-card *ngIf="review.accountsToCreate.length === 0">
+        <ion-card-content class="empty-section">
+          <ion-icon name="checkmark-circle-outline"></ion-icon>
+          <div>
+            <h3>No new accounts</h3>
+            <p>All account names already match existing records.</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card *ngIf="review.categoriesToCreate.length > 0">
+        <ion-card-header>
+          <ion-card-title>Categories that will be created</ion-card-title>
+        </ion-card-header>
+        <ion-list class="compact-create-list">
+          <ion-item *ngFor="let category of review.categoriesToCreate">
+            <ion-label>
+              <p class="compact-row">{{ category.name }} • {{ category.recordCount }} record{{ category.recordCount === 1 ? '' : 's' }}</p>
+            </ion-label>
+            <ion-badge slot="end" color="secondary">New</ion-badge>
+          </ion-item>
+        </ion-list>
+      </ion-card>
+
+      <ion-card *ngIf="review.categoriesToCreate.length === 0">
+        <ion-card-content class="empty-section">
+          <ion-icon name="checkmark-circle-outline"></ion-icon>
+          <div>
+            <h3>No new categories</h3>
+            <p>All category names already match existing records or the rows are transfers.</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Transactions that will be imported</ion-card-title>
+        </ion-card-header>
+        <ion-card-content *ngIf="hasTruncatedTransactionPreview" class="helper-text">
+          Showing first {{ displayedTransactions.length }} rows for preview. All valid rows will still be imported.
+        </ion-card-content>
+        <ion-list>
+          <ion-item *ngFor="let transaction of displayedTransactions; trackBy: trackByTransactionRow">
+            <ion-label>
+              <h2>{{ transaction.description }}</h2>
+              <p>
+                {{ transaction.type | titlecase }}
+              </p>
+              <p *ngIf="transaction.type === 'transfer'">
+                {{ transaction.fromAccountName }} → {{ transaction.toAccountName }}
+              </p>
+              <p *ngIf="transaction.type !== 'transfer'">
+                {{ transaction.type === 'expense' ? transaction.fromAccountName : transaction.toAccountName }}
+                <span *ngIf="transaction.categoryName">• {{ transaction.categoryName }}</span>
+              </p>
+              <p *ngIf="transaction.warnings.length > 0" class="warning-text">{{ transaction.warnings.join(' ') }}</p>
+            </ion-label>
+            <div slot="end" class="transaction-end">
+              <div class="transaction-amount">{{ transaction.amount | currency:selectedCurrency }}</div>
+              <div class="transaction-date">{{ transaction.date | date:'dd-MMM-yyyy' }}</div>
+            </div>
+            <div slot="end" class="transaction-badges">
+              <ion-badge color="warning" *ngIf="transaction.duplicate">Duplicate</ion-badge>
+            </div>
+          </ion-item>
+        </ion-list>
+      </ion-card>
+
+      <ion-card *ngIf="review.duplicateWarnings.length > 0">
+        <ion-card-header>
+          <ion-card-title>Duplicate warnings</ion-card-title>
+        </ion-card-header>
+        <ion-list>
+          <ion-item *ngFor="let transaction of review.duplicateWarnings; trackBy: trackByTransactionRow">
+            <ion-label>
+              <h2>Row {{ transaction.rowNumber }} • {{ transaction.description }}</h2>
+              <p>{{ transaction.warnings.join(' ') }}</p>
+            </ion-label>
+            <ion-badge slot="end" color="warning">Review</ion-badge>
+          </ion-item>
+        </ion-list>
+      </ion-card>
+
+      <ion-card *ngIf="review.invalidRows.length > 0">
+        <ion-card-header>
+          <ion-card-title>Invalid rows that will be skipped</ion-card-title>
+        </ion-card-header>
+        <ion-list>
+          <ion-item *ngFor="let row of review.invalidRows; trackBy: trackByInvalidRow">
+            <ion-label>
+              <h2>Row {{ row.rowNumber }}</h2>
+              <p>{{ row.reasons.join(' ') }}</p>
+              <p *ngIf="formatInvalidRow(row)">{{ formatInvalidRow(row) }}</p>
+            </ion-label>
+            <ion-badge slot="end" color="danger">Skipped</ion-badge>
+          </ion-item>
+        </ion-list>
+      </ion-card>
+
+      <ion-card *ngIf="importResult">
+        <ion-card-header>
+          <ion-card-title>Import complete</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="result-grid">
+            <div>
+              <strong>{{ importResult.importedCount }}</strong>
+              <span>transactions imported</span>
+            </div>
+            <div>
+              <strong>{{ importResult.createdAccounts.length }}</strong>
+              <span>accounts created</span>
+            </div>
+            <div>
+              <strong>{{ importResult.createdCategories.length }}</strong>
+              <span>categories created</span>
+            </div>
+            <div>
+              <strong>{{ importResult.skippedInvalidRows }}</strong>
+              <span>rows skipped</span>
+            </div>
+          </div>
+          <p *ngIf="importResult.duplicateCount > 0" class="helper-text">
+            {{ importResult.duplicateCount }} transaction(s) were imported even though they looked like duplicates.
+          </p>
+        </ion-card-content>
+      </ion-card>
+
+      <div class="action-row">
+        <ion-button color="primary" (click)="importTransactions()" [disabled]="!canImport || importing">
+          <ion-spinner *ngIf="importing" name="crescent"></ion-spinner>
+          <span *ngIf="!importing">Import {{ review.summary.importableTransactions }} Transactions</span>
+        </ion-button>
+      </div>
+    </ng-container>
+  </div>
+</ion-content>

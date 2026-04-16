@@ -5,6 +5,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
+  cloudUploadOutline,
   statsChart, 
   list, 
   settings, 
@@ -24,6 +25,6 @@ import { MenuComponent } from './core/components';
 })
 export class AppComponent {
   constructor() {
-    addIcons({ statsChart, list, settings, card, menu });
+    addIcons({ statsChart, list, settings, card, menu, cloudUploadOutline });
   }
 }
