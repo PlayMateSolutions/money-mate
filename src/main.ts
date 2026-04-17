@@ -21,9 +21,10 @@ bootstrapApplication(AppComponent, {
 if ('serviceWorker' in navigator) {
   if (environment.production) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
         .then((registration) => {
           console.log('SW registered: ', registration);
+          registration.update().catch(() => undefined);
         })
         .catch((registrationError) => {
           console.log('SW registration failed: ', registrationError);

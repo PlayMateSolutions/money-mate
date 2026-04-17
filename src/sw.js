@@ -1,14 +1,21 @@
-const CACHE_NAME = 'money-mate-v1';
+const SW_VERSION = 'v2';
+const CACHE_NAME = `money-mate-${SW_VERSION}`;
 
 const urlsToCache = [
   './',
-  './index.html', 
+  './index.html',
   './manifest.json',
   './assets/icon/favicon.png',
-  './assets/icon/android-chrome-192x192.png', 
+  './assets/icon/android-chrome-192x192.png',
   './assets/icon/android-chrome-512x512.png',
   './assets/shapes.svg'
-]
+];
+
+const isNavigationRequest = (request) => request.mode === 'navigate' || request.destination === 'document';
+const isCacheableAssetRequest = (request) => {
+  const url = request.url;
+  return /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf)$/.test(url) || url.includes('/assets/');
+};
 
 // Install event - cache static resources
 self.addEventListener('install', (event) => {
@@ -55,63 +62,54 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request)
-      .then((cachedResponse) => {
-        // Return cached response if available
-        if (cachedResponse) {
-          return cachedResponse;
+  if (isNavigationRequest(event.request)) {
+    event.respondWith((async () => {
+      try {
+        const networkResponse = await fetch(event.request);
+        if (networkResponse && networkResponse.status === 200) {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put('./index.html', networkResponse.clone());
+        }
+        return networkResponse;
+      } catch (error) {
+        console.warn('Navigation network request failed:', event.request.url, error);
+        const cachedIndex = await caches.match('./index.html');
+        if (cachedIndex) {
+          return cachedIndex;
         }
 
-        // Clone the request for network fetch
-        return fetch(event.request.clone())
-          .then((networkResponse) => {
-            // Check if response is valid
-            if (!networkResponse || 
-                networkResponse.status !== 200 || 
-                networkResponse.type !== 'basic') {
-              return networkResponse;
-            }
+        return new Response('', {
+          status: 408,
+          statusText: 'Network request failed'
+        });
+      }
+    })());
+    return;
+  }
 
-            // Only cache specific file types
-            const url = event.request.url;
-            const shouldCache = url.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|html)$/) ||
-                               url.endsWith('/') ||
-                               url.includes('/assets/');
+  if (!isCacheableAssetRequest(event.request)) {
+    return;
+  }
 
-            if (shouldCache) {
-              const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME)
-                .then((cache) => {
-                  cache.put(event.request, responseToCache);
-                })
-                .catch((err) => {
-                  console.warn('Failed to cache:', event.request.url, err);
-                });
-            }
+  event.respondWith((async () => {
+    const cachedResponse = await caches.match(event.request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
 
-            return networkResponse;
-          })
-          .catch((error) => {
-            console.warn('Network request failed:', event.request.url, error);
-            
-            // Return cached index.html for navigation requests when offline
-            if (event.request.destination === 'document' || 
-                event.request.mode === 'navigate') {
-              return caches.match('./index.html');
-            }
-            
-            // For other failed requests, just return the error
-            return new Response('', {
-              status: 408,
-              statusText: 'Network request failed'
-            });
-          });
-      })
-      .catch((error) => {
-        console.error('Cache match failed:', error);
-        // Fallback to network if cache fails
-        return fetch(event.request);
-      })
-  );
+    try {
+      const networkResponse = await fetch(event.request);
+      if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(event.request, networkResponse.clone());
+      }
+      return networkResponse;
+    } catch (error) {
+      console.warn('Asset network request failed:', event.request.url, error);
+      return new Response('', {
+        status: 408,
+        statusText: 'Network request failed'
+      });
+    }
+  })());
 });
