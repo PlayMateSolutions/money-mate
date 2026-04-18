@@ -1,0 +1,58 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ account?.id ? 'Edit Account' : 'Create Account' }}</ion-title>
+    <ion-buttons slot="start">
+      <ion-button (click)="cancel()">Cancel</ion-button>
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button [disabled]="!canSave" (click)="save()">Save</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-list>
+    <ion-item class="name-item">
+      <ion-button class="icon-edit-button" fill="clear" (click)="openIconPicker()">
+        <ion-icon [name]="form.icon || 'wallet-outline'" [style.color]="form.color || '#2196F3'"></ion-icon>
+        <ion-icon class="edit-indicator" name="create-outline"></ion-icon>
+      </ion-button>
+
+      <div class="name-field-block">
+        <ion-label class="name-label">Name *</ion-label>
+        <ion-input [(ngModel)]="form.name" placeholder="Account name"></ion-input>
+      </div>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="stacked">Type</ion-label>
+      <ion-select [(ngModel)]="form.type">
+        <ion-select-option value="cash">Cash</ion-select-option>
+        <ion-select-option value="checking">Checking</ion-select-option>
+        <ion-select-option value="savings">Savings</ion-select-option>
+        <ion-select-option value="credit">Credit</ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="stacked">Current Balance</ion-label>
+      <ion-input
+        type="number"
+        inputmode="decimal"
+        [ngModel]="form.balance"
+        (ngModelChange)="onBalanceChange($event)"
+        placeholder="0"
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="stacked">Owner Name</ion-label>
+      <ion-input [(ngModel)]="form.ownerName" placeholder="Account owner"></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label>IsActive</ion-label>
+      <ion-toggle [(ngModel)]="form.isActive" slot="end"></ion-toggle>
+    </ion-item>
+  </ion-list>
+</ion-content>

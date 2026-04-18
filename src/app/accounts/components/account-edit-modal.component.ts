@@ -12,12 +12,15 @@ import {
   IonItem,
   IonLabel,
   IonInput,
+  IonIcon,
   IonToggle,
   IonSelect,
   IonSelectOption,
   ModalController
 } from '@ionic/angular/standalone';
 import { Account, AccountType } from '../../core/database/models';
+import { IconPickerModalComponent } from '../../shared/icon-picker/icon-picker-modal.component';
+import { IconPickerConfig, IconPickerResult } from '../../shared/icon-picker/icon-picker.types';
 
 export interface AccountEditModalResult {
   name: string;
@@ -31,81 +34,8 @@ export interface AccountEditModalResult {
 
 @Component({
   selector: 'app-account-edit-modal',
-  template: `
-    <ion-header>
-      <ion-toolbar>
-        <ion-title>{{ account ? 'Edit Account' : 'Create Account' }}</ion-title>
-        <ion-buttons slot="start">
-          <ion-button (click)="cancel()">Cancel</ion-button>
-        </ion-buttons>
-        <ion-buttons slot="end">
-          <ion-button [disabled]="!canSave" (click)="save()">Save</ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-
-    <ion-content>
-      <ion-list>
-        <ion-item>
-          <ion-label position="stacked">Name *</ion-label>
-          <ion-input [(ngModel)]="form.name" placeholder="Account name"></ion-input>
-        </ion-item>
-
-        <ion-item>
-          <ion-label position="stacked">Type</ion-label>
-          <ion-select [(ngModel)]="form.type">
-            <ion-select-option value="cash">Cash</ion-select-option>
-            <ion-select-option value="checking">Checking</ion-select-option>
-            <ion-select-option value="savings">Savings</ion-select-option>
-            <ion-select-option value="credit">Credit</ion-select-option>
-          </ion-select>
-        </ion-item>
-
-        <ion-item>
-          <ion-label position="stacked">Current Balance</ion-label>
-          <ion-input
-            type="number"
-            inputmode="decimal"
-            [ngModel]="form.balance"
-            (ngModelChange)="onBalanceChange($event)"
-            placeholder="0"
-          ></ion-input>
-        </ion-item>
-
-        <ion-item>
-          <ion-label position="stacked">Owner Name</ion-label>
-          <ion-input [(ngModel)]="form.ownerName" placeholder="Account owner"></ion-input>
-        </ion-item>
-
-        <ion-item>
-          <ion-label position="stacked">Color</ion-label>
-          <div style="display:flex; align-items:center; gap:12px; width:100%;">
-            <ion-input
-              style="flex:1;"
-              [ngModel]="form.color"
-              (ngModelChange)="onColorChange($event)"
-              placeholder="#FFB300"
-            ></ion-input>
-            <div
-              style="width:20px; height:20px; border-radius:50%; border:1px solid var(--ion-color-medium); flex-shrink:0;"
-              [style.background]="form.color || '#ffffff'"
-            ></div>
-            <ion-button fill="outline" size="small" (click)="regenerateColor()">Generate</ion-button>
-          </div>
-        </ion-item>
-
-        <ion-item>
-          <ion-label position="stacked">Icon</ion-label>
-          <ion-input [(ngModel)]="form.icon" placeholder="cash-outline"></ion-input>
-        </ion-item>
-
-        <ion-item>
-          <ion-label>IsActive</ion-label>
-          <ion-toggle [(ngModel)]="form.isActive" slot="end"></ion-toggle>
-        </ion-item>
-      </ion-list>
-    </ion-content>
-  `,
+  templateUrl: './account-edit-modal.component.html',
+  styleUrls: ['./account-edit-modal.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
@@ -120,6 +50,7 @@ export interface AccountEditModalResult {
     IonItem,
     IonLabel,
     IonInput,
+    IonIcon,
     IonToggle,
     IonSelect,
     IonSelectOption
@@ -127,6 +58,14 @@ export interface AccountEditModalResult {
 })
 export class AccountEditModalComponent implements OnInit {
   @Input() account?: Partial<Account>;
+
+  readonly iconPickerConfig: Partial<IconPickerConfig> = {
+    sourceUrl: 'assets/assets/ionic-icons.json',
+    initialVisibleCount: 100,
+    loadMoreStep: 100,
+    title: 'Pick Icon',
+    searchPlaceholder: 'Search icon by name or tag'
+  };
 
   form: AccountEditModalResult = {
     name: '',
@@ -148,7 +87,7 @@ export class AccountEditModalComponent implements OnInit {
         balance: this.normalizeBalance(this.account.balance),
         ownerName: this.account.ownerName ?? '',
         color: this.normalizeColor(this.account.color ?? ''),
-        icon: this.account.icon ?? '',
+        icon: this.account.icon ?? this.getDefaultIcon(this.account.type),
         isActive: !this.account.isDeleted
       };
       return;
@@ -160,7 +99,7 @@ export class AccountEditModalComponent implements OnInit {
       balance: this.normalizeBalance(this.account?.balance),
       ownerName: this.account?.ownerName ?? '',
       color: this.normalizeColor(this.account?.color ?? '') || this.generateRandomColor(),
-      icon: this.account?.icon ?? '',
+      icon: this.account?.icon ?? this.getDefaultIcon(this.account?.type),
       isActive: this.account?.isDeleted !== undefined ? !this.account.isDeleted : true
     };
   }
@@ -178,16 +117,47 @@ export class AccountEditModalComponent implements OnInit {
     return Number.isFinite(normalizedValue) ? normalizedValue : 0;
   }
 
-  onColorChange(value: string | number | null | undefined): void {
-    this.form.color = this.normalizeColor(String(value ?? ''));
+  private getDefaultIcon(type: AccountType | null | undefined): string {
+    switch (type) {
+      case 'cash':
+        return 'cash-outline';
+      case 'credit':
+        return 'card-outline';
+      case 'checking':
+        return 'card-outline';
+      case 'savings':
+      default:
+        return 'wallet-outline';
+    }
   }
 
   onBalanceChange(value: string | number | null | undefined): void {
     this.form.balance = this.normalizeBalance(value);
   }
 
-  regenerateColor(): void {
-    this.form.color = this.generateRandomColor();
+  async openIconPicker(): Promise<void> {
+    const modal = await this.modalController.create({
+      component: IconPickerModalComponent,
+      componentProps: {
+        selectedIcon: this.form.icon,
+        selectedColor: this.form.color,
+        config: this.iconPickerConfig
+      },
+      breakpoints: [0, 0.75, 1],
+      initialBreakpoint: 0.75
+    });
+
+    await modal.present();
+    const { data, role } = await modal.onDidDismiss<IconPickerResult>();
+
+    if (role !== 'select' || !data?.icon) {
+      return;
+    }
+
+    this.form.icon = data.icon;
+    if (data.color) {
+      this.form.color = this.normalizeColor(data.color);
+    }
   }
 
   get canSave(): boolean {
@@ -210,7 +180,7 @@ export class AccountEditModalComponent implements OnInit {
         balance: this.form.balance,
         ownerName: this.form.ownerName.trim(),
         color: this.normalizeColor(this.form.color),
-        icon: this.form.icon.trim(),
+        icon: (this.form.icon || this.getDefaultIcon(this.form.type)).trim(),
         isActive: this.form.isActive
       },
       'save'
