@@ -184,24 +184,34 @@ export class GoogleSheetService {
 
     const dirtyAccounts = await this.accountRepository.getDirtyAccounts();
     const pushedIds: string[] = [];
+    const updateRequests: Array<{ range: string; values: string[][] }> = [];
+    const rowsToAppend: string[][] = [];
 
     for (const account of dirtyAccounts) {
-      const rowValues = [this.toSheetAccountRow(account)];
+      const rowValues = this.toSheetAccountRow(account);
       const existing = sheetById.get(account.id);
 
       if (existing) {
-        await this.googleSheetsDbService.updateRangeValues(
-          `accounts!A${existing.rowNumber}:M${existing.rowNumber}`,
-          rowValues,
-        );
+        updateRequests.push({
+          range: `accounts!A${existing.rowNumber}:M${existing.rowNumber}`,
+          values: [rowValues],
+        });
       } else {
-        await this.googleSheetsDbService.appendValues(
-          'accounts!A:M',
-          rowValues,
-        );
+        rowsToAppend.push(rowValues);
       }
 
       pushedIds.push(account.id);
+    }
+
+    if (updateRequests.length > 0) {
+      await this.googleSheetsDbService.batchUpdateValues(updateRequests);
+    }
+
+    if (rowsToAppend.length > 0) {
+      await this.googleSheetsDbService.appendValues(
+        'accounts!A:M',
+        rowsToAppend,
+      );
     }
 
     await this.accountRepository.clearDirtyFlags(pushedIds);
@@ -245,24 +255,34 @@ export class GoogleSheetService {
 
     const dirtyCategories = await this.categoryRepository.getDirtyCategories();
     const pushedIds: string[] = [];
+    const updateRequests: Array<{ range: string; values: string[][] }> = [];
+    const rowsToAppend: string[][] = [];
 
     for (const category of dirtyCategories) {
-      const rowValues = [this.toSheetCategoryRow(category)];
+      const rowValues = this.toSheetCategoryRow(category);
       const existing = sheetById.get(category.id);
 
       if (existing) {
-        await this.googleSheetsDbService.updateRangeValues(
-          `categories!A${existing.rowNumber}:K${existing.rowNumber}`,
-          rowValues,
-        );
+        updateRequests.push({
+          range: `categories!A${existing.rowNumber}:K${existing.rowNumber}`,
+          values: [rowValues],
+        });
       } else {
-        await this.googleSheetsDbService.appendValues(
-          'categories!A:K',
-          rowValues,
-        );
+        rowsToAppend.push(rowValues);
       }
 
       pushedIds.push(category.id);
+    }
+
+    if (updateRequests.length > 0) {
+      await this.googleSheetsDbService.batchUpdateValues(updateRequests);
+    }
+
+    if (rowsToAppend.length > 0) {
+      await this.googleSheetsDbService.appendValues(
+        'categories!A:K',
+        rowsToAppend,
+      );
     }
 
     await this.categoryRepository.clearDirtyFlags(pushedIds);
@@ -304,24 +324,34 @@ export class GoogleSheetService {
 
     const dirtyTransactions = await this.transactionRepository.getDirtyTransactions();
     const pushedIds: string[] = [];
+    const updateRequests: Array<{ range: string; values: string[][] }> = [];
+    const rowsToAppend: string[][] = [];
 
     for (const transaction of dirtyTransactions) {
-      const rowValues = [this.toSheetTransactionRow(transaction)];
+      const rowValues = this.toSheetTransactionRow(transaction);
       const existing = sheetById.get(transaction.id);
 
       if (existing) {
-        await this.googleSheetsDbService.updateRangeValues(
-          `transactions!A${existing.rowNumber}:O${existing.rowNumber}`,
-          rowValues,
-        );
+        updateRequests.push({
+          range: `transactions!A${existing.rowNumber}:O${existing.rowNumber}`,
+          values: [rowValues],
+        });
       } else {
-        await this.googleSheetsDbService.appendValues(
-          'transactions!A:O',
-          rowValues,
-        );
+        rowsToAppend.push(rowValues);
       }
 
       pushedIds.push(transaction.id);
+    }
+
+    if (updateRequests.length > 0) {
+      await this.googleSheetsDbService.batchUpdateValues(updateRequests);
+    }
+
+    if (rowsToAppend.length > 0) {
+      await this.googleSheetsDbService.appendValues(
+        'transactions!A:O',
+        rowsToAppend,
+      );
     }
 
     await this.transactionRepository.clearDirtyFlags(pushedIds);
