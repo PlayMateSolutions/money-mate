@@ -61,7 +61,7 @@ export class DashboardLayoutService {
       .filter((widget) => !filtered.some((item) => item.id === widget.id))
       .map((widget) => ({
         id: widget.id,
-        visible: true,
+        visible: widget.defaultVisible ?? true,
         order: Number.MAX_SAFE_INTEGER
       }));
 

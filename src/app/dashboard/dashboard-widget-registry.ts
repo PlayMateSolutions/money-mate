@@ -2,12 +2,14 @@ import { Type } from '@angular/core';
 import { AccountBalanceCarouselComponent } from './widgets/account-balance-carousel/account-balance-carousel.component';
 import { DailyExpensesWidgetComponent } from './widgets/daily-expenses/daily-expenses-widget.component';
 import { ExpenseBreakdownWidgetComponent } from './widgets/expense-breakdown/expense-breakdown-widget.component';
+import { ExpenseComparisonWidgetComponent } from './widgets/expense-comparison/expense-comparison-widget.component';
 import { RecentTransactionsWidgetComponent } from './widgets/recent-transactions/recent-transactions-widget.component';
 
 export type DashboardWidgetId =
   | 'top-summary'
   | 'daily-expenses'
   | 'expense-breakdown'
+  | 'expense-comparison'
   | 'recent-transactions';
 
 export interface DashboardWidgetDefinition {
@@ -15,6 +17,8 @@ export interface DashboardWidgetDefinition {
   title: string;
   subtitle: string;
   component: Type<unknown>;
+  /** Whether the widget is visible by default. Defaults to true when omitted. */
+  defaultVisible?: boolean;
 }
 
 export const DASHBOARD_WIDGET_DEFINITIONS: DashboardWidgetDefinition[] = [
@@ -28,13 +32,22 @@ export const DASHBOARD_WIDGET_DEFINITIONS: DashboardWidgetDefinition[] = [
     id: 'expense-breakdown',
     title: 'Expense Breakdown',
     subtitle: 'Category-wise expense overview',
-    component: ExpenseBreakdownWidgetComponent
+    component: ExpenseBreakdownWidgetComponent,
+    defaultVisible: false
   },
   {
     id: 'daily-expenses',
     title: 'Daily Expenses Trends',
     subtitle: 'Day-wise expenses: this month vs last month',
-    component: DailyExpensesWidgetComponent
+    component: DailyExpensesWidgetComponent,
+    defaultVisible: false
+  },
+  {
+    id: 'expense-comparison',
+    title: 'Expense Comparison',
+    subtitle: 'This month vs monthly average by category',
+    component: ExpenseComparisonWidgetComponent,
+    defaultVisible: false
   },
   {
     id: 'recent-transactions',

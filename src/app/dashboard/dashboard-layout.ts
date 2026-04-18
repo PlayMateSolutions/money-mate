@@ -9,7 +9,7 @@ export interface DashboardWidgetLayout {
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidgetLayout[] = DASHBOARD_WIDGET_DEFINITIONS.map(
   (widget, index) => ({
     id: widget.id,
-    visible: true,
+    visible: widget.defaultVisible ?? true,
     order: index + 1
   })
 );
