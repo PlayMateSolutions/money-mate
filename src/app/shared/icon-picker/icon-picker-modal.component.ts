@@ -16,6 +16,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import * as ionicons from 'ionicons/icons';
+import { IconColorPickerComponent } from './components/icon-color-picker.component';
 import {
   DEFAULT_ICON_PICKER_CONFIG,
   IconPickerConfig,
@@ -40,11 +41,13 @@ import {
     IonContent,
     IonSearchbar,
     IonIcon,
-    IonSpinner
+    IonSpinner,
+    IconColorPickerComponent
   ]
 })
 export class IconPickerModalComponent implements OnInit {
   @Input() selectedIcon = '';
+  @Input() selectedColor = '#2196F3';
   @Input() config: Partial<IconPickerConfig> = {};
 
   mergedConfig: IconPickerConfig = DEFAULT_ICON_PICKER_CONFIG;
@@ -57,6 +60,7 @@ export class IconPickerModalComponent implements OnInit {
   visibleIcons: IconPickerIcon[] = [];
   visibleCount = 0;
   selectedIconName = '';
+  currentColor = '#2196F3';
 
   private readonly registeredIconNames = new Set<string>();
 
@@ -72,6 +76,7 @@ export class IconPickerModalComponent implements OnInit {
     };
 
     this.selectedIconName = this.selectedIcon?.trim() || '';
+    this.currentColor = this.normalizeColor(this.selectedColor) || '#2196F3';
 
     await this.loadIcons();
   }
@@ -90,7 +95,8 @@ export class IconPickerModalComponent implements OnInit {
     }
 
     const result: IconPickerResult = {
-      icon: this.selectedIconName
+      icon: this.selectedIconName,
+      color: this.currentColor
     };
 
     await this.modalController.dismiss(result, 'select');
@@ -115,6 +121,10 @@ export class IconPickerModalComponent implements OnInit {
 
   chooseIcon(iconName: string): void {
     this.selectedIconName = iconName;
+  }
+
+  onColorChange(color: string): void {
+    this.currentColor = this.normalizeColor(color) || this.currentColor;
   }
 
   private async loadIcons(): Promise<void> {
@@ -191,5 +201,15 @@ export class IconPickerModalComponent implements OnInit {
     if (Object.keys(iconsToRegister).length > 0) {
       addIcons(iconsToRegister);
     }
+  }
+
+  private normalizeColor(value: string): string {
+    const trimmed = value.trim().toUpperCase();
+    if (!trimmed) {
+      return '';
+    }
+
+    const normalized = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+    return /^#([0-9A-F]{3}|[0-9A-F]{6})$/.test(normalized) ? normalized : '';
   }
 }

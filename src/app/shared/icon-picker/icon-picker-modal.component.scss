@@ -2,6 +2,44 @@
   display: block;
 }
 
+.selection-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
+
+.selected-icon-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ion-color-medium-tint);
+}
+
+.selected-icon-preview ion-icon {
+  font-size: 22px;
+  color: var(--ion-color-light-contrast);
+}
+
+.selected-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.selected-icon-name {
+  font-size: 0.85rem;
+  color: var(--ion-text-color);
+}
+
+.selected-color-name {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+
 .icon-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

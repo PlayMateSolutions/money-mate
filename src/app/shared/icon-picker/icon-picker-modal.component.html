@@ -11,6 +11,23 @@
 </ion-header>
 
 <ion-content>
+  <div class="selection-preview">
+    <div class="selected-icon-preview" [style.background]="currentColor">
+      <ion-icon [name]="selectedIconName || 'pricetag-outline'"></ion-icon>
+    </div>
+    <div class="selected-meta">
+      <div class="selected-icon-name">{{ selectedIconName || 'pricetag-outline' }}</div>
+      <div class="selected-color-name">{{ currentColor }}</div>
+    </div>
+  </div>
+
+  <app-icon-color-picker
+    [value]="currentColor"
+    [swatchCount]="8"
+    [allowManualInput]="true"
+    (valueChange)="onColorChange($event)"
+  ></app-icon-color-picker>
+
   <ion-searchbar
     [ngModel]="searchQuery"
     (ngModelChange)="onSearchChange($event)"

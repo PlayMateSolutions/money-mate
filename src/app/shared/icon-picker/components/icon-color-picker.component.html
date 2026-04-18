@@ -1,0 +1,30 @@
+<div class="color-picker-row" role="radiogroup" aria-label="Icon color picker">
+  <button
+    type="button"
+    class="color-chip"
+    *ngFor="let color of colors"
+    [style.background]="color"
+    [class.selected]="isSelected(color)"
+    [attr.aria-checked]="isSelected(color)"
+    (click)="selectColor(color)"
+  >
+  </button>
+
+  <ion-button
+    class="refresh-button"
+    fill="clear"
+    size="small"
+    aria-label="Refresh colors"
+    (click)="refreshPalette()"
+  >
+    <ion-icon name="refresh-outline"></ion-icon>
+  </ion-button>
+</div>
+
+<ion-input
+  *ngIf="allowManualInput"
+  class="color-input"
+  [ngModel]="inputValue"
+  (ngModelChange)="onInputChange($event)"
+  placeholder="#2196F3"
+></ion-input>

@@ -98,19 +98,12 @@ export class CategoryEditModalComponent implements OnInit {
     return value.trim().toUpperCase();
   }
 
-  onColorChange(value: string | number | null | undefined): void {
-    this.form.color = this.normalizeColor(String(value ?? ''));
-  }
-
-  regenerateColor(): void {
-    this.form.color = this.generateRandomColor();
-  }
-
   async openIconPicker(): Promise<void> {
     const modal = await this.modalController.create({
       component: IconPickerModalComponent,
       componentProps: {
         selectedIcon: this.form.icon,
+        selectedColor: this.form.color,
         config: this.iconPickerConfig
       },
       breakpoints: [0, 0.75, 1],
@@ -125,6 +118,9 @@ export class CategoryEditModalComponent implements OnInit {
     }
 
     this.form.icon = data.icon;
+    if (data.color) {
+      this.form.color = this.normalizeColor(data.color);
+    }
   }
 
   get canSave(): boolean {

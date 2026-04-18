@@ -21,6 +21,7 @@ export interface IconPickerConfig {
 
 export interface IconPickerResult {
   icon: string;
+  color: string;
 }
 
 export const DEFAULT_ICON_PICKER_CONFIG: IconPickerConfig = {

@@ -12,36 +12,15 @@
 
 <ion-content>
   <ion-list>
-    <ion-item>
-      <ion-label position="stacked">Name *</ion-label>
-      <ion-input [(ngModel)]="form.name" placeholder="Category name"></ion-input>
-    </ion-item>
+    <ion-item class="name-item">
+      <ion-button class="icon-edit-button" fill="clear" (click)="openIconPicker()">
+        <ion-icon [name]="form.icon || 'pricetag-outline'" [style.color]="form.color || '#2196F3'"></ion-icon>
+        <ion-icon class="edit-indicator" name="create-outline"></ion-icon>
+      </ion-button>
 
-    <ion-item>
-      <ion-label position="stacked">Icon</ion-label>
-      <div class="icon-picker-row">
-        <ion-button fill="outline" size="small" (click)="openIconPicker()">
-          <ion-icon slot="start" [name]="form.icon || 'pricetag-outline'"></ion-icon>
-          Choose Icon
-        </ion-button>
-        <span class="icon-name">{{ form.icon || 'pricetag-outline' }}</span>
-      </div>
-    </ion-item>
-
-    <ion-item>
-      <ion-label position="stacked">Color</ion-label>
-      <div class="color-row">
-        <ion-input
-          class="color-input"
-          [ngModel]="form.color"
-          (ngModelChange)="onColorChange($event)"
-          placeholder="#2196F3"
-        ></ion-input>
-        <div
-          class="color-preview"
-          [style.background]="form.color || '#ffffff'"
-        ></div>
-        <ion-button fill="outline" size="small" (click)="regenerateColor()">Generate</ion-button>
+      <div class="name-field-block">
+        <ion-label class="name-label">Name *</ion-label>
+        <ion-input [(ngModel)]="form.name" placeholder="Category name"></ion-input>
       </div>
     </ion-item>
 
