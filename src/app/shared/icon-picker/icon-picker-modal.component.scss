@@ -1,0 +1,67 @@
+:host {
+  display: block;
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.icon-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 88px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--ion-color-medium-tint);
+  background: var(--ion-color-light);
+  color: var(--ion-text-color);
+}
+
+.icon-tile ion-icon {
+  font-size: 22px;
+}
+
+.icon-tile span {
+  font-size: 0.72rem;
+  text-align: center;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.icon-tile.selected {
+  border-color: var(--ion-color-primary);
+  background: var(--ion-color-light-shade);
+  color: var(--ion-color-primary);
+}
+
+@media (min-width: 768px) {
+  .icon-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: var(--ion-color-medium);
+  min-height: 160px;
+  padding: 16px;
+}
+
+.state.error {
+  color: var(--ion-color-danger);
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  padding: 0 16px 16px;
+}

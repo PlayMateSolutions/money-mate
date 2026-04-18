@@ -1,0 +1,195 @@
+import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { Component, Input, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import {
+  IonButton,
+  IonButtons,
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonSearchbar,
+  IonSpinner,
+  IonTitle,
+  IonToolbar,
+  ModalController
+} from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import * as ionicons from 'ionicons/icons';
+import {
+  DEFAULT_ICON_PICKER_CONFIG,
+  IconPickerConfig,
+  IconPickerDataSource,
+  IconPickerIcon,
+  IconPickerResult
+} from './icon-picker.types';
+
+@Component({
+  selector: 'app-icon-picker-modal',
+  standalone: true,
+  templateUrl: './icon-picker-modal.component.html',
+  styleUrls: ['./icon-picker-modal.component.scss'],
+  imports: [
+    CommonModule,
+    FormsModule,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonButtons,
+    IonButton,
+    IonContent,
+    IonSearchbar,
+    IonIcon,
+    IonSpinner
+  ]
+})
+export class IconPickerModalComponent implements OnInit {
+  @Input() selectedIcon = '';
+  @Input() config: Partial<IconPickerConfig> = {};
+
+  mergedConfig: IconPickerConfig = DEFAULT_ICON_PICKER_CONFIG;
+  loading = false;
+  error = '';
+  searchQuery = '';
+
+  allIcons: IconPickerIcon[] = [];
+  filteredIcons: IconPickerIcon[] = [];
+  visibleIcons: IconPickerIcon[] = [];
+  visibleCount = 0;
+  selectedIconName = '';
+
+  private readonly registeredIconNames = new Set<string>();
+
+  constructor(
+    private readonly modalController: ModalController,
+    private readonly http: HttpClient
+  ) {}
+
+  async ngOnInit(): Promise<void> {
+    this.mergedConfig = {
+      ...DEFAULT_ICON_PICKER_CONFIG,
+      ...this.config
+    };
+
+    this.selectedIconName = this.selectedIcon?.trim() || '';
+
+    await this.loadIcons();
+  }
+
+  get hasMore(): boolean {
+    return this.visibleCount < this.filteredIcons.length;
+  }
+
+  async cancel(): Promise<void> {
+    await this.modalController.dismiss(undefined, 'cancel');
+  }
+
+  async select(): Promise<void> {
+    if (!this.selectedIconName) {
+      return;
+    }
+
+    const result: IconPickerResult = {
+      icon: this.selectedIconName
+    };
+
+    await this.modalController.dismiss(result, 'select');
+  }
+
+  onSearchChange(value: string | null | undefined): void {
+    this.searchQuery = String(value ?? '').trim().toLowerCase();
+    this.applyFilters();
+  }
+
+  loadMore(): void {
+    if (!this.hasMore) {
+      return;
+    }
+
+    this.visibleCount = Math.min(
+      this.visibleCount + this.mergedConfig.loadMoreStep,
+      this.filteredIcons.length
+    );
+    this.refreshVisibleIcons();
+  }
+
+  chooseIcon(iconName: string): void {
+    this.selectedIconName = iconName;
+  }
+
+  private async loadIcons(): Promise<void> {
+    this.loading = true;
+    this.error = '';
+
+    try {
+      const data = await this.http
+        .get<IconPickerDataSource>(this.mergedConfig.sourceUrl)
+        .toPromise();
+
+      this.allIcons = Array.isArray(data?.icons)
+        ? data.icons.filter((icon) => !!icon?.name)
+        : [];
+      this.applyFilters();
+    } catch (error) {
+      this.error = 'Failed to load icons.';
+      this.allIcons = [];
+      this.filteredIcons = [];
+      this.visibleIcons = [];
+      this.visibleCount = 0;
+      console.error('Icon picker load error:', error);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  private applyFilters(): void {
+    if (!this.searchQuery) {
+      this.filteredIcons = [...this.allIcons];
+    } else {
+      this.filteredIcons = this.allIcons.filter((icon) => {
+        const nameMatch = icon.name.toLowerCase().includes(this.searchQuery);
+        const tagsMatch = icon.tags?.some((tag) =>
+          tag.toLowerCase().includes(this.searchQuery)
+        );
+        return nameMatch || !!tagsMatch;
+      });
+    }
+
+    this.visibleCount = Math.min(
+      this.mergedConfig.initialVisibleCount,
+      this.filteredIcons.length
+    );
+    this.refreshVisibleIcons();
+  }
+
+  private refreshVisibleIcons(): void {
+    this.visibleIcons = this.filteredIcons.slice(0, this.visibleCount);
+    this.registerIcons(this.visibleIcons.map((icon) => icon.name));
+  }
+
+  private registerIcons(iconNames: string[]): void {
+    const iconsToRegister: Record<string, string> = {};
+
+    iconNames.forEach((iconName) => {
+      const normalizedIconName = iconName.trim();
+      if (!normalizedIconName || this.registeredIconNames.has(normalizedIconName)) {
+        return;
+      }
+
+      const exportName = normalizedIconName.replace(/-([a-z])/g, (_, char: string) =>
+        char.toUpperCase()
+      );
+      const iconData = (ionicons as Record<string, string>)[exportName];
+      if (!iconData) {
+        return;
+      }
+
+      iconsToRegister[normalizedIconName] = iconData;
+      this.registeredIconNames.add(normalizedIconName);
+    });
+
+    if (Object.keys(iconsToRegister).length > 0) {
+      addIcons(iconsToRegister);
+    }
+  }
+}

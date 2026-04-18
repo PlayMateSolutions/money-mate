@@ -1,0 +1,52 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ mergedConfig.title }}</ion-title>
+    <ion-buttons slot="start">
+      <ion-button (click)="cancel()">{{ mergedConfig.cancelText }}</ion-button>
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button [disabled]="!selectedIconName" (click)="select()">{{ mergedConfig.selectText }}</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-searchbar
+    [ngModel]="searchQuery"
+    (ngModelChange)="onSearchChange($event)"
+    [placeholder]="mergedConfig.searchPlaceholder"
+    debounce="250"
+  ></ion-searchbar>
+
+  <div class="state" *ngIf="loading">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <div class="state error" *ngIf="!loading && error">
+    {{ error }}
+  </div>
+
+  <div class="state" *ngIf="!loading && !error && filteredIcons.length === 0">
+    {{ mergedConfig.emptyStateText }}
+  </div>
+
+  <div *ngIf="!loading && !error && visibleIcons.length > 0" class="icon-grid" role="listbox" aria-label="Available icons">
+    <button
+      type="button"
+      class="icon-tile"
+      *ngFor="let icon of visibleIcons"
+      (click)="chooseIcon(icon.name)"
+      [class.selected]="icon.name === selectedIconName"
+      [attr.aria-selected]="icon.name === selectedIconName"
+    >
+      <ion-icon [name]="icon.name"></ion-icon>
+      <span>{{ icon.name }}</span>
+    </button>
+  </div>
+
+  <div class="actions" *ngIf="!loading && !error && hasMore">
+    <ion-button fill="outline" size="small" (click)="loadMore()">
+      {{ mergedConfig.loadMoreText }}
+    </ion-button>
+  </div>
+</ion-content>

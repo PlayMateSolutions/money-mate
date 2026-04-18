@@ -12,10 +12,13 @@ import {
   IonItem,
   IonLabel,
   IonInput,
+  IonIcon,
   IonToggle,
   ModalController
 } from '@ionic/angular/standalone';
 import { Category } from '../../core/database/models';
+import { IconPickerModalComponent } from '../../shared/icon-picker/icon-picker-modal.component';
+import { IconPickerConfig, IconPickerResult } from '../../shared/icon-picker/icon-picker.types';
 
 export interface CategoryEditModalResult {
   name: string;
@@ -44,11 +47,20 @@ type CategoryModalData = Partial<Category>;
     IonItem,
     IonLabel,
     IonInput,
+    IonIcon,
     IonToggle
   ]
 })
 export class CategoryEditModalComponent implements OnInit {
   @Input() category?: CategoryModalData;
+
+  readonly iconPickerConfig: Partial<IconPickerConfig> = {
+    sourceUrl: 'assets/assets/ionic-icons.json',
+    initialVisibleCount: 100,
+    loadMoreStep: 100,
+    title: 'Pick Icon',
+    searchPlaceholder: 'Search icon by name or tag'
+  };
 
   form: CategoryEditModalResult = {
     name: '',
@@ -94,6 +106,27 @@ export class CategoryEditModalComponent implements OnInit {
     this.form.color = this.generateRandomColor();
   }
 
+  async openIconPicker(): Promise<void> {
+    const modal = await this.modalController.create({
+      component: IconPickerModalComponent,
+      componentProps: {
+        selectedIcon: this.form.icon,
+        config: this.iconPickerConfig
+      },
+      breakpoints: [0, 0.75, 1],
+      initialBreakpoint: 0.75
+    });
+
+    await modal.present();
+    const { data, role } = await modal.onDidDismiss<IconPickerResult>();
+
+    if (role !== 'select' || !data?.icon) {
+      return;
+    }
+
+    this.form.icon = data.icon;
+  }
+
   get canSave(): boolean {
     return this.form.name.trim().length > 0;
   }
@@ -111,7 +144,7 @@ export class CategoryEditModalComponent implements OnInit {
       {
         ...this.form,
         name: this.form.name.trim(),
-        icon: this.form.icon.trim(),
+        icon: (this.form.icon || 'pricetag-outline').trim(),
         color: this.normalizeColor(this.form.color)
       },
       'save'

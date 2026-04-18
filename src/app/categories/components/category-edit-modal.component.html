@@ -19,7 +19,13 @@
 
     <ion-item>
       <ion-label position="stacked">Icon</ion-label>
-      <ion-input [(ngModel)]="form.icon" placeholder="car-outline"></ion-input>
+      <div class="icon-picker-row">
+        <ion-button fill="outline" size="small" (click)="openIconPicker()">
+          <ion-icon slot="start" [name]="form.icon || 'pricetag-outline'"></ion-icon>
+          Choose Icon
+        </ion-button>
+        <span class="icon-name">{{ form.icon || 'pricetag-outline' }}</span>
+      </div>
     </ion-item>
 
     <ion-item>
