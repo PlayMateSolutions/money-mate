@@ -1,0 +1,18 @@
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.color-input {
+  flex: 1;
+}
+
+.color-preview {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--ion-color-medium);
+  flex-shrink: 0;
+}

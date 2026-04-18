@@ -28,55 +28,8 @@ type CategoryModalData = Partial<Category>;
 
 @Component({
   selector: 'app-category-edit-modal',
-  template: `
-    <ion-header>
-      <ion-toolbar>
-        <ion-title>{{ category?.id ? 'Edit Category' : 'Create Category' }}</ion-title>
-        <ion-buttons slot="start">
-          <ion-button (click)="cancel()">Cancel</ion-button>
-        </ion-buttons>
-        <ion-buttons slot="end">
-          <ion-button [disabled]="!canSave" (click)="save()">Save</ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-
-    <ion-content>
-      <ion-list>
-        <ion-item>
-          <ion-label position="stacked">Name *</ion-label>
-          <ion-input [(ngModel)]="form.name" placeholder="Category name"></ion-input>
-        </ion-item>
-
-        <ion-item>
-          <ion-label position="stacked">Icon</ion-label>
-          <ion-input [(ngModel)]="form.icon" placeholder="car-outline"></ion-input>
-        </ion-item>
-
-        <ion-item>
-          <ion-label position="stacked">Color</ion-label>
-          <div style="display:flex; align-items:center; gap:12px; width:100%;">
-            <ion-input
-              style="flex:1;"
-              [ngModel]="form.color"
-              (ngModelChange)="onColorChange($event)"
-              placeholder="#2196F3"
-            ></ion-input>
-            <div
-              style="width:20px; height:20px; border-radius:50%; border:1px solid var(--ion-color-medium); flex-shrink:0;"
-              [style.background]="form.color || '#ffffff'"
-            ></div>
-            <ion-button fill="outline" size="small" (click)="regenerateColor()">Generate</ion-button>
-          </div>
-        </ion-item>
-
-        <ion-item>
-          <ion-label>IsActive</ion-label>
-          <ion-toggle [(ngModel)]="form.isActive" slot="end"></ion-toggle>
-        </ion-item>
-      </ion-list>
-    </ion-content>
-  `,
+  templateUrl: 'category-edit-modal.component.html',
+  styleUrls: ['category-edit-modal.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
