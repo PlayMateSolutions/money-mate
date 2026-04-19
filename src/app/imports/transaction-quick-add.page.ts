@@ -28,8 +28,9 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { helpCircleOutline } from 'ionicons/icons';
-import { Account, Category } from '../core/database/models';
-import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
+import { Account } from '../core/database/models';
+import { AccountRepository } from '../core/database/repositories';
+import { AutoCategorizationService } from '../core/services/auto-categorization.service';
 import {
   CsvImportCommitResult,
   CsvImportInvalidRow,
@@ -83,24 +84,14 @@ export class TransactionQuickAddPage implements OnInit {
   error: string | null = null;
   preview: CsvImportPreviewResult | null = null;
   importResult: CsvImportCommitResult | null = null;
-
-  /**
-   * Mapping from normalized description to categoryId, built from past year transactions.
-   */
-  private descriptionCategoryMap = new Map<string, string>();
-  /**
-   * categoryId -> Category
-   */
-  private categoriesMap = new Map<string, Category>();
-
+  
   constructor(
     private readonly accountRepository: AccountRepository,
     private readonly csvImportService: CsvImportService,
     private readonly alertController: AlertController,
     private readonly toastController: ToastController,
     private readonly cdr: ChangeDetectorRef,
-    private readonly transactionRepository: TransactionRepository,
-    private readonly categoryRepository: CategoryRepository,
+    private readonly autoCategorizationService: AutoCategorizationService,
   ) {
     addIcons({
       helpCircleOutline,
@@ -110,43 +101,9 @@ export class TransactionQuickAddPage implements OnInit {
   async ngOnInit(): Promise<void> {
     this.selectedCurrency = localStorage.getItem(this.currencyKey) || 'USD';
     await this.loadAccounts();
-    await this.buildDescriptionCategoryMap();
+    await this.autoCategorizationService.initialize();
   }
 
-  /**
-   * Normalize a description for matching: trim and lowercase.
-   */
-  private normalizeDescription(desc: string): string {
-    return desc.trim().toLowerCase();
-  }
-
-  /**
-   * Fetch transactions from the past year and build a normalized description->categoryId map. Also build categoryId->Category map.
-   */
-  private async buildDescriptionCategoryMap(): Promise<void> {
-    const now = new Date();
-    const oneYearAgo = new Date(now);
-    oneYearAgo.setFullYear(now.getFullYear() - 1);
-    try {
-      const [transactions, categories] = await Promise.all([
-        this.transactionRepository.getTransactionsByDateRange(oneYearAgo, now),
-        this.categoryRepository.getCategoriesForSettings(),
-      ]);
-      for (const cat of categories) {
-        this.categoriesMap.set(cat.id, cat);
-      }
-      for (const tx of transactions) {
-        if (tx.description && tx.categoryId) {
-          const norm = this.normalizeDescription(tx.description);
-          if (!this.descriptionCategoryMap.has(norm)) {
-            this.descriptionCategoryMap.set(norm, tx.categoryId);
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Failed to build description->category map', err);
-    }
-  }
 
   get canPreview(): boolean {
     return !!this.selectedAccountId && !!this.quickEntryText.trim();
@@ -244,14 +201,9 @@ export class TransactionQuickAddPage implements OnInit {
       // Auto-categorize: assign categoryName if description matches
       if (this.preview && this.preview.transactionsToImport.length > 0) {
         for (const tx of this.preview.transactionsToImport) {
-          const norm = this.normalizeDescription(tx.description);
-          const catId = this.descriptionCategoryMap.get(norm);
-          if (catId) {
-            const cat = this.categoriesMap.get(catId);
-            if (cat) {
-              tx.categoryName = cat.name;
-              console.log(`Auto-categorized "${tx.description}" as "${cat.name}" based on past transactions`);
-            }
+          const cat = this.autoCategorizationService.getCategoryForDescription(tx.description);
+          if (cat) {
+            tx.categoryName = cat.name;
           }
         }
       }

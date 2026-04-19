@@ -32,6 +32,7 @@ import { addIcons } from 'ionicons';
 import { chevronDownOutline, chevronUpOutline, closeCircle, trashOutline, saveOutline } from 'ionicons/icons';
 import { Account, Category, Transaction, TransactionType } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository, CreateTransactionInput, UpdateTransactionInput } from '../core/database/repositories';
+import { AutoCategorizationService } from '../core/services/auto-categorization.service';
 import { NavController } from '@ionic/angular';
 
 @Component({
@@ -76,10 +77,6 @@ export class TransactionFormPage implements OnInit {
   tagInput = '';
 
   /**
-   * Mapping from normalized description to categoryId, built from past year transactions.
-   */
-  private descriptionCategoryMap = new Map<string, string>();
-  /**
    * Used to avoid overriding manual category selection after auto-selection.
    */
   private categoryManuallySelected = false;
@@ -118,17 +115,12 @@ export class TransactionFormPage implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private alertController: AlertController,
-    private navController: NavController
+    private navController: NavController,
+    private autoCategorizationService: AutoCategorizationService
   ) {
     addIcons({ closeCircle, chevronDownOutline, chevronUpOutline, trashOutline, saveOutline });
   }
 
-  /**
-   * Normalize a description for matching: trim and lowercase.
-   */
-  private normalizeDescription(desc: string): string {
-    return desc.trim().toLowerCase();
-  }
 
   async ngOnInit(): Promise<void> {
     const [accounts, categories] = await Promise.all([
@@ -139,7 +131,7 @@ export class TransactionFormPage implements OnInit {
     this.categories = categories;
 
     // Build description->category mapping from past year transactions
-    await this.buildDescriptionCategoryMap();
+    await this.autoCategorizationService.initialize();
 
     // Set up listener for description input changes (auto-categorization)
     this.setupDescriptionAutoCategorization();
@@ -169,50 +161,25 @@ export class TransactionFormPage implements OnInit {
     }
   }
 
-  /**
-   * Fetch transactions from the past year and build a normalized description->categoryId map.
-   */
-  private async buildDescriptionCategoryMap(): Promise<void> {
-    const now = new Date();
-    const oneYearAgo = new Date(now);
-    oneYearAgo.setFullYear(now.getFullYear() - 1);
-    try {
-      const transactions = await this.transactionRepository.getTransactionsByDateRange(oneYearAgo, now);
-      for (const tx of transactions) {
-        if (tx.description && tx.categoryId) {
-          const norm = this.normalizeDescription(tx.description);
-          // Only set if not already present (first match wins)
-          if (!this.descriptionCategoryMap.has(norm)) {
-            this.descriptionCategoryMap.set(norm, tx.categoryId);
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Failed to build description->category map', err);
-    }
-  }
 
   /**
    * Set up auto-categorization: listen for description changes and auto-select category if exact match found.
    */
   private setupDescriptionAutoCategorization(): void {
-    // Use a polling approach since template uses ngModel (not reactive form)
     let lastDescription = this.form.description;
     setInterval(() => {
-      if (this.form.type === 'transfer') return; // No category for transfers
+      if (this.form.type === 'transfer') return;
       if (this.form.description !== lastDescription) {
         lastDescription = this.form.description;
         if (!this.categoryManuallySelected) {
-          const norm = this.normalizeDescription(this.form.description);
-          const catId = this.descriptionCategoryMap.get(norm);
-          if (catId && catId !== this.form.categoryId) {
-            this.form.categoryId = catId;
+          const cat = this.autoCategorizationService.getCategoryForDescription(this.form.description);
+          if (cat && cat.id !== this.form.categoryId) {
+            this.form.categoryId = cat.id;
           }
         }
-        // Reset manual selection if description changes
         this.categoryManuallySelected = false;
       }
-    }, 500); // Debounce: 500ms
+    }, 500);
   }
 
   private populateFormFromTransaction(tx: Transaction): void {
