@@ -16,8 +16,8 @@ import {
   IonCardTitle,
   IonIcon,
   IonText,
+  ModalController,
 } from '@ionic/angular/standalone';
-import { AlertController } from '@ionic/angular';
 import { ChartType, GoogleChart } from 'angular-google-charts';
 import { addIcons } from 'ionicons';
 import { settings, settingsOutline } from 'ionicons/icons';
@@ -26,11 +26,11 @@ import {
   CategoryRepository,
   TransactionRepository,
 } from '../../../core/database/repositories';
-
-interface CategorySelectionOption {
-  id: string;
-  label: string;
-}
+import {
+  WidgetSettingsModalComponent,
+  WidgetSettingsOption,
+  WidgetSettingsResult,
+} from '../../../shared/widget-settings';
 
 @Component({
   selector: 'app-daily-expenses-widget',
@@ -73,7 +73,7 @@ export class DailyExpensesWidgetComponent implements OnInit, OnDestroy {
   constructor(
     private readonly transactionRepository: TransactionRepository,
     private readonly categoryRepository: CategoryRepository,
-    private readonly alertController: AlertController,
+    private readonly modalController: ModalController,
     private readonly cdr: ChangeDetectorRef,
   ) {
     addIcons({ settings, settingsOutline });
@@ -96,46 +96,27 @@ export class DailyExpensesWidgetComponent implements OnInit, OnDestroy {
   }
 
   async openCategorySettings(): Promise<void> {
-    const options = this.getCategorySelectionOptions();
-    const currentlySelected = this.selectedCategoryIds;
-
-    const alert = await this.alertController.create({
-      header: 'Visible categories',
-      inputs: options.map((option) => ({
-        type: 'checkbox' as const,
-        label: option.label,
-        value: option.id,
-        checked: currentlySelected ? currentlySelected.has(option.id) : true,
-      })),
-      buttons: [
-        {
-          text: 'Show all',
-          handler: () => {
-            this.selectedCategoryIds = null;
-            this.persistCategorySelection(null);
-            this.rebuildChart();
-          },
-        },
-        {
-          text: 'Cancel',
-          role: 'cancel',
-        },
-        {
-          text: 'Save',
-          handler: (selectedValues: unknown) => {
-            const selectedIds = Array.isArray(selectedValues)
-              ? selectedValues.filter((value): value is string => typeof value === 'string')
-              : [];
-
-            this.selectedCategoryIds = new Set<string>(selectedIds);
-            this.persistCategorySelection(this.selectedCategoryIds);
-            this.rebuildChart();
-          },
-        },
-      ],
+    const modal = await this.modalController.create({
+      component: WidgetSettingsModalComponent,
+      componentProps: {
+        options: this.getCategorySelectionOptions(),
+        selectedIds: this.selectedCategoryIds ? Array.from(this.selectedCategoryIds) : null,
+      },
+      breakpoints: [0, 0.7, 0.95],
+      initialBreakpoint: 0.7,
     });
 
-    await alert.present();
+    await modal.present();
+
+    const { data, role } = await modal.onDidDismiss<WidgetSettingsResult>();
+
+    if (role !== 'apply' || !data) {
+      return;
+    }
+
+    this.selectedCategoryIds = data.selectedIds ? new Set<string>(data.selectedIds) : null;
+    this.persistCategorySelection(this.selectedCategoryIds);
+    this.rebuildChart();
   }
 
   onChartError(): void {
@@ -334,7 +315,7 @@ export class DailyExpensesWidgetComponent implements OnInit, OnDestroy {
     this.persistCategorySelection(this.selectedCategoryIds);
   }
 
-  private getCategorySelectionOptions(): CategorySelectionOption[] {
+  private getCategorySelectionOptions(): WidgetSettingsOption[] {
     const categoryOptions = Array.from(this.categoriesMap.values())
       .sort((first, second) => first.name.localeCompare(second.name))
       .map((category) => ({

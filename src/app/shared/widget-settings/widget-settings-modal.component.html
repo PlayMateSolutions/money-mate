@@ -1,0 +1,66 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ title }}</ion-title>
+    <ion-buttons slot="start">
+      <ion-button (click)="cancel()">Cancel</ion-button>
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button (click)="apply()">Apply</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-list lines="full">
+    <ion-item *ngIf="topN">
+      <ion-label position="stacked">{{ topN.label || 'Show top categories' }}</ion-label>
+      <ion-input
+        type="number"
+        inputmode="numeric"
+        [ngModel]="topNValue"
+        (ngModelChange)="onTopNChange($event)"
+        [placeholder]="topN.placeholder || 'All items'"
+      ></ion-input>
+      <ion-note color="medium">
+        {{ topN.helperText || 'Leave empty to show all items.' }}
+      </ion-note>
+      <ion-button
+        slot="end"
+        fill="clear"
+        size="small"
+        (click)="clearTopN()"
+        aria-label="Clear top count"
+      >
+        Clear
+      </ion-button>
+    </ion-item>
+
+    <ion-item lines="none" class="section-header">
+      <ion-label>
+        <h2>{{ selectionTitle }}</h2>
+        <p *ngIf="selectionDescription">{{ selectionDescription }}</p>
+      </ion-label>
+      <ion-button slot="end" fill="clear" size="small" (click)="selectAllOptions()">
+        Show all
+      </ion-button>
+    </ion-item>
+
+    <ion-item *ngIf="options.length === 0" lines="none">
+      <ion-text color="medium">No options available.</ion-text>
+    </ion-item>
+
+    <ion-item *ngFor="let option of options" [disabled]="option.disabled">
+      <ion-checkbox
+        slot="start"
+        [checked]="isSelected(option.id)"
+        [disabled]="option.disabled"
+        (ionChange)="setOptionSelected(option.id, $event.detail.checked)"
+      ></ion-checkbox>
+      <ion-label>{{ option.label }}</ion-label>
+    </ion-item>
+  </ion-list>
+
+  <ion-note color="medium" class="selection-summary" *ngIf="options.length > 0">
+    {{ isAllSelected ? 'All selected' : (selectedCount + ' selected') }}
+  </ion-note>
+</ion-content>

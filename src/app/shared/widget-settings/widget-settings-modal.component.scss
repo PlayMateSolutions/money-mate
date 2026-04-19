@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --padding-bottom: 24px;
+}
+
+ion-list {
+  background: transparent;
+}
+
+ion-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+.section-header {
+  --min-height: 56px;
+  margin-top: 8px;
+
+  h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ion-text-color);
+  }
+
+  p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--ion-color-medium);
+  }
+}
+
+ion-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.selection-summary {
+  margin-top: 12px;
+}

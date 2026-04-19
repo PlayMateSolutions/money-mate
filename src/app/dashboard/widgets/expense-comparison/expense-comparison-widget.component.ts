@@ -16,8 +16,8 @@ import {
   IonCardTitle,
   IonIcon,
   IonText,
+  ModalController,
 } from '@ionic/angular/standalone';
-import { AlertController } from '@ionic/angular';
 import { ChartType, GoogleChart } from 'angular-google-charts';
 import { addIcons } from 'ionicons';
 import { settings, settingsOutline } from 'ionicons/icons';
@@ -26,17 +26,17 @@ import {
   CategoryRepository,
   TransactionRepository,
 } from '../../../core/database/repositories';
+import {
+  WidgetSettingsModalComponent,
+  WidgetSettingsOption,
+  WidgetSettingsResult,
+} from '../../../shared/widget-settings';
 
 interface CategoryExpense {
   categoryId: string;
   categoryName: string;
   currentMonthAmount: number;
   avgMonthlyAmount: number;
-}
-
-interface CategorySelectionOption {
-  id: string;
-  label: string;
 }
 
 @Component({
@@ -60,18 +60,22 @@ interface CategorySelectionOption {
 })
 export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
   private static readonly STORAGE_KEY = 'dashboard.expenseComparison.visibleCategoryIds';
+  private static readonly TOP_N_STORAGE_KEY = 'dashboard.expenseComparison.topN';
   private static readonly UNCATEGORIZED_ID = '__uncategorized__';
+  private static readonly DEFAULT_TOP_CATEGORY_COUNT = 6;
 
   loading = true;
   error: string | null = null;
   chartLoadError = false;
   hasSavedCategorySelection = false;
+  hasSavedTopCategoryLimit = false;
 
   readonly chartType = ChartType.ColumnChart;
   readonly chartColumns: string[] = ['Category', 'This Month', 'Monthly Avg'];
   chartData: Array<[string, number, number]> = [];
   chartOptions: object = {};
   chartWidth = 320;
+  topCategoryCount: number | null = ExpenseComparisonWidgetComponent.DEFAULT_TOP_CATEGORY_COUNT;
 
   private categoriesMap = new Map<string, Category>();
   private selectedCategoryIds: Set<string> | null = null;
@@ -80,7 +84,7 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
   constructor(
     private readonly transactionRepository: TransactionRepository,
     private readonly categoryRepository: CategoryRepository,
-    private readonly alertController: AlertController,
+    private readonly modalController: ModalController,
     private readonly cdr: ChangeDetectorRef,
   ) {
     addIcons({ settings, settingsOutline });
@@ -98,47 +102,45 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
     return this.chartData.length > 0;
   }
 
+  get hasSavedSettings(): boolean {
+    return this.hasSavedCategorySelection || this.hasSavedTopCategoryLimit;
+  }
+
   get settingsIconName(): string {
-    return this.hasSavedCategorySelection ? 'settings' : 'settings-outline';
+    return this.hasSavedSettings ? 'settings' : 'settings-outline';
   }
 
   async openCategorySettings(): Promise<void> {
-    const options = this.getCategorySelectionOptions();
-    const currentlySelected = this.selectedCategoryIds;
-
-    const alert = await this.alertController.create({
-      header: 'Visible categories',
-      inputs: options.map((option) => ({
-        type: 'checkbox' as const,
-        label: option.label,
-        value: option.id,
-        checked: currentlySelected ? currentlySelected.has(option.id) : true,
-      })),
-      buttons: [
-        {
-          text: 'Show all',
-          handler: () => {
-            this.selectedCategoryIds = null;
-            this.persistCategorySelection(null);
-            void this.loadAndBuildChart();
-          },
+    const modal = await this.modalController.create({
+      component: WidgetSettingsModalComponent,
+      componentProps: {
+        options: this.getCategorySelectionOptions(),
+        selectedIds: this.selectedCategoryIds ? Array.from(this.selectedCategoryIds) : null,
+        topN: {
+          value: this.topCategoryCount,
+          label: 'Show top categories',
+          helperText: 'Leave empty to show all categories. When limited, remaining categories are grouped into Other.',
+          placeholder: 'All categories',
+          min: 1,
+          max: Math.max(this.categoriesMap.size + 1, 1),
         },
-        { text: 'Cancel', role: 'cancel' },
-        {
-          text: 'Save',
-          handler: (selectedValues: unknown) => {
-            const selectedIds = Array.isArray(selectedValues)
-              ? selectedValues.filter((v): v is string => typeof v === 'string')
-              : [];
-            this.selectedCategoryIds = new Set<string>(selectedIds);
-            this.persistCategorySelection(this.selectedCategoryIds);
-            void this.loadAndBuildChart();
-          },
-        },
-      ],
+      },
+      breakpoints: [0, 0.72, 0.95],
+      initialBreakpoint: 0.72,
     });
 
-    await alert.present();
+    await modal.present();
+
+    const { data, role } = await modal.onDidDismiss<WidgetSettingsResult>();
+
+    if (role !== 'apply' || !data) {
+      return;
+    }
+
+    this.selectedCategoryIds = data.selectedIds ? new Set<string>(data.selectedIds) : null;
+    this.persistCategorySelection(this.selectedCategoryIds);
+    this.persistTopCategoryCount(data.topN ?? ExpenseComparisonWidgetComponent.DEFAULT_TOP_CATEGORY_COUNT);
+    void this.loadAndBuildChart();
   }
 
   onChartError(): void {
@@ -154,6 +156,7 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
 
       this.loadSavedCategorySelection();
+      this.loadSavedTopCategoryCount();
 
       await this.refreshCategories();
       this.sanitizeSavedSelection();
@@ -242,10 +245,12 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
     // Sort by current month spend descending
     rows.sort((a, b) => b.currentMonthAmount - a.currentMonthAmount);
 
-    this.chartData = rows.map((r) => [r.categoryName, r.currentMonthAmount, r.avgMonthlyAmount]);
+    const visibleRows = this.applyTopCategoryLimit(rows);
+
+    this.chartData = visibleRows.map((r) => [r.categoryName, r.currentMonthAmount, r.avgMonthlyAmount]);
 
     // Dynamic width for horizontal scroll
-    this.chartWidth = Math.max(rows.length * 90, 320);
+    this.chartWidth = Math.max(visibleRows.length * 90, 320);
 
     const textColor = this.getComputedColor('--ion-text-color') || '#000000';
     const primaryColor = this.getComputedColor('--ion-color-primary') || '#667EEA';
@@ -255,7 +260,12 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
 
     this.chartOptions = {
       backgroundColor: 'transparent',
-      chartArea: { width: '80%', height: '65%' },
+      chartArea: {
+        left: 44,
+        top: 40,
+        width: '88%',
+        height: '65%',
+      },
       legend: {
         position: 'top',
         textStyle: { color: textColor, fontSize: 12 },
@@ -324,6 +334,54 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
     this.hasSavedCategorySelection = true;
   }
 
+  private loadSavedTopCategoryCount(): void {
+    const savedValue = localStorage.getItem(ExpenseComparisonWidgetComponent.TOP_N_STORAGE_KEY);
+
+    if (savedValue === null) {
+      this.topCategoryCount = ExpenseComparisonWidgetComponent.DEFAULT_TOP_CATEGORY_COUNT;
+      this.hasSavedTopCategoryLimit = false;
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(savedValue) as number | null;
+
+      if (parsed === null) {
+        this.topCategoryCount = null;
+        this.hasSavedTopCategoryLimit = true;
+        return;
+      }
+
+      if (!Number.isInteger(parsed) || parsed < 1) {
+        throw new Error('Invalid top category limit');
+      }
+
+      this.topCategoryCount = parsed;
+      this.hasSavedTopCategoryLimit = parsed !== ExpenseComparisonWidgetComponent.DEFAULT_TOP_CATEGORY_COUNT;
+    } catch {
+      localStorage.removeItem(ExpenseComparisonWidgetComponent.TOP_N_STORAGE_KEY);
+      this.topCategoryCount = ExpenseComparisonWidgetComponent.DEFAULT_TOP_CATEGORY_COUNT;
+      this.hasSavedTopCategoryLimit = false;
+    }
+  }
+
+  private persistTopCategoryCount(value: number | null): void {
+    if (value === ExpenseComparisonWidgetComponent.DEFAULT_TOP_CATEGORY_COUNT) {
+      localStorage.removeItem(ExpenseComparisonWidgetComponent.TOP_N_STORAGE_KEY);
+      this.topCategoryCount = value;
+      this.hasSavedTopCategoryLimit = false;
+      return;
+    }
+
+    localStorage.setItem(
+      ExpenseComparisonWidgetComponent.TOP_N_STORAGE_KEY,
+      JSON.stringify(value),
+    );
+
+    this.topCategoryCount = value;
+    this.hasSavedTopCategoryLimit = true;
+  }
+
   private sanitizeSavedSelection(): void {
     if (!this.selectedCategoryIds) return;
     const validIds = new Set<string>([
@@ -339,13 +397,41 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getCategorySelectionOptions(): CategorySelectionOption[] {
+  private getCategorySelectionOptions(): WidgetSettingsOption[] {
     return [
       ...Array.from(this.categoriesMap.values())
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((c) => ({ id: c.id, label: c.name })),
       { id: ExpenseComparisonWidgetComponent.UNCATEGORIZED_ID, label: 'Uncategorized' },
     ];
+  }
+
+  private applyTopCategoryLimit(rows: CategoryExpense[]): CategoryExpense[] {
+    if (this.topCategoryCount === null || rows.length <= this.topCategoryCount) {
+      return rows;
+    }
+
+    const topRows = rows.slice(0, this.topCategoryCount);
+    const remainingRows = rows.slice(this.topCategoryCount);
+
+    const otherRow = remainingRows.reduce<CategoryExpense>(
+      (acc, row) => ({
+        categoryId: '__other__',
+        categoryName: 'Other',
+        currentMonthAmount: acc.currentMonthAmount + row.currentMonthAmount,
+        avgMonthlyAmount: acc.avgMonthlyAmount + row.avgMonthlyAmount,
+      }),
+      {
+        categoryId: '__other__',
+        categoryName: 'Other',
+        currentMonthAmount: 0,
+        avgMonthlyAmount: 0,
+      },
+    );
+
+    return otherRow.currentMonthAmount > 0 || otherRow.avgMonthlyAmount > 0
+      ? [...topRows, otherRow]
+      : topRows;
   }
 
   private isCategoryVisible(key: string): boolean {
