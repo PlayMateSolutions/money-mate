@@ -73,7 +73,10 @@
           <ion-label>
             <ng-container *ngIf="!isSkippedRow(transaction.rowNumber); else invalidRowTemplate">
               <h2>{{ transaction.description }}</h2>
-              <p>{{ transaction.fromAccountName }} • Uncategorized</p>
+              <p>{{ transaction.fromAccountName }}
+                <span *ngIf="transaction.categoryName; else uncategorized">• {{ transaction.categoryName }}</span>
+                <ng-template #uncategorized>• Uncategorized</ng-template>
+              </p>
               <p *ngIf="transaction.warnings.length > 0" class="warning-text">{{ transaction.warnings.join(' ') }}</p>
             </ng-container>
 
