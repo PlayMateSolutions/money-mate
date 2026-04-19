@@ -9,8 +9,8 @@
       <ion-button
         fill="clear"
         class="settings-button"
-        [class.has-saved-selection]="hasSavedCategorySelection"
-        [attr.aria-label]="hasSavedCategorySelection ? 'Edit widget settings' : 'Open widget settings'"
+        [class.has-saved-selection]="hasSavedSettings"
+        [attr.aria-label]="hasSavedSettings ? 'Edit widget settings' : 'Open widget settings'"
         (click)="openCategorySettings()"
       >
         <ion-icon slot="icon-only" [name]="settingsIconName"></ion-icon>

@@ -60,12 +60,17 @@ interface ExpenseCategorySlice {
 })
 export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
   private static readonly STORAGE_KEY = 'dashboard.expenseBreakdown.visibleCategoryIds';
+  private static readonly TOP_N_STORAGE_KEY = 'dashboard.expenseBreakdown.topN';
+  private static readonly GROUP_OTHERS_STORAGE_KEY = 'dashboard.expenseBreakdown.groupOthers';
   private static readonly UNCATEGORIZED_ID = '__uncategorized__';
 
   loading = true;
   error: string | null = null;
   chartLoadError = false;
   hasSavedCategorySelection = false;
+  hasSavedTopCategoryLimit = false;
+  topCategoryCount: number | null = null;
+  groupOthers = true;
 
   readonly chartType = ChartType.PieChart;
   readonly chartColumns: string[] = ['Category', 'Amount'];
@@ -98,8 +103,12 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
     return this.chartData.length > 0;
   }
 
+  get hasSavedSettings(): boolean {
+    return this.hasSavedCategorySelection || this.hasSavedTopCategoryLimit;
+  }
+
   get settingsIconName(): string {
-    return this.hasSavedCategorySelection ? 'settings' : 'settings-outline';
+    return this.hasSavedSettings ? 'settings' : 'settings-outline';
   }
 
   async openCategorySettings(): Promise<void> {
@@ -108,9 +117,18 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
       componentProps: {
         options: this.getCategorySelectionOptions(),
         selectedIds: this.selectedCategoryIds ? Array.from(this.selectedCategoryIds) : null,
+        topN: {
+          value: this.topCategoryCount,
+          label: 'Show top categories',
+          helperText: 'Leave empty to show all categories. When limited, remaining categories are grouped into Other.',
+          placeholder: 'All categories',
+          min: 1,
+          max: Math.max(this.categoriesMap.size + 1, 1),
+          groupOthers: this.groupOthers,
+        },
       },
-      breakpoints: [0, 0.7, 0.95],
-      initialBreakpoint: 0.7,
+      breakpoints: [0, 0.72, 0.95],
+      initialBreakpoint: 0.72,
     });
 
     await modal.present();
@@ -123,6 +141,16 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
 
     this.selectedCategoryIds = data.selectedIds ? new Set<string>(data.selectedIds) : null;
     this.persistCategorySelection(this.selectedCategoryIds);
+    // If data.topN is null or undefined, persist null (not default)
+    this.persistTopCategoryCount(
+      data.topN ?? null
+    );
+    this.persistGroupOthers(data.groupOthers ?? true);
+    console.log('Updated category selection:', {
+      selectedCategoryIds: this.selectedCategoryIds,
+      topCategoryCount: this.topCategoryCount,
+      groupOthers: this.groupOthers,
+    });
     this.rebuildChart();
   }
 
@@ -139,6 +167,8 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
 
       this.loadSavedCategorySelection();
+      this.loadSavedTopCategoryCount();
+      this.loadSavedGroupOthers();
 
       await this.refreshCategories();
       this.sanitizeSavedSelection();
@@ -204,8 +234,10 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
       });
     });
 
-    const slices = Array.from(groupedByCategory.values())
+    const sortedSlices = Array.from(groupedByCategory.values())
       .sort((a, b) => b.amount - a.amount);
+
+    const slices = this.applyTopCategoryLimit(sortedSlices);
 
     this.chartData = slices.map((slice) => [
       `${slice.categoryName}`,
@@ -337,5 +369,111 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
 
   private getMediumColor(): string {
     return this.getComputedColor('--ion-color-medium');
+  }
+
+  private loadSavedTopCategoryCount(): void {
+    const savedValue = localStorage.getItem(ExpenseBreakdownWidgetComponent.TOP_N_STORAGE_KEY);
+
+    if (savedValue === null) {
+      this.topCategoryCount = null;
+      this.hasSavedTopCategoryLimit = false;
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(savedValue) as number | null;
+
+      if (parsed === null) {
+        this.topCategoryCount = null;
+        this.hasSavedTopCategoryLimit = true;
+        return;
+      }
+
+      if (!Number.isInteger(parsed) || parsed < 1) {
+        throw new Error('Invalid top category limit');
+      }
+
+      this.topCategoryCount = parsed;
+      this.hasSavedTopCategoryLimit = parsed !== null;
+    } catch {
+      localStorage.removeItem(ExpenseBreakdownWidgetComponent.TOP_N_STORAGE_KEY);
+      this.topCategoryCount = null;
+      this.hasSavedTopCategoryLimit = false;
+    }
+  }
+
+  private persistTopCategoryCount(value: number | null): void {
+    if (value === null) {
+      localStorage.removeItem(ExpenseBreakdownWidgetComponent.TOP_N_STORAGE_KEY);
+      this.topCategoryCount = value;
+      this.hasSavedTopCategoryLimit = false;
+      return;
+    }
+
+    localStorage.setItem(
+      ExpenseBreakdownWidgetComponent.TOP_N_STORAGE_KEY,
+      JSON.stringify(value),
+    );
+    this.topCategoryCount = value;
+    this.hasSavedTopCategoryLimit = true;
+  }
+
+  private loadSavedGroupOthers(): void {
+    const savedValue = localStorage.getItem(
+      ExpenseBreakdownWidgetComponent.GROUP_OTHERS_STORAGE_KEY,
+    );
+
+    if (savedValue === null) {
+      this.groupOthers = true;
+      return;
+    }
+
+    try {
+      this.groupOthers = JSON.parse(savedValue) !== false;
+    } catch {
+      localStorage.removeItem(ExpenseBreakdownWidgetComponent.GROUP_OTHERS_STORAGE_KEY);
+      this.groupOthers = true;
+    }
+  }
+
+  private persistGroupOthers(value: boolean): void {
+    if (value) {
+      localStorage.removeItem(ExpenseBreakdownWidgetComponent.GROUP_OTHERS_STORAGE_KEY);
+    } else {
+      localStorage.setItem(
+        ExpenseBreakdownWidgetComponent.GROUP_OTHERS_STORAGE_KEY,
+        JSON.stringify(false),
+      );
+    }
+    this.groupOthers = value;
+  }
+
+  private applyTopCategoryLimit(slices: ExpenseCategorySlice[]): ExpenseCategorySlice[] {
+    if (this.topCategoryCount === null || slices.length <= this.topCategoryCount) {
+      return slices;
+    }
+
+    const topSlices = slices.slice(0, this.topCategoryCount);
+    const remaining = slices.slice(this.topCategoryCount);
+
+    if (!this.groupOthers) {
+      return topSlices;
+    }
+
+    const otherAmount = remaining.reduce((sum, s) => sum + s.amount, 0);
+
+    if (otherAmount <= 0) {
+      return topSlices;
+    }
+
+    return [
+      ...topSlices,
+      {
+        categoryId: '__other__',
+        categoryName: 'Other',
+        amount: otherAmount,
+        color: this.getMediumColor(),
+      },
+    ];
   }
 }

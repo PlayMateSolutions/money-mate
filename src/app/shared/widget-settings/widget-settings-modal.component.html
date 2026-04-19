@@ -35,13 +35,27 @@
       </ion-button>
     </ion-item>
 
+    <ion-item *ngIf="topN && topNValue" lines="full">
+      <ion-checkbox
+        slot="start"
+        [(ngModel)]="groupOthersValue"
+      ></ion-checkbox>
+      <ion-label>
+        <h3>Group remaining as "Other"</h3>
+        <p>Categories beyond the limit are summed into a single Other bar</p>
+      </ion-label>
+    </ion-item>
+
     <ion-item lines="none" class="section-header">
       <ion-label>
         <h2>{{ selectionTitle }}</h2>
         <p *ngIf="selectionDescription">{{ selectionDescription }}</p>
       </ion-label>
-      <ion-button slot="end" fill="clear" size="small" (click)="selectAllOptions()">
-        Show all
+      <ion-button slot="end" fill="clear" size="small" (click)="clearAllOptions()" [disabled]="disableCategoryList">
+        Clear all
+      </ion-button>
+      <ion-button slot="end" fill="clear" size="small" (click)="selectAllOptions()" [disabled]="disableCategoryList">
+        Select all
       </ion-button>
     </ion-item>
 
@@ -49,11 +63,11 @@
       <ion-text color="medium">No options available.</ion-text>
     </ion-item>
 
-    <ion-item *ngFor="let option of options" [disabled]="option.disabled">
+    <ion-item *ngFor="let option of options" [disabled]="option.disabled || disableCategoryList">
       <ion-checkbox
         slot="start"
         [checked]="isSelected(option.id)"
-        [disabled]="option.disabled"
+        [disabled]="option.disabled || disableCategoryList"
         (ionChange)="setOptionSelected(option.id, $event.detail.checked)"
       ></ion-checkbox>
       <ion-label>{{ option.label }}</ion-label>

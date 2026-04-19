@@ -61,6 +61,7 @@ interface CategoryExpense {
 export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
   private static readonly STORAGE_KEY = 'dashboard.expenseComparison.visibleCategoryIds';
   private static readonly TOP_N_STORAGE_KEY = 'dashboard.expenseComparison.topN';
+  private static readonly GROUP_OTHERS_STORAGE_KEY = 'dashboard.expenseComparison.groupOthers';
   private static readonly UNCATEGORIZED_ID = '__uncategorized__';
   private static readonly DEFAULT_TOP_CATEGORY_COUNT = 6;
 
@@ -69,6 +70,7 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
   chartLoadError = false;
   hasSavedCategorySelection = false;
   hasSavedTopCategoryLimit = false;
+  groupOthers = true;
 
   readonly chartType = ChartType.ColumnChart;
   readonly chartColumns: string[] = ['Category', 'This Month', 'Monthly Avg'];
@@ -123,6 +125,7 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
           placeholder: 'All categories',
           min: 1,
           max: Math.max(this.categoriesMap.size + 1, 1),
+          groupOthers: this.groupOthers,
         },
       },
       breakpoints: [0, 0.72, 0.95],
@@ -139,7 +142,11 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
 
     this.selectedCategoryIds = data.selectedIds ? new Set<string>(data.selectedIds) : null;
     this.persistCategorySelection(this.selectedCategoryIds);
-    this.persistTopCategoryCount(data.topN ?? ExpenseComparisonWidgetComponent.DEFAULT_TOP_CATEGORY_COUNT);
+    // If data.topN is null, persist null (not default)
+    this.persistTopCategoryCount(
+      data.topN === null ? null : data.topN ?? ExpenseComparisonWidgetComponent.DEFAULT_TOP_CATEGORY_COUNT
+    );
+    this.persistGroupOthers(data.groupOthers ?? true);
     void this.loadAndBuildChart();
   }
 
@@ -157,6 +164,7 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
 
       this.loadSavedCategorySelection();
       this.loadSavedTopCategoryCount();
+      this.loadSavedGroupOthers();
 
       await this.refreshCategories();
       this.sanitizeSavedSelection();
@@ -406,6 +414,36 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
     ];
   }
 
+  private loadSavedGroupOthers(): void {
+    const savedValue = localStorage.getItem(
+      ExpenseComparisonWidgetComponent.GROUP_OTHERS_STORAGE_KEY,
+    );
+
+    if (savedValue === null) {
+      this.groupOthers = true;
+      return;
+    }
+
+    try {
+      this.groupOthers = JSON.parse(savedValue) !== false;
+    } catch {
+      localStorage.removeItem(ExpenseComparisonWidgetComponent.GROUP_OTHERS_STORAGE_KEY);
+      this.groupOthers = true;
+    }
+  }
+
+  private persistGroupOthers(value: boolean): void {
+    if (value) {
+      localStorage.removeItem(ExpenseComparisonWidgetComponent.GROUP_OTHERS_STORAGE_KEY);
+    } else {
+      localStorage.setItem(
+        ExpenseComparisonWidgetComponent.GROUP_OTHERS_STORAGE_KEY,
+        JSON.stringify(false),
+      );
+    }
+    this.groupOthers = value;
+  }
+
   private applyTopCategoryLimit(rows: CategoryExpense[]): CategoryExpense[] {
     if (this.topCategoryCount === null || rows.length <= this.topCategoryCount) {
       return rows;
@@ -413,6 +451,10 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
 
     const topRows = rows.slice(0, this.topCategoryCount);
     const remainingRows = rows.slice(this.topCategoryCount);
+
+    if (!this.groupOthers) {
+      return topRows;
+    }
 
     const otherRow = remainingRows.reduce<CategoryExpense>(
       (acc, row) => ({
