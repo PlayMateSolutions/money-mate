@@ -75,6 +75,15 @@ export class TransactionFormPage implements OnInit {
   showMoreOptions = false;
   tagInput = '';
 
+  /**
+   * Mapping from normalized description to categoryId, built from past year transactions.
+   */
+  private descriptionCategoryMap = new Map<string, string>();
+  /**
+   * Used to avoid overriding manual category selection after auto-selection.
+   */
+  private categoryManuallySelected = false;
+
 
   get isEditMode(): boolean {
     return !!this.transactionToEdit;
@@ -114,6 +123,13 @@ export class TransactionFormPage implements OnInit {
     addIcons({ closeCircle, chevronDownOutline, chevronUpOutline, trashOutline, saveOutline });
   }
 
+  /**
+   * Normalize a description for matching: trim and lowercase.
+   */
+  private normalizeDescription(desc: string): string {
+    return desc.trim().toLowerCase();
+  }
+
   async ngOnInit(): Promise<void> {
     const [accounts, categories] = await Promise.all([
       this.accountRepository.getAccounts(),
@@ -121,6 +137,12 @@ export class TransactionFormPage implements OnInit {
     ]);
     this.accounts = accounts;
     this.categories = categories;
+
+    // Build description->category mapping from past year transactions
+    await this.buildDescriptionCategoryMap();
+
+    // Set up listener for description input changes (auto-categorization)
+    this.setupDescriptionAutoCategorization();
 
     // Check for transaction id in route params
     const id = this.route.snapshot.paramMap.get('id');
@@ -145,6 +167,52 @@ export class TransactionFormPage implements OnInit {
     if (this.accounts.length > 0) {
       this.form.accountId = this.accounts[0].id;
     }
+  }
+
+  /**
+   * Fetch transactions from the past year and build a normalized description->categoryId map.
+   */
+  private async buildDescriptionCategoryMap(): Promise<void> {
+    const now = new Date();
+    const oneYearAgo = new Date(now);
+    oneYearAgo.setFullYear(now.getFullYear() - 1);
+    try {
+      const transactions = await this.transactionRepository.getTransactionsByDateRange(oneYearAgo, now);
+      for (const tx of transactions) {
+        if (tx.description && tx.categoryId) {
+          const norm = this.normalizeDescription(tx.description);
+          // Only set if not already present (first match wins)
+          if (!this.descriptionCategoryMap.has(norm)) {
+            this.descriptionCategoryMap.set(norm, tx.categoryId);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to build description->category map', err);
+    }
+  }
+
+  /**
+   * Set up auto-categorization: listen for description changes and auto-select category if exact match found.
+   */
+  private setupDescriptionAutoCategorization(): void {
+    // Use a polling approach since template uses ngModel (not reactive form)
+    let lastDescription = this.form.description;
+    setInterval(() => {
+      if (this.form.type === 'transfer') return; // No category for transfers
+      if (this.form.description !== lastDescription) {
+        lastDescription = this.form.description;
+        if (!this.categoryManuallySelected) {
+          const norm = this.normalizeDescription(this.form.description);
+          const catId = this.descriptionCategoryMap.get(norm);
+          if (catId && catId !== this.form.categoryId) {
+            this.form.categoryId = catId;
+          }
+        }
+        // Reset manual selection if description changes
+        this.categoryManuallySelected = false;
+      }
+    }, 500); // Debounce: 500ms
   }
 
   private populateFormFromTransaction(tx: Transaction): void {
@@ -191,6 +259,7 @@ export class TransactionFormPage implements OnInit {
     this.form.notes = '';
     this.form.tags = [];
     this.tagInput = '';
+    this.categoryManuallySelected = false;
   }
 
   onTagKeydown(event: KeyboardEvent): void {
@@ -235,6 +304,7 @@ export class TransactionFormPage implements OnInit {
     }
 
     this.saving = true;
+    this.categoryManuallySelected = false;
     try {
       const baseInput = {
         accountId: this.form.accountId,
@@ -264,6 +334,13 @@ export class TransactionFormPage implements OnInit {
       console.error('Error saving transaction:', error);
       this.saving = false;
     }
+  }
+
+  /**
+   * Called from template when user manually selects a category.
+   */
+  onCategorySelected(): void {
+    this.categoryManuallySelected = true;
   }
 
   private getLastUsedAccountId(): string | null {
