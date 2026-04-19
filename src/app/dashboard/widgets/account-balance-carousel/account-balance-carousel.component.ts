@@ -9,6 +9,11 @@ import { Pagination } from 'swiper/modules';
 import { AccountRepository } from '../../../core/database/repositories';
 import { Account } from '../../../core/database/models';
 import { ToastController } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import * as ionicons from 'ionicons/icons';
+import { 
+  cardOutline
+} from 'ionicons/icons';
 
 interface BalanceCard {
   id: string;
@@ -47,6 +52,7 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.subscribeToAccounts();
+    addIcons({cardOutline});
   }
 
   ngAfterViewInit(): void {
@@ -109,7 +115,33 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
     void this.accountRepository.getAccounts();
   }
 
+  private registerIconsFromAccounts(accounts: Account[]): void {
+      const iconsToRegister: Record<string, string> = {};
+  
+      accounts.forEach((account) => {
+        const iconName = account.icon?.trim();
+        if (!iconName) {
+          return;
+        }
+  
+        const exportName = iconName.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase());
+        const iconData = (ionicons as Record<string, string>)[exportName];
+  
+        if (!iconData) {
+          return;
+        }
+  
+        iconsToRegister[iconName] = iconData;
+      });
+  
+      if (Object.keys(iconsToRegister).length > 0) {
+        addIcons(iconsToRegister);
+      }
+  }
+
   private buildCards(accounts: Account[]): BalanceCard[] {
+   this.registerIconsFromAccounts(accounts);
+
     if (accounts.length === 0) {
       return [];
     }

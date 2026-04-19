@@ -37,6 +37,14 @@
       ></ion-input>
     </ion-item>
 
+    <ion-item *ngIf="form.type !== 'transfer'">
+      <ion-label position="stacked">Description</ion-label>
+      <ion-input
+        [(ngModel)]="form.description"
+        placeholder="What was this for?"
+      ></ion-input>
+    </ion-item>
+
     <ion-item>
       <ion-label position="stacked">{{ form.type === 'transfer' ? 'From Account *' : 'Account *' }}</ion-label>
       <ion-select [(ngModel)]="form.accountId" placeholder="Select account" interface="action-sheet">
@@ -72,14 +80,6 @@
     <ion-item>
       <ion-label position="stacked">Date *</ion-label>
       <ion-datetime-button style="margin-top: 6px;" datetime="transaction-date"></ion-datetime-button>
-    </ion-item>
-
-    <ion-item *ngIf="form.type !== 'transfer'">
-      <ion-label position="stacked">Description</ion-label>
-      <ion-input
-        [(ngModel)]="form.description"
-        placeholder="What was this for?"
-      ></ion-input>
     </ion-item>
 
     <ion-item button detail="false" *ngIf="form.type !== 'transfer'" (click)="showMoreOptions = !showMoreOptions">
