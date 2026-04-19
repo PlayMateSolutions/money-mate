@@ -1,1 +1,1 @@
-export * from './components/transaction-form-modal.component';
+export * from './transaction-form.page';

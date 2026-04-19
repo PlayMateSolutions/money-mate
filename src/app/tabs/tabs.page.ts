@@ -1,8 +1,9 @@
 import { Component, EnvironmentInjector, inject } from '@angular/core';
-import { IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel, IonFab, IonFabButton, ModalController } from '@ionic/angular/standalone';
+import { IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel, IonFab, IonFabButton } from '@ionic/angular/standalone';
+import { Router } from '@angular/router';
 import { addIcons } from 'ionicons';
 import { statsChart, list, add } from 'ionicons/icons';
-import { TransactionFormModalComponent } from '../transactions';
+
 
 @Component({
   selector: 'app-tabs',
@@ -13,14 +14,11 @@ import { TransactionFormModalComponent } from '../transactions';
 export class TabsPage {
   public environmentInjector = inject(EnvironmentInjector);
 
-  constructor(private modalController: ModalController) {
+  constructor(private router: Router) {
     addIcons({ statsChart, list, add });
   }
 
-  async openTransactionModal(): Promise<void> {
-    const modal = await this.modalController.create({
-      component: TransactionFormModalComponent
-    });
-    await modal.present();
+  navigateToTransactionForm() {
+    this.router.navigate(['/tabs/transactions/form']);
   }
 }

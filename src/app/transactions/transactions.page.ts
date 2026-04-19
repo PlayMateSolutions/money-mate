@@ -34,7 +34,7 @@ import {
   SessionService,
   TransactionDisplayItem,
 } from '../core/services';
-import { TransactionFormModalComponent } from './components/transaction-form-modal.component';
+import { Router } from '@angular/router';
 import { TransactionFilterModalComponent, TransactionFilterState } from './components/transaction-filter-modal.component';
 import { DateRangeFilterComponent, DateRange } from '../shared/date-range-filter/date-range-filter.component';
 
@@ -106,6 +106,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private readonly googleSheetService: GoogleSheetService,
     private readonly toastController: ToastController,
     private readonly modalController: ModalController,
+    private readonly router: Router,
   ) {
     addIcons({
       pricetagOutline,
@@ -213,15 +214,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   async openEditModal(item: TransactionListItem): Promise<void> {
-    const modal = await this.modalController.create({
-      component: TransactionFormModalComponent,
-      componentProps: { transactionToEdit: item.transaction },
-    });
-    await modal.present();
-    const { role } = await modal.onWillDismiss();
-    if (role === 'saved') {
-      await this.refreshLookups();
-    }
+    await this.router.navigate(['/tabs/transactions/form', item.id]);
   }
 
   async openFilterModal(): Promise<void> {
@@ -250,7 +243,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     };
 
     this.buildGroupedItems(this.applyFilters(this.allTransactions));
-  }
+    }
 
   async syncTransactions(): Promise<void> {
     if (this.syncing) {

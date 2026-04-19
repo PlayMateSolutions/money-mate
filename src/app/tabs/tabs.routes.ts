@@ -17,6 +17,16 @@ export const routes: Routes = [
           import('../transactions/transactions.page').then((m) => m.TransactionsPage),
       },
       {
+        path: 'transactions/form',
+        loadComponent: () =>
+          import('../transactions/transaction-form.page').then((m) => m.TransactionFormPage),
+      },
+      {
+        path: 'transactions/form/:id',
+        loadComponent: () =>
+          import('../transactions/transaction-form.page').then((m) => m.TransactionFormPage),
+      },
+      {
         path: '',
         redirectTo: '/tabs/dashboard',
         pathMatch: 'full',

@@ -1,0 +1,133 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/transactions"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ isEditMode ? 'Edit Transaction' : 'New Transaction' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button [disabled]="!canSave || saving" (click)="save()">
+        {{ saving ? 'Saving...' : 'Save' }}
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div style="padding: 12px 16px 0;">
+    <ion-segment [(ngModel)]="form.type" (ionChange)="onTypeChange()" *ngIf="!isEditMode">
+      <ion-segment-button value="expense">Expense</ion-segment-button>
+      <ion-segment-button value="income">Income</ion-segment-button>
+      <ion-segment-button value="transfer">Transfer</ion-segment-button>
+    </ion-segment>
+  </div>
+
+  <ion-list>
+    <ion-item>
+      <ion-label position="stacked">Amount *</ion-label>
+      <ion-input
+        autofocus
+        type="number"
+        [(ngModel)]="form.amount"
+        placeholder="0.00"
+        inputmode="decimal"
+        min="0"
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="stacked">{{ form.type === 'transfer' ? 'From Account *' : 'Account *' }}</ion-label>
+      <ion-select [(ngModel)]="form.accountId" placeholder="Select account" interface="action-sheet">
+        <ion-select-option *ngFor="let account of accounts" [value]="account.id">
+          {{ account.name }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-item *ngIf="form.type === 'transfer'">
+      <ion-label position="stacked">To Account *</ion-label>
+      <ion-select [(ngModel)]="form.transferToAccountId" placeholder="Select destination" interface="action-sheet">
+        <ion-select-option
+          *ngFor="let account of accounts"
+          [value]="account.id"
+          [disabled]="account.id === form.accountId"
+        >
+          {{ account.name }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-item *ngIf="form.type !== 'transfer'">
+      <ion-label position="stacked">Category</ion-label>
+      <ion-select [(ngModel)]="form.categoryId" placeholder="Select category" interface="action-sheet">
+        <ion-select-option value="">None</ion-select-option>
+        <ion-select-option *ngFor="let category of categories" [value]="category.id">
+          {{ category.name }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="stacked">Date *</ion-label>
+      <ion-datetime-button style="margin-top: 6px;" datetime="transaction-date"></ion-datetime-button>
+    </ion-item>
+
+    <ion-item *ngIf="form.type !== 'transfer'">
+      <ion-label position="stacked">Description</ion-label>
+      <ion-input
+        [(ngModel)]="form.description"
+        placeholder="What was this for?"
+      ></ion-input>
+    </ion-item>
+
+    <ion-item button detail="false" *ngIf="form.type !== 'transfer'" (click)="showMoreOptions = !showMoreOptions">
+      <ion-label>{{ showMoreOptions ? 'Hide More options' : 'More options' }}</ion-label>
+      <ion-icon slot="end" [name]="showMoreOptions ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+    </ion-item>
+
+    <ng-container *ngIf="form.type !== 'transfer' && showMoreOptions">
+      <ion-item>
+        <ion-label position="stacked">Tags</ion-label>
+        <ion-input
+          [(ngModel)]="tagInput"
+          placeholder="Type a tag and press Enter"
+          (keydown)="onTagKeydown($event)"
+        ></ion-input>
+      </ion-item>
+      <ion-item lines="none" *ngIf="form.tags.length > 0">
+        <div style="display:flex; flex-wrap:wrap; gap:6px; padding: 4px 0; width:100%;">
+          <ion-chip
+            *ngFor="let tag of form.tags"
+            (click)="removeTag(tag)"
+            style="cursor:pointer;"
+          >
+            {{ tag }}
+            <ion-icon name="close-circle" style="margin-left:4px;"></ion-icon>
+          </ion-chip>
+        </div>
+      </ion-item>
+      <ion-item lines="none" *ngIf="form.tags.length === 0">
+        <ion-note style="padding: 4px 0;">No tags added yet</ion-note>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="stacked">Notes</ion-label>
+        <ion-textarea
+          [(ngModel)]="form.notes"
+          placeholder="Additional details..."
+          rows="3"
+        ></ion-textarea>
+      </ion-item>
+    </ng-container>
+  </ion-list>
+
+  <ion-modal [keepContentsMounted]="true">
+    <ng-template>
+      <ion-datetime
+        id="transaction-date"
+        presentation="date"
+        [value]="form.date"
+        (ionChange)="onDateChange($event)"
+      ></ion-datetime>
+    </ng-template>
+  </ion-modal>
+</ion-content>

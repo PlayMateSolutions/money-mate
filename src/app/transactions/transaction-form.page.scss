@@ -1,0 +1,27 @@
+
+:host {
+  display: block;
+  padding: var(--app-padding-medium);
+}
+
+ion-list {
+  background: var(--ion-background-color, #fff);
+  border-radius: 12px;
+  box-shadow: var(--app-card-shadow);
+  margin-bottom: var(--app-padding-medium);
+}
+
+ion-item {
+  --background: transparent;
+}
+
+ion-segment {
+  margin-bottom: 8px;
+}
+
+@media (min-width: 768px) {
+  :host {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
