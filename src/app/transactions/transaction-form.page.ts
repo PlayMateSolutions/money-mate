@@ -25,12 +25,14 @@ import {
   IonChip,
   IonIcon,
   IonNote,
-  IonBackButton
+  IonBackButton,
 } from '@ionic/angular/standalone';
+import { AlertController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { chevronDownOutline, chevronUpOutline, closeCircle } from 'ionicons/icons';
+import { chevronDownOutline, chevronUpOutline, closeCircle, trashOutline, saveOutline } from 'ionicons/icons';
 import { Account, Category, Transaction, TransactionType } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository, CreateTransactionInput, UpdateTransactionInput } from '../core/database/repositories';
+import { NavController } from '@ionic/angular';
 
 @Component({
   selector: 'app-transaction-form',
@@ -73,6 +75,7 @@ export class TransactionFormPage implements OnInit {
   showMoreOptions = false;
   tagInput = '';
 
+
   get isEditMode(): boolean {
     return !!this.transactionToEdit;
   }
@@ -104,9 +107,11 @@ export class TransactionFormPage implements OnInit {
     private categoryRepository: CategoryRepository,
     private transactionRepository: TransactionRepository,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private alertController: AlertController,
+    private navController: NavController
   ) {
-    addIcons({ closeCircle, chevronDownOutline, chevronUpOutline });
+    addIcons({ closeCircle, chevronDownOutline, chevronUpOutline, trashOutline, saveOutline });
   }
 
   async ngOnInit(): Promise<void> {
@@ -254,7 +259,7 @@ export class TransactionFormPage implements OnInit {
       }
 
       // Navigate back to transactions list after save
-      await this.router.navigate(['/tabs/transactions']);
+      await this.navController.back();
     } catch (error) {
       console.error('Error saving transaction:', error);
       this.saving = false;
@@ -271,5 +276,37 @@ export class TransactionFormPage implements OnInit {
     }
 
     localStorage.setItem(this.lastUsedAccountStorageKey, accountId);
+  }
+
+  
+  async confirmDelete(): Promise<void> {
+    const alert = await this.alertController.create({
+      header: 'Delete Transaction',
+      message: 'Are you sure you want to delete this transaction?',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+        },
+        {
+          text: 'Delete',
+          role: 'destructive',
+          handler: () => this.deleteTransaction(),
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  async deleteTransaction(): Promise<void> {
+    if (!this.isEditMode || !this.transactionToEdit) return;
+    try {
+      this.saving = true;
+      await this.transactionRepository.archiveTransaction(this.transactionToEdit.id);
+      await this.router.navigate(['/tabs/transactions']);
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      this.saving = false;
+    }
   }
 }

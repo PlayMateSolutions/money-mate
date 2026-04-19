@@ -17,6 +17,7 @@ export interface CreateTransactionInput {
 
 export interface UpdateTransactionInput extends CreateTransactionInput {
   id: string;
+  isDeleted?: boolean;
 }
 
 export interface TransactionQueryFilters {
@@ -140,6 +141,7 @@ export class TransactionRepository {
       notes: input.notes,
       tags: input.tags ?? [],
       transferToAccountId: input.type === 'transfer' ? input.transferToAccountId : undefined,
+      isDeleted: input.isDeleted ?? false,
       updatedAt: now,
       updatedBy: GUEST_USER_NAME,
     };
@@ -174,6 +176,7 @@ export class TransactionRepository {
           await this.db.accounts.update(input.transferToAccountId, { balance: newDest.balance + Math.abs(input.amount), updatedAt: now });
         }
       } else {
+        console.log('Updating transaction amount from', oldTx.amount, 'to', storedAmount, 'for account', input.accountId);
         const newAccount = await this.db.accounts.get(input.accountId);
         if (newAccount) {
           await this.db.accounts.update(input.accountId, { balance: newAccount.balance + storedAmount, updatedAt: now });
@@ -185,6 +188,29 @@ export class TransactionRepository {
 
     await this.refreshTransactionStreams();
     return updated;
+  }
+
+  /**
+   * Archive (soft-delete) a transaction by setting isDeleted to true.
+   * Does not affect account balances.
+   */
+  async archiveTransaction(id: string): Promise<Transaction> {
+    const transaction = await this.db.transactions.get(id);
+    if (!transaction) {
+      throw new Error(`Transaction ${id} not found`);
+    }
+    transaction.isDeleted = true;
+    transaction.amount = 0;
+    return this.updateTransaction(transaction as UpdateTransactionInput);
+  }
+
+  async getTransactionById(id: string): Promise<Transaction | undefined> {
+    try {
+      return await this.db.transactions.get(id);
+    } catch (error) {
+      console.error(`Error fetching transaction ${id}:`, error);
+      throw new Error('Failed to fetch transaction');
+    }
   }
 
   async getTransactionsByAccount(accountId: string): Promise<Transaction[]> {
