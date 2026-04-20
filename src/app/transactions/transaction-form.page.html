@@ -47,7 +47,7 @@
 
     <ion-item>
       <ion-label position="stacked">{{ form.type === 'transfer' ? 'From Account *' : 'Account *' }}</ion-label>
-      <ion-select [(ngModel)]="form.accountId" placeholder="Select account" interface="action-sheet">
+      <ion-select [(ngModel)]="form.accountId" placeholder="Select account" interface="action-sheet" [disabled]="isEditMode">
         <ion-select-option *ngFor="let account of accounts" [value]="account.id">
           {{ account.name }}
         </ion-select-option>
