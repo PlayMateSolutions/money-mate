@@ -7,7 +7,10 @@ import { Subscription } from 'rxjs';
 import { Swiper } from 'swiper';
 import { Pagination } from 'swiper/modules';
 import { AccountRepository } from '../../../core/database/repositories';
+import { TransactionRepository } from '../../../core/database/repositories/transaction.repository';
+import { AccountLastEntryService } from './account-last-entry.service';
 import { Account } from '../../../core/database/models';
+import { format } from 'date-fns';
 import { ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import * as ionicons from 'ionicons/icons';
@@ -39,6 +42,7 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
   @ViewChild('swiperContainer', { static: false }) swiperContainer!: ElementRef;
 
   cards: BalanceCard[] = [];
+  lastEntryDates: { [accountId: string]: Date | null } = {};
   loading = true;
   error: string | null = null;
   private swiper: Swiper | null = null;
@@ -47,7 +51,9 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
   constructor(
     private accountRepository: AccountRepository,
     private cdr: ChangeDetectorRef,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private transactionRepository: TransactionRepository,
+    private lastEntryService: AccountLastEntryService
   ) {}
 
   ngOnInit(): void {
@@ -93,8 +99,9 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
     this.cdr.markForCheck();
 
     this.accountsSubscription = this.accountRepository.accounts$.subscribe({
-      next: (accounts) => {
+      next: async (accounts) => {
         this.cards = this.buildCards(accounts);
+        await this.fetchLastEntryDates(accounts);
         this.loading = false;
         this.error = null;
         this.cdr.markForCheck();
@@ -113,6 +120,20 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
     });
 
     void this.accountRepository.getAccounts();
+  }
+
+  private async fetchLastEntryDates(accounts: Account[]): Promise<void> {
+    const promises = accounts.map(async (account) => {
+      const date = await this.lastEntryService.getLastEntryDate(account.id);
+      this.lastEntryDates[account.id] = date;
+    });
+    await Promise.all(promises);
+    this.cdr.markForCheck();
+  }
+
+  formatLastEntryDate(date: Date | null | undefined): string {
+    if (!date) return '--/--';
+    return format(date, 'dd/MM');
   }
 
   private registerIconsFromAccounts(accounts: Account[]): void {

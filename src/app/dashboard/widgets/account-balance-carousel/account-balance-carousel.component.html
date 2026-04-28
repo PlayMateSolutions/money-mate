@@ -9,7 +9,7 @@
           <ion-card-content class="card-content">
             <!-- Top section: Account name and type badge -->
             <div class="card-top">
-              <h3 class="account-name">{{ card.name }}</h3>
+                <h3 class="account-name">{{ card.name }}</h3>
               <span class="account-type" *ngIf="card.type">{{ capitalizeType(card.type) }}</span>
             </div>
 
@@ -22,10 +22,13 @@
             </div>
 
             <!-- Bottom section: Card number and icon -->
-            <div class="card-bottom">
-              <span class="card-number">{{ getCardNumber(card.id) }}</span>
+            <div class="card-bottom card-physical">
+              <div class="last-entry">
+                <span *ngIf="!card.isTotal" class="last-entry-date">{{ formatLastEntryDate(lastEntryDates[card.id]) }}</span>
+              </div>
+              <!-- <span class="card-number">{{ getCardNumber(card.id) }}</span>-->
               <ion-icon *ngIf="card.icon && !card.isTotal" [name]="card.icon" class="account-icon"></ion-icon>
-              <ion-icon *ngIf="card.isTotal" name="card-outline" class="payment-icon"></ion-icon>
+              <ion-icon *ngIf="card.isTotal" name="card-outline" class="payment-icon"></ion-icon> 
             </div>
           </ion-card-content>
         </ion-card>
