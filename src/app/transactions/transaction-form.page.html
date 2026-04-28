@@ -94,6 +94,8 @@
           [(ngModel)]="tagInput"
           placeholder="Type a tag and press Enter"
           (keydown)="onTagKeydown($event)"
+          (ionBlur)="onTagBlur()"
+          (ionChange)="onTagChange()"
         ></ion-input>
       </ion-item>
       <ion-item lines="none" *ngIf="form.tags.length > 0">

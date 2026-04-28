@@ -161,7 +161,25 @@ export class TransactionFormPage implements OnInit {
     }
   }
 
+  onTagBlur(): void {
+    if (this.tagInput.trim()) {
+      this.addTag();
+    }
+  }
 
+    onTagChange(): void {
+    // If the user types a comma, treat it as a tag separator
+    if (this.tagInput && this.tagInput.includes(',')) {
+      const tags = this.tagInput.split(',').map(t => t.trim()).filter(t => t);
+      for (const tag of tags) {
+        if (tag && !this.form.tags.includes(tag)) {
+          this.form.tags = [...this.form.tags, tag];
+        }
+      }
+      this.tagInput = '';
+    }
+  }
+  
   /**
    * Set up auto-categorization: listen for description changes and auto-select category if exact match found.
    */
