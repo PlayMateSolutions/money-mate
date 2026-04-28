@@ -5,15 +5,21 @@
   width: 100%;
 
   .swiper {
-    width: 100%;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
     padding-bottom: 40px; // Space for pagination dots
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
   }
 
   .swiper-wrapper {
     display: flex;
     flex-direction: row;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
   }
 
   .swiper-slide {
@@ -21,6 +27,9 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
   }
 
   .balance-card {
