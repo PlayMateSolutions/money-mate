@@ -15,7 +15,18 @@
 
             <!-- Middle section: Large balance -->
             <div class="card-middle">
-              <p class="balance">{{ formatBalance(card.balance) }}</p>
+              <p 
+                class="balance"
+                [class.clickable]="!card.isTotal"
+                *ngIf="!card.isTotal"
+                (click)="openAccountDetails(card.name)"
+                tabindex="0"
+                role="button"
+                aria-label="View transactions for {{ card.name }}"
+              >
+                {{ formatBalance(card.balance) }}
+              </p>
+              <p class="balance" *ngIf="card.isTotal">{{ formatBalance(card.balance) }}</p>
               <p class="credit-due" *ngIf="card.isTotal">
                 Due: {{ formatBalance(card.creditDue ?? 0) }}
               </p>

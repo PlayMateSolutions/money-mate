@@ -92,7 +92,7 @@
         <ion-label position="stacked">Tags</ion-label>
         <ion-input
           [(ngModel)]="tagInput"
-          placeholder="Type a tag and press Enter"
+          placeholder="Type tags (use commas to separate)"
           (keydown)="onTagKeydown($event)"
           (ionBlur)="onTagBlur()"
           (ionChange)="onTagChange()"

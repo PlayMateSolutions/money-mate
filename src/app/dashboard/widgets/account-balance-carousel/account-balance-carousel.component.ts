@@ -1,6 +1,7 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { IonCard, IonCardContent, IonIcon } from '@ionic/angular/standalone';
+import { IonCard, IonCardContent, IonIcon, IonButton } from '@ionic/angular/standalone';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import { Subscription } from 'rxjs';
@@ -53,7 +54,8 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
     private cdr: ChangeDetectorRef,
     private toastController: ToastController,
     private transactionRepository: TransactionRepository,
-    private lastEntryService: AccountLastEntryService
+    private lastEntryService: AccountLastEntryService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -91,6 +93,10 @@ export class AccountBalanceCarouselComponent implements OnInit, AfterViewInit {
         grabCursor: true
       });
     }
+  }
+
+  async openAccountDetails(accountName: string): Promise<void> {
+    await this.router.navigate(['/tabs/transactions'], { queryParams: { accountName } });
   }
 
   private subscribeToAccounts(): void {

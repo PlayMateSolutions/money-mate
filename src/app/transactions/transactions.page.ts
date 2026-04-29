@@ -34,7 +34,7 @@ import {
   SessionService,
   TransactionDisplayItem,
 } from '../core/services';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { TransactionFilterModalComponent, TransactionFilterState } from './components/transaction-filter-modal.component';
 import { DateRangeFilterComponent, DateRange } from '../shared/date-range-filter/date-range-filter.component';
 
@@ -107,6 +107,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private readonly toastController: ToastController,
     private readonly modalController: ModalController,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
   ) {
     addIcons({
       pricetagOutline,
@@ -119,7 +120,29 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadSelectedCurrency();
-    void this.initializeTransactionsStream();
+    this.route.queryParams.subscribe(params => {
+      let accountNames: string[] = [];
+      const param = params['accountName'];
+      if (Array.isArray(param)) {
+        accountNames = param;
+      } else if (typeof param === 'string') {
+        accountNames = [param];
+      }
+      if (accountNames.length > 0) {
+        this.accountRepository.getAccountsForSettings().then(accounts => {
+          const matching = accounts.filter(acc => accountNames.includes(acc.name));
+          if (matching.length > 0) {
+            this.filters.accountIds = matching.map(acc => acc.id);
+          } else {
+            this.filters.accountIds = [];
+          }
+          void this.initializeTransactionsStream();
+        });
+      } else {
+        this.filters.accountIds = [];
+        void this.initializeTransactionsStream();
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -241,6 +264,27 @@ export class TransactionsPage implements OnInit, OnDestroy {
       accountIds: [...data.accountIds],
       tags: [...data.tags],
     };
+
+    // Update query params based on account filter (array style)
+    if (this.filters.accountIds.length > 0) {
+      // Find the account names for the selected ids
+      const selectedAccounts = this.accounts.filter(acc => this.filters.accountIds.includes(acc.id));
+      const accountNames = selectedAccounts.map(acc => acc.name);
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { accountName: accountNames },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    } else {
+      // Remove accountName param if no accounts selected
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { accountName: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    }
 
     this.buildGroupedItems(this.applyFilters(this.allTransactions));
     }
