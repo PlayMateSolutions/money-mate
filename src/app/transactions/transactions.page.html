@@ -70,7 +70,7 @@
         ></ion-icon>
 
         <ion-label>
-          <h2 *ngIf="item.transaction.type !== 'transfer'">{{ item.transaction.description || item.categoryName }}</h2>
+          <h2 *ngIf="item.transaction.type !== 'transfer'">{{ capitalize(item.transaction.description) || item.categoryName }}</h2>
           <h2 *ngIf="item.transaction.type === 'transfer'">Transfer</h2>
 
           <p *ngIf="item.transaction.type !== 'transfer'">

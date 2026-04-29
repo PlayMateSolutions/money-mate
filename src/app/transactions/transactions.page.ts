@@ -545,4 +545,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
     await toast.present();
   }
 
+  capitalize(text?: string): string {
+    if (!text) return '';
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
 }
