@@ -31,13 +31,8 @@ jobs:
           npm ci --legacy-peer-deps
           npm i -D -E @angular/cli --legacy-peer-deps
 
-
       - name: Build web assets
         run: ionic build --configuration production
-
-      - name: Ensure Android platform is added
-        run: |
-          npx cap ls | grep 'android' || npx cap add android
 
       - name: Sync Capacitor
         run: npx cap sync android

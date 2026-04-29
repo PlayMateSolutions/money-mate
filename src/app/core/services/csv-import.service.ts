@@ -120,6 +120,18 @@ export class CsvImportService {
       const rowNumber = index + 1;
       const parsedLine = this.parseQuickAddLine(line, referenceDate);
 
+      const currentTime = new Date();
+      const baseDate = parsedLine.date ? new Date(parsedLine.date) : currentTime;
+      if (parsedLine.date) {
+        baseDate.setHours(
+          currentTime.getHours(),
+          currentTime.getMinutes(),
+          currentTime.getSeconds(),
+          currentTime.getMilliseconds(),
+        );
+      }
+      const dateWithDelay = new Date(baseDate.getTime() + index * 2000);
+
       if (parsedLine.reasons.length > 0 || !parsedLine.date || parsedLine.amount === null || !parsedLine.description) {
         invalidRows.push({
           rowNumber,
@@ -131,7 +143,7 @@ export class CsvImportService {
 
       transactionsToImport.push({
         rowNumber,
-        date: parsedLine.date,
+        date: dateWithDelay,
         description: parsedLine.description,
         amount: Math.abs(parsedLine.amount),
         type: 'expense',
