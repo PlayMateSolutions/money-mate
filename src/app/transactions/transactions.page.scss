@@ -37,6 +37,21 @@ ion-item h2 {
   font-weight: 600;
 }
 
+ion-icon[slot="start"] {
+  margin-right: 20px; 
+}
+
+.dirty-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ion-color-warning, #ffc409);
+  margin-left: 6px;
+  vertical-align: middle;
+  box-shadow: 0 0 0 1px var(--ion-background-color, #fff);
+}
+
 ion-item p {
   margin: 2px 0;
 }
