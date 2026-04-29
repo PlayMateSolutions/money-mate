@@ -126,11 +126,15 @@ export class TransactionQuickAddPage implements OnInit {
       return [];
     }
 
-    const invalidRowsAsPreview: CsvImportTransactionPreview[] = this.preview.invalidRows.map((invalidRow) => {
+
+    // Add a 2-second delay between each transaction (by incrementing the date by 2 seconds per row)
+    const baseDate = new Date();
+    const invalidRowsAsPreview: CsvImportTransactionPreview[] = this.preview.invalidRows.map((invalidRow, idx) => {
       const rawInput = this.formatInvalidRow(invalidRow);
+      const dateWithDelay = new Date(baseDate.getTime() + idx * 2000);
       return {
         rowNumber: invalidRow.rowNumber,
-        date: new Date(),
+        date: dateWithDelay,
         description: `Input ${rawInput}`,
         amount: 0,
         type: 'expense',
