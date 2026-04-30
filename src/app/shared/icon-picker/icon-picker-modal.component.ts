@@ -12,6 +12,10 @@ import {
   IonSpinner,
   IonTitle,
   IonToolbar,
+  IonInfiniteScroll,
+  IonInfiniteScrollContent,
+  IonSegment,
+  IonSegmentButton,
   ModalController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -42,7 +46,11 @@ import {
     IonSearchbar,
     IonIcon,
     IonSpinner,
-    IconColorPickerComponent
+    IconColorPickerComponent,
+    IonInfiniteScroll,
+    IonInfiniteScrollContent,
+    IonSegment,
+    IonSegmentButton
   ]
 })
 export class IconPickerModalComponent implements OnInit {
@@ -54,6 +62,8 @@ export class IconPickerModalComponent implements OnInit {
   loading = false;
   error = '';
   searchQuery = '';
+
+  iconStyle: 'outline' | 'filled' | 'sharp' = 'outline';
 
   allIcons: IconPickerIcon[] = [];
   filteredIcons: IconPickerIcon[] = [];
@@ -107,6 +117,17 @@ export class IconPickerModalComponent implements OnInit {
     this.applyFilters();
   }
 
+  onIconStyleChange(event: any): void {
+    this.applyFilters();
+  }
+
+  onInfiniteScroll(event: any): void {
+    this.loadMore();
+    setTimeout(() => {
+      event.target.complete();
+    }, 350);
+  }
+  
   loadMore(): void {
     if (!this.hasMore) {
       return;
@@ -153,18 +174,29 @@ export class IconPickerModalComponent implements OnInit {
   }
 
   private applyFilters(): void {
-    if (!this.searchQuery) {
-      this.filteredIcons = [...this.allIcons];
-    } else {
-      this.filteredIcons = this.allIcons.filter((icon) => {
-        const nameMatch = icon.name.toLowerCase().includes(this.searchQuery);
-        const tagsMatch = icon.tags?.some((tag) =>
-          tag.toLowerCase().includes(this.searchQuery)
-        );
-        return nameMatch || !!tagsMatch;
-      });
+    // Filter by search
+    let icons = !this.searchQuery
+      ? [...this.allIcons]
+      : this.allIcons.filter((icon) => {
+          const nameMatch = icon.name.toLowerCase().includes(this.searchQuery);
+          const tagsMatch = icon.tags?.some((tag) =>
+            tag.toLowerCase().includes(this.searchQuery)
+          );
+          return nameMatch || !!tagsMatch;
+        });
+
+    // Filter by style
+    if (this.iconStyle === 'outline') {
+      icons = icons.filter(icon => icon.name.endsWith('-outline'));
+    } else if (this.iconStyle === 'sharp') {
+      icons = icons.filter(icon => icon.name.endsWith('-sharp'));
+    } else if (this.iconStyle === 'filled') {
+      icons = icons.filter(icon =>
+        !icon.name.endsWith('-outline') && !icon.name.endsWith('-sharp')
+      );
     }
 
+    this.filteredIcons = icons;
     this.visibleCount = Math.min(
       this.mergedConfig.initialVisibleCount,
       this.filteredIcons.length

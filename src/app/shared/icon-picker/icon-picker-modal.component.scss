@@ -1,3 +1,10 @@
+.icon-list-scrollable {
+  max-height: 320px;
+  min-height: 160px;
+  overflow-y: auto;
+  margin: 0 0 12px 0;
+  padding-bottom: 4px;
+}
 :host {
   display: block;
 }
@@ -47,35 +54,31 @@
   padding: 0 12px 12px;
 }
 
+// Clean icon tile style
 .icon-tile {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 88px;
-  padding: 8px;
-  border-radius: 10px;
-  border: 1px solid var(--ion-color-medium-tint);
-  background: var(--ion-color-light);
+  min-height: 56px;
+  min-width: 56px;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
   color: var(--ion-text-color);
+  transition: transform 0.15s;
 }
 
 .icon-tile ion-icon {
-  font-size: 22px;
-}
-
-.icon-tile span {
-  font-size: 0.72rem;
-  text-align: center;
-  line-height: 1.2;
-  word-break: break-word;
+  font-size: 32px;
 }
 
 .icon-tile.selected {
+  border-radius: 8px;
   border-color: var(--ion-color-primary);
   background: var(--ion-color-light-shade);
   color: var(--ion-color-primary);
+  transform: scale(1.08);
 }
 
 @media (min-width: 768px) {
