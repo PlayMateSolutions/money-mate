@@ -95,13 +95,7 @@ export class CategoriesPage implements OnInit {
     return this.categories.filter(category => category.isDeleted);
   }
 
-  get hasDirtyCategories(): boolean {
-    return this.categories.some((category) => !!category.isDirty);
-  }
 
-  get canSync(): boolean {
-    return !!this.sessionService.currentSession?.accessToken && !!this.sessionService.linkedSpreadsheet?.id;
-  }
 
   trackByCategoryId(_: number, category: Category): string {
     return category.id;
@@ -160,32 +154,7 @@ export class CategoriesPage implements OnInit {
     }
   }
 
-  async syncCategories(): Promise<void> {
-    if (this.syncing) {
-      return;
-    }
 
-    if (!this.sessionService.currentSession?.accessToken || !this.sessionService.linkedSpreadsheet?.id) {
-      return;
-    }
-
-    try {
-      this.syncing = true;
-      this.error = null;
-      this.cdr.markForCheck();
-
-      await this.googleSheetService.syncCategories();
-      await this.loadCategories();
-      await this.presentToast('Categories synced successfully', 'success');
-    } catch (error) {
-      console.error('Error syncing categories:', error);
-      this.error = 'Failed to sync categories';
-      await this.presentToast('Failed to sync categories', 'danger');
-    } finally {
-      this.syncing = false;
-      this.cdr.markForCheck();
-    }
-  }
 
   async openEditModal(category: Category): Promise<void> {
     const modal = await this.modalController.create({

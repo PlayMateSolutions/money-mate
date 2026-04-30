@@ -302,14 +302,17 @@ export class TransactionsPage implements OnInit, OnDestroy {
       this.syncing = true;
       this.error = null;
 
+      // Sync all: accounts, categories, transactions
+      await this.googleSheetService.syncAccounts();
+      await this.googleSheetService.syncCategories();
       await this.googleSheetService.syncTransactions();
       await this.refreshLookups();
       await this.transactionRepository.getAllTransactions();
-      await this.presentToast('Transactions synced successfully', 'success');
+      await this.presentToast('All data synced successfully', 'success');
     } catch (error) {
-      console.error('Error syncing transactions:', error);
-      this.error = 'Failed to sync transactions';
-      await this.presentToast('Failed to sync transactions', 'danger');
+      console.error('Error syncing data:', error);
+      this.error = 'Failed to sync data';
+      await this.presentToast('Failed to sync data', 'danger');
     } finally {
       this.syncing = false;
     }

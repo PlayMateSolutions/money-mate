@@ -4,13 +4,6 @@
       <ion-back-button defaultHref="/settings"></ion-back-button>
     </ion-buttons>
     <ion-title>Manage Categories</ion-title>
-    <ion-buttons slot="end" *ngIf="canSync">
-      <ion-button (click)="syncCategories()">
-        <ion-spinner *ngIf="syncing" name="crescent"></ion-spinner>
-        <ion-icon *ngIf="!syncing" name="sync-outline" slot="start"></ion-icon>
-        <ion-badge *ngIf="hasDirtyCategories && !syncing" color="warning" slot="end">!</ion-badge>
-      </ion-button>
-    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 

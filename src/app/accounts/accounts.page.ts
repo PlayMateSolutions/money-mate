@@ -109,13 +109,7 @@ export class AccountsPage implements OnInit {
     return this.accounts.filter(account => account.isDeleted);
   }
 
-  get hasDirtyAccounts(): boolean {
-    return this.accounts.some((account) => !!account.isDirty);
-  }
 
-  get canSync(): boolean {
-    return !!this.sessionService.currentSession?.accessToken && !!this.sessionService.linkedSpreadsheet?.id;
-  }
 
   trackByAccountId(_: number, account: Account): string {
     return account.id;
@@ -174,32 +168,7 @@ export class AccountsPage implements OnInit {
     }
   }
 
-  async syncAccounts(): Promise<void> {
-    if (this.syncing) {
-      return;
-    }
 
-    if (!this.sessionService.currentSession?.accessToken || !this.sessionService.linkedSpreadsheet?.id) {
-      return;
-    }
-
-    try {
-      this.syncing = true;
-      this.error = null;
-      this.cdr.markForCheck();
-
-      await this.googleSheetService.syncAccounts();
-      await this.loadAccounts();
-      await this.presentToast('Accounts synced successfully', 'success');
-    } catch (error) {
-      console.error('Error syncing accounts:', error);
-      this.error = 'Failed to sync accounts';
-      await this.presentToast('Failed to sync accounts', 'danger');
-    } finally {
-      this.syncing = false;
-      this.cdr.markForCheck();
-    }
-  }
 
   async openEditModal(account: Account): Promise<void> {
     const modal = await this.modalController.create({
