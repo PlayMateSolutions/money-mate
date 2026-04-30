@@ -21,6 +21,7 @@ import {
   DashboardWidgetDefinition,
   DashboardWidgetId
 } from './dashboard-widget-registry';
+import { DateRangeFilterComponent } from '../shared/date-range-filter/date-range-filter.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -37,11 +38,17 @@ import {
     IonButtons,
     IonButton,
     IonIcon,
-    IonText
+    IonText,
+    DateRangeFilterComponent
   ],
 })
 export class DashboardPage implements OnInit, OnDestroy {
   visibleWidgets: DashboardWidgetDefinition[] = [];
+  selectedDateRange: { startDate: Date; endDate: Date; period: 'weekly' | 'monthly' | 'yearly' | 'custom' } = {
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    endDate: new Date(),
+    period: 'monthly',
+  };
   private readonly layoutService = inject(DashboardLayoutService);
   private readonly router = inject(Router);
   private routerSubscription?: Subscription;
@@ -66,6 +73,12 @@ export class DashboardPage implements OnInit, OnDestroy {
 
   ionViewWillEnter(): void {
     this.refreshVisibleWidgets();
+  }
+
+  onDateRangeChange(range: { startDate: Date; endDate: Date; period: 'weekly' | 'monthly' | 'yearly' | 'custom' }) {
+    this.selectedDateRange = range;
+    // TODO: trigger data reload for widgets
+    console.log('Selected date range changed:', range);
   }
 
   trackByWidgetId(_: number, widget: DashboardWidgetDefinition): DashboardWidgetId {

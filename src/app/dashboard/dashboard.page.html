@@ -17,6 +17,14 @@
     </ion-toolbar>
   </ion-header>
 
+
+  <app-date-range-filter
+    [selectedPeriod]="selectedDateRange.period"
+    [showNavigation]="true"
+    [showPeriodPicker]="false"
+    (dateRangeChange)="onDateRangeChange($event)">
+  </app-date-range-filter>
+
   <div class="container" *ngIf="visibleWidgets.length > 0; else emptyState">
     <ng-container *ngFor="let widget of visibleWidgets; trackBy: trackByWidgetId">
       <ng-container *ngComponentOutlet="widget.component"></ng-container>

@@ -1,4 +1,4 @@
-<ion-toolbar>
+<ion-toolbar *ngIf="showPeriodPicker">
   <ion-segment [(ngModel)]="selectedPeriod" (ionChange)="onPeriodChange($event)" mode="ios">
     <ion-segment-button value="weekly" *ngIf="isPeriodAvailable('weekly')">
       <ion-label>Weekly</ion-label>

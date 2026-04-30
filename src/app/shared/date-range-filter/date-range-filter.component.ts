@@ -46,6 +46,9 @@ export class DateRangeFilterComponent implements AfterViewInit {
   @Input() availablePeriods: ('weekly' | 'monthly' | 'yearly' | 'custom')[] = ['weekly', 'monthly', 'yearly', 'custom'];
   @Output() dateRangeChange = new EventEmitter<DateRange>();
 
+  // If false, hides the period picker segment and only shows navigation.
+  @Input() showPeriodPicker: boolean = true;
+
   currentWeekStart = new Date();
   currentMonth = new Date();
   currentYear = new Date();
