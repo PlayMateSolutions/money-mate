@@ -46,14 +46,21 @@ jobs:
         run: |
           echo $ENCODED_KEYSTORE | base64 -d > android/app/GymMate
 
-      - name: Debug environment variables
+      - name: Debug keystore and credentials
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "Checking if secrets are set..."
-          echo "KEYSTORE_PASSWORD is set: ${{ secrets.KEYSTORE_PASSWORD != '' }}"
-          echo "KEY_ALIAS is set: ${{ secrets.KEY_ALIAS != '' }}"
-          echo "KEY_PASSWORD is set: ${{ secrets.KEY_PASSWORD != '' }}"
-          echo "KEYSTORE_BASE64 is set: ${{ secrets.KEYSTORE_BASE64 != '' }}"
+          echo "Checking keystore file..."
           ls -la android/app/GymMate || echo "Keystore file not found"
+          file android/app/GymMate || echo "Cannot determine file type"
+          
+          echo "Testing keystore accessibility..."
+          keytool -list -keystore android/app/GymMate -storepass "$KEYSTORE_PASSWORD" || echo "Failed to access keystore"
+          
+          echo "Checking if alias exists..."
+          keytool -list -keystore android/app/GymMate -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" || echo "Alias not found or wrong password"
 
       - name: Build Release APK
         env:
