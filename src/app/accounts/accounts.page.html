@@ -39,7 +39,7 @@
         </ion-button>
       </ion-item>
 
-      <ion-item-divider>
+      <ion-item-divider *ngIf="inactiveAccounts.length > 0">
         <ion-label>Inactive</ion-label>
       </ion-item-divider>
       <ion-item *ngFor="let account of inactiveAccounts; trackBy: trackByAccountId">

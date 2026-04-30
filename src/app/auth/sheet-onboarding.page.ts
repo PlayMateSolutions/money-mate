@@ -170,7 +170,7 @@ export class SheetOnboardingPage implements OnInit {
 
     this.loading = true;
     try {
-      const title = `Money Mate | ${new Date().getFullYear()}`;
+      const title = `MoneyMate | ${this.sessionService.currentSession?.name || 'My Account'}`;
       const spreadsheet = await this.googleSheetService.createMoneyMateSpreadsheet(title);
 
       this.sessionService.setLinkedSpreadsheet(spreadsheet);
