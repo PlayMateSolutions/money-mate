@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android Release APK
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Install Ionic CLI
         run: npm install -g @ionic/cli
@@ -40,13 +40,43 @@ jobs:
       - name: Grant permission
         run: chmod +x android/gradlew
 
-      - name: Build APK
+      - name: Decode keystore
+        env:
+          ENCODED_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo $ENCODED_KEYSTORE | base64 -d > android/app/GymMate
+
+      - name: Debug keystore and credentials
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "Checking keystore file..."
+          ls -la android/app/GymMate || echo "Keystore file not found"
+          file android/app/GymMate || echo "Cannot determine file type"
+          
+          echo "Testing keystore accessibility..."
+          keytool -list -keystore android/app/GymMate -storepass "$KEYSTORE_PASSWORD" || echo "Failed to access keystore"
+          
+          echo "Checking if alias exists..."
+          keytool -list -keystore android/app/GymMate -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" || echo "Alias not found or wrong password"
+
+      - name: Build Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
-      - name: Upload APK
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: money-mate-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Clean up keystore
+        if: always()
+        run: rm -f android/app/GymMate

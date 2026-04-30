@@ -4,4 +4,5 @@
     <string name="title_activity_main">MoneyMate</string>
     <string name="package_name">com.moneymate.app</string>
     <string name="custom_url_scheme">com.moneymate.app</string>
+    <string name="google_web_client_id">1031239235658-a21arqinflilmv504uqdge4pv2debf27.apps.googleusercontent.comm</string>
 </resources>
