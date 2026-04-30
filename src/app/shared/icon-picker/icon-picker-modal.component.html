@@ -10,64 +10,64 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content>  
-  <div class="selection-preview">
-    <div class="selected-icon-preview" [style.background]="currentColor">
-      <ion-icon [name]="selectedIconName || 'pricetag-outline'"></ion-icon>
+<ion-content class="icon-picker-content">
+  <div class="icon-picker-flex">
+    <div>
+      <div class="selection-preview">
+        <div class="selected-icon-preview" [style.background]="currentColor">
+          <ion-icon [name]="selectedIconName || 'pricetag-outline'"></ion-icon>
+        </div>
+        <div class="selected-meta">
+          <div class="selected-icon-name">{{ selectedIconName || 'pricetag-outline' }}</div>
+          <div class="selected-color-name">{{ currentColor }}</div>
+        </div>
+      </div>
+
+      <app-icon-color-picker
+        [value]="currentColor"
+        [swatchCount]="8"
+        [allowManualInput]="true"
+        (valueChange)="onColorChange($event)"
+      ></app-icon-color-picker>
+
+      <ion-searchbar
+        [ngModel]="searchQuery"
+        (ngModelChange)="onSearchChange($event)"
+        [placeholder]="mergedConfig.searchPlaceholder"
+        debounce="250"
+      ></ion-searchbar>
+
+      <ion-segment [(ngModel)]="iconStyle" (ionChange)="onIconStyleChange($event)" class="icon-style-segment" mode="md">
+        <ion-segment-button value="outline">Outline</ion-segment-button>
+        <ion-segment-button value="filled">Filled</ion-segment-button>
+        <ion-segment-button value="sharp">Sharp</ion-segment-button>
+      </ion-segment>
     </div>
-    <div class="selected-meta">
-      <div class="selected-icon-name">{{ selectedIconName || 'pricetag-outline' }}</div>
-      <div class="selected-color-name">{{ currentColor }}</div>
+    <div class="icon-list-scrollable">
+      <div *ngIf="loading" class="state">
+        <ion-spinner name="crescent"></ion-spinner>
+      </div>
+      <div class="state error" *ngIf="!loading && error">
+        {{ error }}
+      </div>
+      <div class="state" *ngIf="!loading && !error && filteredIcons.length === 0">
+        {{ mergedConfig.emptyStateText }}
+      </div>
+      <div *ngIf="!loading && !error && visibleIcons.length > 0" class="icon-grid" role="listbox" aria-label="Available icons">
+        <button
+          type="button"
+          class="icon-tile"
+          *ngFor="let icon of visibleIcons"
+          (click)="chooseIcon(icon.name)"
+          [class.selected]="icon.name === selectedIconName"
+          [attr.aria-selected]="icon.name === selectedIconName"
+        >
+          <ion-icon [name]="icon.name"></ion-icon>
+        </button>
+      </div>
+      <ion-infinite-scroll *ngIf="!loading && !error && hasMore" (ionInfinite)="onInfiniteScroll($event)">
+        <ion-infinite-scroll-content loadingSpinner="crescent" loadingText="Loading more icons..."></ion-infinite-scroll-content>
+      </ion-infinite-scroll>
     </div>
-  </div>
-
-  <app-icon-color-picker
-    [value]="currentColor"
-    [swatchCount]="8"
-    [allowManualInput]="true"
-    (valueChange)="onColorChange($event)"
-  ></app-icon-color-picker>
-
-  <ion-searchbar
-    [ngModel]="searchQuery"
-    (ngModelChange)="onSearchChange($event)"
-    [placeholder]="mergedConfig.searchPlaceholder"
-    debounce="250"
-  ></ion-searchbar>
-
-  <ion-segment [(ngModel)]="iconStyle" (ionChange)="onIconStyleChange($event)" class="icon-style-segment" mode="md">
-    <ion-segment-button value="outline">Outline</ion-segment-button>
-    <ion-segment-button value="filled">Filled</ion-segment-button>
-    <ion-segment-button value="sharp">Sharp</ion-segment-button>
-  </ion-segment>
-  
-  <div class="state" *ngIf="loading">
-    <ion-spinner name="crescent"></ion-spinner>
-  </div>
-
-  <div class="state error" *ngIf="!loading && error">
-    {{ error }}
-  </div>
-
-  <div class="state" *ngIf="!loading && !error && filteredIcons.length === 0">
-    {{ mergedConfig.emptyStateText }}
-  </div>
-
-  <div class="icon-list-scrollable">
-    <div *ngIf="!loading && !error && visibleIcons.length > 0" class="icon-grid" role="listbox" aria-label="Available icons">
-      <button
-        type="button"
-        class="icon-tile"
-        *ngFor="let icon of visibleIcons"
-        (click)="chooseIcon(icon.name)"
-        [class.selected]="icon.name === selectedIconName"
-        [attr.aria-selected]="icon.name === selectedIconName"
-      >
-        <ion-icon [name]="icon.name"></ion-icon>
-      </button>
-    </div>
-    <ion-infinite-scroll *ngIf="!loading && !error && hasMore" (ionInfinite)="onInfiniteScroll($event)">
-      <ion-infinite-scroll-content loadingSpinner="crescent" loadingText="Loading more icons..."></ion-infinite-scroll-content>
-    </ion-infinite-scroll>
   </div>
 </ion-content>

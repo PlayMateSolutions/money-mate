@@ -106,8 +106,8 @@ export class CategoryEditModalComponent implements OnInit {
         selectedColor: this.form.color,
         config: this.iconPickerConfig
       },
-      breakpoints: [0, 0.75, 1],
-      initialBreakpoint: 0.75
+      breakpoints: [1],
+      initialBreakpoint: 1
     });
 
     await modal.present();
