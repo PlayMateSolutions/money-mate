@@ -105,7 +105,6 @@ export class SessionService {
 
   async signInWithGoogle(): Promise<SignInResult> {
     try {
-      await this.initializeGoogleAuth();
       this.removeQueryParams();
 
       const response = await SocialLogin.login({

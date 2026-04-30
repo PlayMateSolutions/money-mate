@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -53,15 +53,20 @@ export class LoginPage {
     private readonly router: Router,
     private readonly toastController: ToastController,
     private readonly alertController: AlertController,
+    private readonly zone: NgZone,
   ) {
     addIcons({ logoGoogle, phonePortraitOutline, chevronDown, chevronUp, trash });
+  }
+
+  async ngOnInit(): Promise<void> {
+    await this.sessionService.initializeGoogleAuth();
   }
 
   async continueWithGoogle(): Promise<void> {
     this.errorMessage = null;
     this.isBusy = true;
 
-    const result = await this.sessionService.signInWithGoogle();
+    const result = await this.zone.run(() => this.sessionService.signInWithGoogle());
     this.isBusy = false;
 
     if (result.success) {
