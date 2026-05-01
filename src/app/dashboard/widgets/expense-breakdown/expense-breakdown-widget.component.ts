@@ -22,6 +22,7 @@ import { ChartType, GoogleChart } from 'angular-google-charts';
 import { addIcons } from 'ionicons';
 import { settings, settingsOutline } from 'ionicons/icons';
 import { Category, Transaction } from '../../../core/database/models';
+import { DashboardDateRangeService, DashboardDateRange } from '../../services/dashboard-date-range.service';
 import {
   CategoryRepository,
   TransactionRepository,
@@ -81,22 +82,30 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
   private latestTransactions: Transaction[] = [];
   private selectedCategoryIds: Set<string> | null = null;
   private transactionsSub?: Subscription;
+  private dateRangeSub?: Subscription;
+  private selectedDateRange: DashboardDateRange | null = null;
 
   constructor(
     private readonly transactionRepository: TransactionRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly modalController: ModalController,
     private readonly cdr: ChangeDetectorRef,
+    private readonly dateRangeService: DashboardDateRangeService,
   ) {
     addIcons({ settings, settingsOutline });
   }
 
   ngOnInit(): void {
-    void this.initialize();
+    // Subscribe to dashboard date range changes
+    this.dateRangeSub = this.dateRangeService.getDateRange$().subscribe((range) => {
+      this.selectedDateRange = range;
+      void this.initialize();
+    });
   }
 
   ngOnDestroy(): void {
     this.transactionsSub?.unsubscribe();
+    this.dateRangeSub?.unsubscribe();
   }
 
   get hasChartData(): boolean {
@@ -207,16 +216,30 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
   }
 
   private buildChart(transactions: Transaction[]): void {
-    const currentMonthExpenses = transactions.filter((transaction) =>
+    // Only show expenses for the selected month
+    let monthStart: Date, monthEnd: Date, label: string;
+    if (this.selectedDateRange && this.selectedDateRange.period === 'monthly') {
+      monthStart = new Date(this.selectedDateRange.startDate);
+      monthEnd = new Date(this.selectedDateRange.endDate);
+      label = monthStart.toLocaleString('default', { month: 'long', year: 'numeric' });
+    } else {
+      // fallback: current month
+      const now = new Date();
+      monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      label = monthStart.toLocaleString('default', { month: 'long', year: 'numeric' });
+    }
+
+    const monthExpenses = transactions.filter((transaction) =>
       transaction.type === 'expense' &&
-      this.isInCurrentMonth(new Date(transaction.date)) &&
+      this.isInMonth(new Date(transaction.date), monthStart, monthEnd) &&
       this.isCategoryVisible(transaction.categoryId)
     );
 
     const groupedByCategory = new Map<string, ExpenseCategorySlice>();
     const fallbackColor = this.getMediumColor();
 
-    currentMonthExpenses.forEach((transaction) => {
+    monthExpenses.forEach((transaction) => {
       const key = this.normalizeCategoryId(transaction.categoryId);
       const category = this.categoriesMap.get(key);
       const existing = groupedByCategory.get(key);
@@ -356,9 +379,8 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
     return this.selectedCategoryIds.has(this.normalizeCategoryId(categoryId));
   }
 
-  private isInCurrentMonth(date: Date): boolean {
-    const now = new Date();
-    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  private isInMonth(date: Date, monthStart: Date, monthEnd: Date): boolean {
+    return date >= monthStart && date <= monthEnd;
   }
 
   private getComputedColor(variable: string): string {

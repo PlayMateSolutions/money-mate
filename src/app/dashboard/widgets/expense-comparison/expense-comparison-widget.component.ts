@@ -22,6 +22,7 @@ import { ChartType, GoogleChart } from 'angular-google-charts';
 import { addIcons } from 'ionicons';
 import { settings, settingsOutline } from 'ionicons/icons';
 import { Category } from '../../../core/database/models';
+import { DashboardDateRangeService, DashboardDateRange } from '../../services/dashboard-date-range.service';
 import {
   CategoryRepository,
   TransactionRepository,
@@ -82,22 +83,29 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
   private categoriesMap = new Map<string, Category>();
   private selectedCategoryIds: Set<string> | null = null;
   private transactionsSub?: Subscription;
+  private dateRangeSub?: Subscription;
+  private selectedDateRange: DashboardDateRange | null = null;
 
   constructor(
     private readonly transactionRepository: TransactionRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly modalController: ModalController,
     private readonly cdr: ChangeDetectorRef,
+    private readonly dateRangeService: DashboardDateRangeService,
   ) {
     addIcons({ settings, settingsOutline });
   }
 
   ngOnInit(): void {
-    void this.initialize();
+    this.dateRangeSub = this.dateRangeService.getDateRange$().subscribe((range) => {
+      this.selectedDateRange = range;
+      void this.initialize();
+    });
   }
 
   ngOnDestroy(): void {
     this.transactionsSub?.unsubscribe();
+    this.dateRangeSub?.unsubscribe();
   }
 
   get hasChartData(): boolean {
@@ -195,36 +203,46 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
   }
 
   private async loadAndBuildChart(): Promise<void> {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0-indexed
+    // Only support monthly period
+    let currentPeriodStart: Date, currentPeriodEnd: Date, prevPeriodStart: Date;
+    let labelCurrent = 'Current', labelAvg = 'Monthly Avg';
+    if (this.selectedDateRange && this.selectedDateRange.period === 'monthly') {
+      currentPeriodStart = new Date(this.selectedDateRange.startDate);
+      currentPeriodEnd = new Date(this.selectedDateRange.endDate);
+      prevPeriodStart = new Date(currentPeriodStart.getFullYear(), 0, 1);
+      labelCurrent = currentPeriodStart.toLocaleString('default', { month: 'long', year: 'numeric' });
+    } else {
+      // fallback: current month
+      const now = new Date();
+      currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      currentPeriodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      prevPeriodStart = new Date(now.getFullYear(), 0, 1);
+      labelCurrent = currentPeriodStart.toLocaleString('default', { month: 'long', year: 'numeric' });
+    }
 
-    // Date range: Jan 1 of this year → today
-    const ytdStart = new Date(currentYear, 0, 1, 0, 0, 0, 0);
-    const ytdEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-
-    const allYtdTransactions = await this.transactionRepository.queryTransactions(
+    // Query all transactions from Jan 1 to end of selected month
+    const allTransactions = await this.transactionRepository.queryTransactions(
       { types: ['expense'] },
-      { dateRange: { startDate: ytdStart, endDate: ytdEnd } },
+      { dateRange: { startDate: prevPeriodStart, endDate: currentPeriodEnd } },
     );
 
-    // Number of fully completed months before this one (Jan=0 → March means 3 if today is April)
-    const completedMonthsCount = currentMonth; // months 0..(currentMonth-1)
+    // Calculate number of completed months before selected month
+    const completedMonthsCount = currentPeriodStart.getMonth();
 
     // Bucket transactions
     const currentMonthTotals = new Map<string, number>();
     const ytdTotals = new Map<string, number>();
 
-    allYtdTransactions.forEach((t) => {
+    allTransactions.forEach((t) => {
       const txDate = new Date(t.date);
       const txMonth = txDate.getMonth();
       const txYear = txDate.getFullYear();
       const amount = Math.abs(t.amount);
       const key = t.categoryId || '__uncategorized__';
 
-      if (txYear === currentYear && txMonth === currentMonth) {
+      if (txYear === currentPeriodStart.getFullYear() && txMonth === currentPeriodStart.getMonth()) {
         currentMonthTotals.set(key, (currentMonthTotals.get(key) ?? 0) + amount);
-      } else if (txYear === currentYear && txMonth < currentMonth) {
+      } else if (txYear === currentPeriodStart.getFullYear() && txMonth < currentPeriodStart.getMonth()) {
         ytdTotals.set(key, (ytdTotals.get(key) ?? 0) + amount);
       }
     });
@@ -264,7 +282,8 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
     const primaryColor = this.getComputedColor('--ion-color-primary') || '#667EEA';
     const secondaryColor = this.getComputedColor('--ion-color-secondary') || '#2EC4B6';
 
-    const currentMonthLabel = now.toLocaleString('default', { month: 'long' });
+    this.chartColumns[1] = labelCurrent;
+    this.chartColumns[2] = labelAvg;
 
     this.chartOptions = {
       backgroundColor: 'transparent',
@@ -297,8 +316,8 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
       tooltip: { isHtml: false },
       seriesType: 'bars',
       series: {
-        0: { labelInLegend: currentMonthLabel },
-        1: { labelInLegend: 'Monthly Avg' },
+        0: { labelInLegend: labelCurrent },
+        1: { labelInLegend: labelAvg },
       },
     };
 
