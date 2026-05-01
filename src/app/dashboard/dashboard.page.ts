@@ -16,6 +16,7 @@ import {
 import { addIcons } from 'ionicons';
 import { appsOutline } from 'ionicons/icons';
 import { DashboardLayoutService } from './dashboard-layout.service';
+import { DashboardDateRangeService, DashboardDateRange } from './services/dashboard-date-range.service';
 import {
   DASHBOARD_WIDGET_BY_ID,
   DashboardWidgetDefinition,
@@ -44,13 +45,14 @@ import { DateRangeFilterComponent } from '../shared/date-range-filter/date-range
 })
 export class DashboardPage implements OnInit, OnDestroy {
   visibleWidgets: DashboardWidgetDefinition[] = [];
-  selectedDateRange: { startDate: Date; endDate: Date; period: 'weekly' | 'monthly' | 'yearly' | 'custom' } = {
+  selectedDateRange: DashboardDateRange = {
     startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     endDate: new Date(),
     period: 'monthly',
   };
   private readonly layoutService = inject(DashboardLayoutService);
   private readonly router = inject(Router);
+  private readonly dateRangeService = inject(DashboardDateRangeService);
   private routerSubscription?: Subscription;
 
   constructor() {
@@ -59,6 +61,8 @@ export class DashboardPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.refreshVisibleWidgets();
+    // Set initial date range in the service
+    this.dateRangeService.setDateRange(this.selectedDateRange);
 
     this.routerSubscription = this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd && this.router.url.startsWith('/tabs/dashboard')) {
@@ -75,9 +79,9 @@ export class DashboardPage implements OnInit, OnDestroy {
     this.refreshVisibleWidgets();
   }
 
-  onDateRangeChange(range: { startDate: Date; endDate: Date; period: 'weekly' | 'monthly' | 'yearly' | 'custom' }) {
+  onDateRangeChange(range: DashboardDateRange) {
     this.selectedDateRange = range;
-    // TODO: trigger data reload for widgets
+    this.dateRangeService.setDateRange(range);
     console.log('Selected date range changed:', range);
   }
 

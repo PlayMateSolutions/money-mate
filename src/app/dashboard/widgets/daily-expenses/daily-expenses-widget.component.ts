@@ -22,6 +22,7 @@ import { ChartType, GoogleChart } from 'angular-google-charts';
 import { addIcons } from 'ionicons';
 import { settings, settingsOutline } from 'ionicons/icons';
 import { Category, Transaction } from '../../../core/database/models';
+import { DashboardDateRangeService, DashboardDateRange } from '../../services/dashboard-date-range.service';
 import {
   CategoryRepository,
   TransactionRepository,
@@ -69,22 +70,31 @@ export class DailyExpensesWidgetComponent implements OnInit, OnDestroy {
   private latestTransactions: Transaction[] = [];
   private selectedCategoryIds: Set<string> | null = null;
   private transactionsSub?: Subscription;
+  private dateRangeSub?: Subscription;
+  private selectedDateRange: DashboardDateRange | null = null;
 
   constructor(
     private readonly transactionRepository: TransactionRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly modalController: ModalController,
     private readonly cdr: ChangeDetectorRef,
+    private readonly dateRangeService: DashboardDateRangeService,
   ) {
     addIcons({ settings, settingsOutline });
   }
 
   ngOnInit(): void {
-    void this.initialize();
+    // Subscribe to dashboard date range changes
+    this.dateRangeSub = this.dateRangeService.getDateRange$().subscribe((range) => {
+      this.selectedDateRange = range;
+      console.log('Selected date range changed from widget:', range);
+      void this.initialize();
+    });
   }
 
   ngOnDestroy(): void {
     this.transactionsSub?.unsubscribe();
+    this.dateRangeSub?.unsubscribe();
   }
 
   get hasChartData(): boolean {
@@ -163,59 +173,59 @@ export class DailyExpensesWidgetComponent implements OnInit, OnDestroy {
   }
 
   private buildChart(transactions: Transaction[]): void {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
+    // Only handle monthly period
+    let currentPeriodStart: Date, currentPeriodEnd: Date, prevPeriodStart: Date, prevPeriodEnd: Date;
+    let labelCurrent = 'Current', labelPrev = 'Previous';
+    if (this.selectedDateRange && this.selectedDateRange.period === 'monthly') {
+      currentPeriodStart = new Date(this.selectedDateRange.startDate);
+      currentPeriodEnd = new Date(this.selectedDateRange.endDate);
+      prevPeriodStart = new Date(currentPeriodStart.getFullYear(), currentPeriodStart.getMonth() - 1, 1);
+      prevPeriodEnd = new Date(currentPeriodStart.getFullYear(), currentPeriodStart.getMonth(), 0, 23, 59, 59, 999);
+      labelCurrent = currentPeriodStart.toLocaleString('default', { month: 'short', year: 'numeric' });
+      labelPrev = prevPeriodStart.toLocaleString('default', { month: 'short', year: 'numeric' });
+    } else {
+      // fallback: current and previous month
+      const now = new Date();
+      currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      currentPeriodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      prevPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      prevPeriodEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      labelCurrent = currentPeriodStart.toLocaleString('default', { month: 'short', year: 'numeric' });
+      labelPrev = prevPeriodStart.toLocaleString('default', { month: 'short', year: 'numeric' });
+    }
 
-    const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
-    const lastMonthYear = lastMonthDate.getFullYear();
-    const lastMonth = lastMonthDate.getMonth();
-
-    const daysInCurrentMonth = this.getDaysInMonth(currentYear, currentMonth);
-    const daysInLastMonth = this.getDaysInMonth(lastMonthYear, lastMonth);
-    const maxDays = Math.max(daysInCurrentMonth, daysInLastMonth);
-    const today = now.getDate();
-
-    const currentMonthTotals = new Map<number, number>();
-    const lastMonthTotals = new Map<number, number>();
+    // Group transactions by day for each period
+    const currentTotals = new Map<number, number>();
+    const prevTotals = new Map<number, number>();
 
     transactions
       .filter((transaction) => transaction.type === 'expense' && this.isCategoryVisible(transaction.categoryId))
       .forEach((transaction) => {
         const transactionDate = new Date(transaction.date);
         const amount = Math.abs(transaction.amount);
-        const day = transactionDate.getDate();
-
-        if (
-          transactionDate.getFullYear() === currentYear &&
-          transactionDate.getMonth() === currentMonth
-        ) {
-          currentMonthTotals.set(day, (currentMonthTotals.get(day) ?? 0) + amount);
-          return;
-        }
-
-        if (
-          transactionDate.getFullYear() === lastMonthYear &&
-          transactionDate.getMonth() === lastMonth
-        ) {
-          lastMonthTotals.set(day, (lastMonthTotals.get(day) ?? 0) + amount);
+        if (transactionDate >= currentPeriodStart && transactionDate <= currentPeriodEnd) {
+          const day = transactionDate.getDate();
+          currentTotals.set(day, (currentTotals.get(day) ?? 0) + amount);
+        } else if (transactionDate >= prevPeriodStart && transactionDate <= prevPeriodEnd) {
+          const day = transactionDate.getDate();
+          prevTotals.set(day, (prevTotals.get(day) ?? 0) + amount);
         }
       });
 
+    // Determine max days for chart
+    const daysInCurrent = this.getDaysInMonth(currentPeriodEnd.getFullYear(), currentPeriodEnd.getMonth());
+    const daysInPrev = this.getDaysInMonth(prevPeriodEnd.getFullYear(), prevPeriodEnd.getMonth());
+    const maxDays = Math.max(daysInCurrent, daysInPrev);
+
     const rows: Array<[number, number | null, number | null]> = [];
-
     for (let day = 1; day <= maxDays; day += 1) {
-      const currentMonthValue = day <= daysInCurrentMonth && day <= today
-        ? (currentMonthTotals.get(day) ?? 0)
-        : null;
-
-      const lastMonthValue = day <= daysInLastMonth
-        ? (lastMonthTotals.get(day) ?? 0)
-        : null;
-
-      rows.push([day, currentMonthValue, lastMonthValue]);
+      const currentValue = day <= daysInCurrent ? (currentTotals.get(day) ?? 0) : null;
+      const prevValue = day <= daysInPrev ? (prevTotals.get(day) ?? 0) : null;
+      rows.push([day, currentValue, prevValue]);
     }
 
+    this.chartColumns[1] = labelCurrent;
+    this.chartColumns[2] = labelPrev;
     this.chartData = rows;
 
     const textColor = this.getComputedColor('--ion-text-color') || '#000000';
@@ -349,6 +359,26 @@ export class DailyExpensesWidgetComponent implements OnInit, OnDestroy {
   }
 
   private getComparisonRange(): [Date, Date] {
+    // Use selected date range from service, fallback to previous logic if not set
+    if (this.selectedDateRange) {
+      // For monthly, compare with previous month; for others, just use the selected range
+      if (this.selectedDateRange.period === 'monthly') {
+        const start = new Date(this.selectedDateRange.startDate);
+        start.setMonth(start.getMonth() - 1);
+        start.setDate(1);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(this.selectedDateRange.endDate);
+        end.setHours(23, 59, 59, 999);
+        return [start, end];
+      } else {
+        const start = new Date(this.selectedDateRange.startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(this.selectedDateRange.endDate);
+        end.setHours(23, 59, 59, 999);
+        return [start, end];
+      }
+    }
+    // fallback: current and previous month
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
