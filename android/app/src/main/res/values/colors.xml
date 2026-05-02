@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App primary colors matching the teal theme -->
+    <color name="colorPrimary">#26A69A</color>
+    <color name="colorPrimaryDark">#00695C</color>
+    <color name="colorAccent">#4DB6AC</color>
+    
+    <!-- Additional splash screen colors -->
+    <color name="splash_gradient_start">#26A69A</color>
+    <color name="splash_gradient_center">#4DB6AC</color>
+    <color name="splash_gradient_end">#80CBC4</color>
+</resources>

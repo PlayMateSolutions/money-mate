@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Gradient background -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:startColor="#26A69A"
+                android:centerColor="#4DB6AC"
+                android:endColor="#80CBC4"
+                android:type="linear" />
+        </shape>
+    </item>
+    
+    <!-- App icon in the center -->
+    <item
+        android:drawable="@mipmap/ic_launcher_foreground"
+        android:gravity="center"
+        android:width="120dp"
+        android:height="120dp" />
+</layer-list>

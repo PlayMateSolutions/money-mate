@@ -14,8 +14,8 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
-      backgroundColor: '#121212', // Match your theme or brand color
-      androidSplashResourceName: 'splash',
+      backgroundColor: '#26A69A', // Match the gradient start color
+      androidSplashResourceName: 'splash_screen',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false
     }
