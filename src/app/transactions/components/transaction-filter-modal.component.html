@@ -46,6 +46,9 @@
         [multiple]="true"
         placeholder="All categories"
       >
+        <ion-select-option value="__uncategorized__">
+          Uncategorized
+        </ion-select-option>
         <ion-select-option *ngFor="let category of categories" [value]="category.id">
           {{ category.name }}
         </ion-select-option>

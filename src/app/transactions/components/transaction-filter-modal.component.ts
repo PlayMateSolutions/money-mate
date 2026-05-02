@@ -79,9 +79,11 @@ export class TransactionFilterModalComponent {
   }
 
   ngOnInit(): void {
+    // Map null to '__uncategorized__' for UI binding
+    const initialCategoryIds = (this.initialFilters.categoryIds ?? []).map(id => id === null ? '__uncategorized__' : id);
     this.form = {
       types: [...(this.initialFilters.types ?? this.allTypes)],
-      categoryIds: [...(this.initialFilters.categoryIds ?? [])],
+      categoryIds: [...initialCategoryIds],
       accountIds: [...(this.initialFilters.accountIds ?? [])],
       tags: [...(this.initialFilters.tags ?? [])],
     };

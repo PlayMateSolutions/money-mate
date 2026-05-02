@@ -439,8 +439,16 @@ export class TransactionsPage implements OnInit, OnDestroy {
         return false;
       }
 
-      if (hasCategoryFilter && !selectedCategoryIds.has(transaction.categoryId)) {
-        return false;
+      // CATEGORY FILTER: support '__uncategorized__' sentinel
+      if (hasCategoryFilter) {
+        const isUncategorizedSelected = selectedCategoryIds.has('__uncategorized__');
+        const isUncategorized = transaction.categoryId === null || transaction.categoryId === undefined || transaction.categoryId === '';
+        if (
+          (isUncategorized && !isUncategorizedSelected) ||
+          (!isUncategorized && !selectedCategoryIds.has(transaction.categoryId))
+        ) {
+          return false;
+        }
       }
 
       if (hasAccountFilter) {
