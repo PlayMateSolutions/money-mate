@@ -1,4 +1,4 @@
-package com.moneymate.app;
+package com.ramaraj.moneymate;
 
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;

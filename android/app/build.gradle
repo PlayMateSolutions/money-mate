@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.moneymate.app"
+    namespace = "com.ramaraj.moneymate"
     compileSdk = 36
     defaultConfig {
-        applicationId "com.moneymate.app"
+        applicationId "com.ramaraj.moneymate"
         minSdkVersion 24
         targetSdkVersion 36
         versionCode 1

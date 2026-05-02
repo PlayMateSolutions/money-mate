@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 
 const config: CapacitorConfig = {
-  appId: 'com.moneymate.app',
+  appId: 'com.ramaraj.moneymate',
   appName: 'MoneyMate',
   webDir: 'www',
   plugins: {

@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">MoneyMate</string>
     <string name="title_activity_main">MoneyMate</string>
-    <string name="package_name">com.moneymate.app</string>
-    <string name="custom_url_scheme">com.moneymate.app</string>
+    <string name="package_name">com.ramaraj.moneymate</string>
+    <string name="custom_url_scheme">com.ramaraj.moneymate</string>
     <string name="google_web_client_id">102904530835-dt70ccodl3smiula3frcbrt5ubf8out6.apps.googleusercontent.comm</string>
 </resources>
