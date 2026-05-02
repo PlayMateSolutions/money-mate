@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { ThemeService, Theme } from '../core/services/theme.service';
 import { CommonModule } from '@angular/common';
 import {
   IonHeader,
@@ -60,17 +61,27 @@ interface DashboardWidgetDraft {
     IonToggle,
     IonReorder,
     IonReorderGroup,
-    IonCard,
-    IonCardContent
+    // ...existing code...
   ]
 })
 export class DashboardCustomizePage {
   widgets: DashboardWidgetDraft[] = [];
   private readonly layoutService = inject(DashboardLayoutService);
   private readonly router = inject(Router);
+  private readonly themeService = inject(ThemeService);
+
+  theme: Theme = 'light';
+
 
   constructor() {
     addIcons({ saveOutline });
+    this.themeService.theme$.subscribe((theme: Theme) => {
+      this.theme = theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
+    });
+  }
+  getWidgetIconPath(widgetId: string): string {
+    const themeFolder = this.theme === 'dark' ? 'dark-theme' : 'light-theme';
+    return `assets/widget-icons/${themeFolder}/${widgetId}.png`;
   }
 
   ionViewWillEnter(): void {

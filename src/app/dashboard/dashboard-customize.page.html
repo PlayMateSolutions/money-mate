@@ -16,17 +16,20 @@
   <ion-list lines="full" class="customize-list">
     <ion-reorder-group [disabled]="false" (ionItemReorder)="handleReorder($event)">
       <ion-item *ngFor="let widget of widgets; trackBy: trackByWidgetId">
-        <ion-label>
-          <h2>{{ widget.title }}</h2>
-          <p>{{ widget.subtitle }}</p>
-
-          <ion-card class="widget-preview" aria-hidden="true">
-            <ion-card-content>
-              <div class="preview-line preview-line-lg"></div>
-              <div class="preview-line"></div>
-              <div class="preview-line preview-line-sm"></div>
-            </ion-card-content>
-          </ion-card>
+        <ion-label class="widget-label-row">
+          <div class="widget-row">
+            <div class="widget-info">
+              <h2><strong>{{ widget.title }}</strong></h2>
+              <p style="color: #888;">{{ widget.subtitle }}</p>
+            </div>
+          </div>
+            <img
+              class="widget-icon-preview"
+              [src]="getWidgetIconPath(widget.id)"
+              [alt]="widget.title + ' preview'"
+              loading="lazy"
+              aria-hidden="true"
+            />
         </ion-label>
 
         <ion-toggle
