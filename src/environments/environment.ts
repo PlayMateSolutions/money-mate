@@ -4,8 +4,8 @@
 
 export const environment = {
   production: false,
-  googleSignInClientId: '1031239235658-94pfpseiboals1kv4g0aehujusmlbcfb.apps.googleusercontent.com',
-  googleProjectNumber: '1031239235658',
+  googleSignInClientId: '102904530835-vrtlhimba7aqdaqcm56orbvj19n3ilhi.apps.googleusercontent.com',
+  googleProjectNumber: '102904530835',
   googleScopes: [
     'email',
     'profile',
