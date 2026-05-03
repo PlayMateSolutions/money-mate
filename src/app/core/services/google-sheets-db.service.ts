@@ -76,6 +76,7 @@ export class GoogleSheetsDbService {
 
   async batchUpdateValues(
     ranges: GoogleBatchUpdateRange[],
+    valueInputOption: 'RAW' | 'USER_ENTERED' = 'RAW',
   ): Promise<void> {
     const accessToken = await this.getAccessToken();
     const spreadsheetId = this.getSpreadsheetId();
@@ -88,7 +89,7 @@ export class GoogleSheetsDbService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          valueInputOption: 'RAW',
+          valueInputOption,
           data: ranges,
         }),
       },

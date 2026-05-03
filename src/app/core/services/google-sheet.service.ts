@@ -79,11 +79,19 @@ export class GoogleSheetService {
 
   async createMoneyMateSpreadsheet(title: string): Promise<SpreadsheetSummary> {
     const result = await this.googleSheetsDbService.createSpreadsheet(title, [
+      'dashboard',
       'accounts',
       'categories',
       'transactions',
     ]);
 
+    return {
+      id: result.spreadsheetId,
+      name: result.title,
+    };
+  }
+
+  async initializeWithHeaders() {
     await this.googleSheetsDbService.batchUpdateValues([
       {
         range: 'accounts!A1',
@@ -139,12 +147,64 @@ export class GoogleSheetService {
           'updatedBy',
         ]],
       },
+      {
+        range: 'dashboard!A1',
+        values: [[
+          'Date',
+          'Description',
+          'Amount',
+          'From Account',
+          'To Account',
+          'Category',
+        ]],
+      },
+    
     ]);
+    console.log('Initialized spreadsheet with headers');
+  }
 
-    return {
-      id: result.spreadsheetId,
-      name: result.title,
-    };
+  /**
+   * Sets formulas for the dashboard sheet (A2:F2) using ARRAYFORMULA for all columns.
+   */
+  async setDashboardFormulas(): Promise<void> {
+    await this.googleSheetsDbService.batchUpdateValues([
+      {
+        range: 'dashboard!A2',
+        values: [[
+          '=ARRAYFORMULA(IF(transactions!G2:G="", "", DATEVALUE(LEFT(transactions!G2:G, 10))))',
+        ]],
+      },
+      {
+        range: 'dashboard!B2',
+        values: [[
+          '=ARRAYFORMULA(IF(transactions!F2:F="", "", transactions!F2:F))',
+        ]],
+      },
+      {
+        range: 'dashboard!C2',
+        values: [[
+          '=ARRAYFORMULA(IF(transactions!C2:C="", "", transactions!C2:C))',
+        ]],
+      },
+      {
+        range: 'dashboard!D2',
+        values: [[
+          '=ARRAYFORMULA(IF(transactions!B2:B="","",IFNA(VLOOKUP(transactions!B2:B, accounts!A:B, 2, FALSE))))',
+        ]],
+      },
+      {
+        range: 'dashboard!E2',
+        values: [[
+          '=ARRAYFORMULA(IF(transactions!J2:J="","",VLOOKUP(transactions!J2:J, accounts!A:B, 2, FALSE)))',
+        ]],
+      },
+      {
+        range: 'dashboard!F2',
+        values: [[
+          '=ARRAYFORMULA(IF(transactions!E2:E="","",IFNA(VLOOKUP(transactions!E2:E, categories!A:B, 2, FALSE), "")))',
+        ]],
+      },
+    ], 'USER_ENTERED');
   }
 
   async syncAccounts(): Promise<void> {

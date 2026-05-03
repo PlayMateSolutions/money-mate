@@ -82,7 +82,6 @@ export class DashboardPage implements OnInit, OnDestroy {
   onDateRangeChange(range: DashboardDateRange) {
     this.selectedDateRange = range;
     this.dateRangeService.setDateRange(range);
-    console.log('Selected date range changed:', range);
   }
 
   trackByWidgetId(_: number, widget: DashboardWidgetDefinition): DashboardWidgetId {

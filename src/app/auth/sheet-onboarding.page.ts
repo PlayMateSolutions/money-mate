@@ -175,6 +175,9 @@ export class SheetOnboardingPage implements OnInit {
 
       this.sessionService.setLinkedSpreadsheet(spreadsheet);
 
+      await this.googleSheetService.initializeWithHeaders();
+      await this.googleSheetService.setDashboardFormulas();
+
       await this.showToast('Sheet created successfully', 'success');
       await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
     } catch (error) {
