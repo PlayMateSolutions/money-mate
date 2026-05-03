@@ -12,6 +12,9 @@ import {
   IonMenuButton,
   IonList,
   IonItem,
+  IonItemSliding,
+  IonItemOptions,
+  IonItemOption,
   IonItemDivider,
   IonLabel,
   IonNote,
@@ -20,11 +23,12 @@ import {
   IonBadge,
   IonFab,
   IonFabButton,
+  AlertController,
   ModalController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { syncOutline, pricetagOutline, swapHorizontalOutline, filterOutline, flashOutline } from 'ionicons/icons';
+import { syncOutline, pricetagOutline, swapHorizontalOutline, filterOutline, flashOutline, trashOutline } from 'ionicons/icons';
 import { Account, Category, Transaction, TransactionType } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
 import {
@@ -63,6 +67,9 @@ interface TransactionDateGroup {
     IonMenuButton,
     IonList,
     IonItem,
+    IonItemSliding,
+    IonItemOptions,
+    IonItemOption,
     IonItemDivider,
     IonLabel,
     IonNote,
@@ -105,6 +112,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private readonly sessionService: SessionService,
     private readonly googleSheetService: GoogleSheetService,
     private readonly toastController: ToastController,
+    private readonly alertController: AlertController,
     private readonly modalController: ModalController,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
@@ -115,6 +123,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       syncOutline,
       filterOutline,
       flashOutline,
+      trashOutline,
     });
   }
 
@@ -238,6 +247,36 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   async openEditModal(item: TransactionListItem): Promise<void> {
     await this.router.navigate(['/tabs/transactions/form', item.id]);
+  }
+
+  async confirmDelete(item: TransactionListItem, slidingItem: IonItemSliding): Promise<void> {
+    await slidingItem.close();
+    const alert = await this.alertController.create({
+      header: 'Delete Transaction',
+      message: 'Are you sure you want to delete this transaction?',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+        },
+        {
+          text: 'Delete',
+          role: 'destructive',
+          handler: () => { void this.deleteTransaction(item); },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  async deleteTransaction(item: TransactionListItem): Promise<void> {
+    try {
+      await this.transactionRepository.archiveTransaction(item.id);
+      await this.presentToast('Transaction deleted', 'success');
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      await this.presentToast('Failed to delete transaction', 'danger');
+    }
   }
 
   async openFilterModal(): Promise<void> {
