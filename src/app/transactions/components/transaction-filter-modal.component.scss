@@ -10,6 +10,17 @@ ion-item {
   --padding-bottom: 8px;
 }
 
+ion-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.category-row {
+  --detail-icon-opacity: 1;
+  align-items: center;
+}
+
 ion-footer {
   ion-toolbar {
     --padding-start: 8px;

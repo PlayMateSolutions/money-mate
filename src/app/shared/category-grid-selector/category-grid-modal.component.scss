@@ -1,0 +1,22 @@
+ion-content {
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+}
+
+ion-footer {
+  ion-toolbar {
+    --padding-start: 8px;
+    --padding-end: 8px;
+  }
+
+  ion-buttons {
+    padding: 4px;
+  }
+
+  ion-button {
+    margin: 0;
+    --border-radius: 6px;
+  }
+}

@@ -21,7 +21,7 @@ import {
 import { addIcons } from 'ionicons';
 import { close, checkmark, trash } from 'ionicons/icons';
 import { Account, Category, TransactionType } from '../../core/database/models';
-import { CategoryGridSelectorComponent } from '../../shared/category-grid-selector/category-grid-selector.component';
+import { CategoryGridModalComponent } from '../../shared/category-grid-selector/category-grid-modal.component';
 
 export interface TransactionFilterState {
   types: TransactionType[];
@@ -50,7 +50,6 @@ export interface TransactionFilterState {
     IonSelectOption,
     IonChip,
     IonIcon,
-    CategoryGridSelectorComponent,
   ],
   templateUrl: './transaction-filter-modal.component.html',
   styleUrls: ['./transaction-filter-modal.component.scss'],
@@ -115,6 +114,36 @@ export class TransactionFilterModalComponent {
       accountIds: [],
       tags: [],
     };
+  }
+
+  get categorySelectionLabel(): string {
+    const selectedCount = this.form.categoryIds.length;
+    if (selectedCount === 0) {
+      return 'All categories';
+    }
+
+    return `Categories (${selectedCount} selected)`;
+  }
+
+  async openCategoryPicker(): Promise<void> {
+    const modal = await this.modalController.create({
+      component: CategoryGridModalComponent,
+      componentProps: {
+        title: 'Categories',
+        categories: this.categories,
+        selectedCategoryIds: [...this.form.categoryIds],
+        includeUncategorized: true,
+      },
+    });
+
+    await modal.present();
+    const { data, role } = await modal.onWillDismiss<string[]>();
+
+    if (role !== 'apply' || !data) {
+      return;
+    }
+
+    this.form.categoryIds = [...data];
   }
 
   async cancel(): Promise<void> {
