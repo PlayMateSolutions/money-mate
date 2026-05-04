@@ -28,7 +28,7 @@ import {
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { syncOutline, pricetagOutline, swapHorizontalOutline, filterOutline, flashOutline, trashOutline } from 'ionicons/icons';
+import { syncOutline, pricetagOutline, swapHorizontalOutline, filterOutline, funnelOutline, flashOutline, trashOutline } from 'ionicons/icons';
 import { Account, Category, Transaction, TransactionType } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
 import {
@@ -122,6 +122,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       swapHorizontalOutline,
       syncOutline,
       filterOutline,
+      funnelOutline,
       flashOutline,
       trashOutline,
     });
@@ -160,14 +161,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   async ionViewWillEnter(): Promise<void> {
     this.loadSelectedCurrency();
-    this.resetFilters();
     await this.refreshLookups();
     await this.transactionRepository.getAllTransactions();
-  }
-
-  ionViewWillLeave(): void {
-    this.resetFilters();
-    this.selectedDateRange = this.getDefaultDateRange();
   }
 
   get hasTransactions(): boolean {

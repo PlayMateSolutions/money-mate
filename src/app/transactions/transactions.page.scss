@@ -16,7 +16,10 @@
 }
 
 ion-toolbar ion-button ion-badge {
-  margin-left: 6px;
+  margin-left: -20px;
+  --padding-end: 8px;
+  --padding-start: 8px;
+  border-radius: 20px;
 }
 
 ion-list {
