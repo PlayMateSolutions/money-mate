@@ -133,9 +133,6 @@ export class TransactionFormPage implements OnInit {
     // Build description->category mapping from past year transactions
     await this.autoCategorizationService.initialize();
 
-    // Set up listener for description input changes (auto-categorization)
-    this.setupDescriptionAutoCategorization();
-
     // Check for transaction id in route params
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -146,6 +143,10 @@ export class TransactionFormPage implements OnInit {
         this.populateFormFromTransaction(tx);
         return;
       }
+    } else {
+      // Set up listener for description input changes (auto-categorization)
+      // only for new transactions, not when editing existing one
+      this.setupDescriptionAutoCategorization();
     }
 
     const lastUsedAccountId = this.getLastUsedAccountId();
