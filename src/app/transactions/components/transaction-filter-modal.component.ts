@@ -21,6 +21,7 @@ import {
 import { addIcons } from 'ionicons';
 import { close, checkmark, trash } from 'ionicons/icons';
 import { Account, Category, TransactionType } from '../../core/database/models';
+import { CategoryGridSelectorComponent } from '../../shared/category-grid-selector/category-grid-selector.component';
 
 export interface TransactionFilterState {
   types: TransactionType[];
@@ -49,6 +50,7 @@ export interface TransactionFilterState {
     IonSelectOption,
     IonChip,
     IonIcon,
+    CategoryGridSelectorComponent,
   ],
   templateUrl: './transaction-filter-modal.component.html',
   styleUrls: ['./transaction-filter-modal.component.scss'],

@@ -40,19 +40,12 @@
 
     <ion-item>
       <ion-label position="stacked">Categories</ion-label>
-      <ion-select
-        [(ngModel)]="form.categoryIds"
-        interface="alert"
-        [multiple]="true"
-        placeholder="All categories"
-      >
-        <ion-select-option value="__uncategorized__">
-          Uncategorized
-        </ion-select-option>
-        <ion-select-option *ngFor="let category of categories" [value]="category.id">
-          {{ category.name }}
-        </ion-select-option>
-      </ion-select>
+      <app-category-grid-selector
+        [categories]="categories"
+        [(selectedCategoryIds)]="form.categoryIds"
+        [includeUncategorized]="true"
+        uncategorizedLabel="Uncategorized"
+      ></app-category-grid-selector>
     </ion-item>
 
     <ion-item>

@@ -1,0 +1,27 @@
+<div class="category-grid" role="group" aria-label="Select categories">
+  <button
+    *ngIf="includeUncategorized"
+    type="button"
+    class="category-tile"
+    [class.selected]="isSelected(uncategorizedId)"
+    [attr.aria-pressed]="isSelected(uncategorizedId)"
+    (click)="toggleCategory(uncategorizedId)"
+  >
+    <span class="selected-indicator" *ngIf="isSelected(uncategorizedId)">✓</span>
+    <ion-icon class="tile-icon" name="pricetag-outline" [style.color]="'var(--ion-color-medium)'"></ion-icon>
+    <span class="tile-name">{{ uncategorizedLabel }}</span>
+  </button>
+
+  <button
+    *ngFor="let category of categories; trackBy: trackByCategoryId"
+    type="button"
+    class="category-tile"
+    [class.selected]="isSelected(category.id)"
+    [attr.aria-pressed]="isSelected(category.id)"
+    (click)="toggleCategory(category.id)"
+  >
+    <span class="selected-indicator" *ngIf="isSelected(category.id)">✓</span>
+    <ion-icon class="tile-icon" [name]="getCategoryIcon(category.icon)" [style.color]="getCategoryColor(category.color)"></ion-icon>
+    <span class="tile-name">{{ category.name }}</span>
+  </button>
+</div>
