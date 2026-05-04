@@ -297,7 +297,7 @@ export class TransactionFormPage implements OnInit {
         amount: Number(this.form.amount),
         type: this.form.type,
         categoryId: this.form.type === 'transfer' ? '' : (this.form.categoryId || ''),
-        description: this.form.description.trim(),
+        description: this.capitalizeDescription(this.form.description.trim()),
         date: new Date(this.form.date),
         notes: this.form.notes.trim() || undefined,
         tags: this.form.tags.length > 0 ? this.form.tags : undefined,
@@ -320,6 +320,22 @@ export class TransactionFormPage implements OnInit {
       console.error('Error saving transaction:', error);
       this.saving = false;
     }
+  }
+
+  /**
+   * Capitalize each word in the description (title case).
+   */
+  private capitalizeDescription(value: string): string {
+    return value
+      .split(/\s+/)
+      .filter((part) => !!part)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  onDescriptionBlur(event: any) {
+    const value = event.target.value;
+    this.form.description = this.capitalizeDescription(value);
   }
 
   /**
