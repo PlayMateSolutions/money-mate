@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
 
+def resolvedVersionName = (project.findProperty('VERSION_NAME') ?: '1.0.0').toString()
+def resolvedVersionCode = ((project.findProperty('VERSION_CODE') ?: '1').toString()).toInteger()
+
 android {
     namespace = "com.ramaraj.moneymate"
     compileSdk = 36
@@ -7,8 +10,8 @@ android {
         applicationId "com.ramaraj.moneymate"
         minSdkVersion 24
         targetSdkVersion 36
-        versionCode 1
-        versionName "1.0"
+        versionCode resolvedVersionCode
+        versionName resolvedVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

@@ -11,6 +11,10 @@ on:
         options:
           - apk
           - aab
+      version:
+        description: 'Release version (X.Y.Z)'
+        required: true
+        type: string
 
 jobs:
   build-android-apk:
@@ -49,6 +53,14 @@ jobs:
       - name: Grant permission
         run: chmod +x android/gradlew
 
+      - name: Validate version input
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Invalid version: $VERSION. Expected format: X.Y.Z"
+            exit 1
+          fi
+
       - name: Decode keystore
         env:
           ENCODED_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
@@ -76,18 +88,20 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          VERSION_NAME: ${{ github.event.inputs.version }}
+          VERSION_CODE: ${{ github.run_number }}
         run: |
           cd android
           if [ "${{ github.event.inputs.buildType }}" = "aab" ]; then
-            ./gradlew bundleRelease
+            ./gradlew bundleRelease -PVERSION_NAME="$VERSION_NAME" -PVERSION_CODE="$VERSION_CODE"
           else
-            ./gradlew assembleRelease
+            ./gradlew assembleRelease -PVERSION_NAME="$VERSION_NAME" -PVERSION_CODE="$VERSION_CODE"
           fi
 
       - name: Upload Release Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.inputs.buildType == 'aab' && 'money-mate-release-aab' || 'money-mate-release-apk' }}
+          name: ${{ github.event.inputs.buildType == 'aab' && format('money-mate-v{0}-aab', github.event.inputs.version) || format('money-mate-v{0}-apk', github.event.inputs.version) }}
           path: ${{ github.event.inputs.buildType == 'aab' && 'android/app/build/outputs/bundle/release/app-release.aab' || 'android/app/build/outputs/apk/release/app-release.apk' }}
 
       - name: Clean up keystore
