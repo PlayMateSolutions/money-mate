@@ -24,4 +24,14 @@
       </ion-item>
     </ion-list>
   </ion-content>
+
+  <ion-footer class="install-footer" *ngIf="showInstall">
+    <div class="install-info">
+      Do you know you can install this app on your device for quick access?
+    </div>
+    <ion-item (click)="promptInstall()" class="install-app-button" button>
+      <ion-icon slot="start" name="download-outline" style="color: #fff;"></ion-icon>
+      <ion-label>Install App</ion-label>
+    </ion-item>
+  </ion-footer>
 </ion-menu>

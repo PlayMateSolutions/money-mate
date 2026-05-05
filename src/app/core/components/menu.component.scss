@@ -1,1 +1,59 @@
-// Menu component styles can be added here if needed
+// Install footer styles
+.install-footer {
+	background: var(--ion-color-light);
+	color: var(--ion-text-color);
+	border-top: 1px solid var(--ion-color-medium);
+	padding: var(--app-padding-medium);
+	text-align: center;
+	box-shadow: var(--app-card-shadow);
+	transition: background 0.2s, color 0.2s;
+    margin-bottom: 8px;
+}
+
+// Add spacing below the info text
+.install-info {
+	margin-bottom: 12px;
+	font-size: 1rem;
+	color: var(--ion-text-color, #222);
+}
+
+.install-app-button {
+	--background: var(--ion-color-primary);
+	--color: #fff;
+	border-radius: 8px;
+	margin: 0 auto;
+	width: 90%;
+	font-weight: 600;
+	box-shadow: var(--app-card-shadow);
+	transition: background 0.2s, color 0.2s;
+
+	ion-label {
+		color: #fff !important;
+		font-weight: 600;
+		letter-spacing: 0.5px;
+	}
+	ion-icon {
+		color: #fff !important;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	.install-footer {
+		background: #18191a;
+		color: #fff;
+		border-top: 1px solid var(--ion-color-step-150, #333);
+	}
+	.install-info {
+		color: #e0e0e0;
+	}
+	.install-app-button {
+		--background: var(--ion-color-primary);
+		--color: #fff;
+		ion-label {
+			color: #fff !important;
+		}
+		ion-icon {
+			color: #fff !important;
+		}
+	}
+}
