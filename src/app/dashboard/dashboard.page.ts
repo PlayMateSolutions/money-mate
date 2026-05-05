@@ -17,6 +17,7 @@ import { addIcons } from 'ionicons';
 import { appsOutline } from 'ionicons/icons';
 import { DashboardLayoutService } from './dashboard-layout.service';
 import { DashboardDateRangeService, DashboardDateRange } from './services/dashboard-date-range.service';
+import { AnalyticsService } from '../core/services';
 import {
   DASHBOARD_WIDGET_BY_ID,
   DashboardWidgetDefinition,
@@ -53,6 +54,7 @@ export class DashboardPage implements OnInit, OnDestroy {
   private readonly layoutService = inject(DashboardLayoutService);
   private readonly router = inject(Router);
   private readonly dateRangeService = inject(DashboardDateRangeService);
+  private readonly analyticsService = inject(AnalyticsService);
   private routerSubscription?: Subscription;
 
   constructor() {
@@ -82,6 +84,9 @@ export class DashboardPage implements OnInit, OnDestroy {
   onDateRangeChange(range: DashboardDateRange) {
     this.selectedDateRange = range;
     this.dateRangeService.setDateRange(range);
+    this.analyticsService.trackEvent('dashboard_date_range_changed', {
+      period: range.period,
+    });
   }
 
   trackByWidgetId(_: number, widget: DashboardWidgetDefinition): DashboardWidgetId {
@@ -89,6 +94,9 @@ export class DashboardPage implements OnInit, OnDestroy {
   }
 
   async openCustomizeDashboard(): Promise<void> {
+    this.analyticsService.trackEvent('dashboard_customize_opened', {
+      visible_widget_count: this.visibleWidgets.length,
+    });
     await this.router.navigate(['/dashboard/customize']);
   }
 

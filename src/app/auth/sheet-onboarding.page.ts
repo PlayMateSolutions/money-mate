@@ -21,7 +21,7 @@ import {
 import { addIcons } from 'ionicons';
 import { addCircleOutline, documentOutline, ellipsisHorizontalOutline, logOutOutline } from 'ionicons/icons';
 import { Router } from '@angular/router';
-import { GoogleSheetService, SessionService } from '../core/services';
+import { AnalyticsService, GoogleSheetService, SessionService } from '../core/services';
 import { environment } from '../../environments/environment';
 import '@googleworkspace/drive-picker-element';
 
@@ -75,6 +75,7 @@ export class SheetOnboardingPage implements OnInit {
   constructor(
     private readonly sessionService: SessionService,
     private readonly googleSheetService: GoogleSheetService,
+    private readonly analyticsService: AnalyticsService,
     private readonly router: Router,
     private readonly toastController: ToastController,
   ) {
@@ -145,10 +146,14 @@ export class SheetOnboardingPage implements OnInit {
       });
 
       await this.googleSheetService.importAllFromSheetToLocal();
+      this.analyticsService.trackEvent('sheet_link_existing', {
+        source: spreadsheet.linked ? 'linked_list' : 'existing_list',
+      });
       await this.showToast('Spreadsheet linked and data imported', 'success');
       await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
     } catch (error) {
       console.error('Failed to import sheet data:', error);
+      this.analyticsService.trackEvent('sheet_link_existing', { source: 'existing_list', status: 'failed' });
       await this.showToast('Unable to import data from sheet', 'danger');
     } finally {
       this.loading = false;
@@ -177,11 +182,13 @@ export class SheetOnboardingPage implements OnInit {
 
       await this.googleSheetService.initializeWithHeaders();
       await this.googleSheetService.setDashboardFormulas();
+      this.analyticsService.trackEvent('sheet_create_new', { status: 'success' });
 
       await this.showToast('Sheet created successfully', 'success');
       await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
     } catch (error) {
       console.error('Create sheet failed:', error);
+      this.analyticsService.trackEvent('sheet_create_new', { status: 'failed' });
       await this.showToast('Unable to create sheet. Please try again.', 'danger');
     } finally {
       this.loading = false;
@@ -190,6 +197,7 @@ export class SheetOnboardingPage implements OnInit {
 
   openPicker(): void {
     this.pickerVisible = true;
+    this.analyticsService.trackEvent('sheet_picker_opened');
   }
 
   async onDrivePicked(event: Event): Promise<void> {
@@ -207,10 +215,12 @@ export class SheetOnboardingPage implements OnInit {
       });
 
       await this.googleSheetService.importAllFromSheetToLocal();
+      this.analyticsService.trackEvent('sheet_link_picker', { status: 'success' });
       await this.showToast('Spreadsheet linked and data imported', 'success');
       await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
     } catch (error) {
       console.error('Failed to import picked sheet data:', error);
+      this.analyticsService.trackEvent('sheet_link_picker', { status: 'failed' });
       await this.showToast('Unable to import data from sheet', 'danger');
     } finally {
       this.loading = false;
@@ -218,10 +228,12 @@ export class SheetOnboardingPage implements OnInit {
   }
 
   async skipForNow(): Promise<void> {
+    this.analyticsService.trackEvent('sheet_onboarding_skipped');
     await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
   }
 
   async logout(): Promise<void> {
+    this.analyticsService.trackEvent('sheet_onboarding_logout');
     await this.sessionService.signOutGoogle();
     await this.router.navigate(['/login'], { replaceUrl: true });
   }

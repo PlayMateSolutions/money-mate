@@ -3,6 +3,7 @@ import { addIcons } from 'ionicons';
 import { CommonModule } from '@angular/common';
 import { downloadOutline } from 'ionicons/icons';
 import { RouterLink } from '@angular/router';
+import { AnalyticsService } from '../services';
 import { 
   IonMenu, 
   IonHeader, 
@@ -40,7 +41,7 @@ export class MenuComponent {
   showInstall = false;
   deferredPrompt: any = null;
 
-  constructor() {
+  constructor(private readonly analyticsService: AnalyticsService) {
     // Register the download-outline icon for IonIcon usage
     addIcons({ 'download-outline': downloadOutline });
 
@@ -49,6 +50,7 @@ export class MenuComponent {
       e.preventDefault();
       this.deferredPrompt = e;
       this.showInstall = true;
+      this.analyticsService.trackEvent('install_prompt_available');
     });
   }
 
@@ -62,6 +64,9 @@ export class MenuComponent {
     this.deferredPrompt.prompt();
     const choiceResult = await this.deferredPrompt.userChoice;
     console.log('User choice:', choiceResult.outcome);
+    this.analyticsService.trackEvent('install_prompt_result', {
+      outcome: choiceResult.outcome,
+    });
     this.deferredPrompt = null; // Reset
     this.showInstall = false;
   }

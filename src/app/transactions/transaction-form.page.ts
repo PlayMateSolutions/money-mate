@@ -32,6 +32,7 @@ import { addIcons } from 'ionicons';
 import { chevronDownOutline, chevronUpOutline, closeCircle, trashOutline, saveOutline } from 'ionicons/icons';
 import { Account, Category, Transaction, TransactionType } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository, CreateTransactionInput, UpdateTransactionInput } from '../core/database/repositories';
+import { AnalyticsService } from '../core/services';
 import { AutoCategorizationService } from '../core/services/auto-categorization.service';
 import { NavController } from '@ionic/angular';
 
@@ -116,7 +117,8 @@ export class TransactionFormPage implements OnInit {
     private route: ActivatedRoute,
     private alertController: AlertController,
     private navController: NavController,
-    private autoCategorizationService: AutoCategorizationService
+    private autoCategorizationService: AutoCategorizationService,
+    private analyticsService: AnalyticsService,
   ) {
     addIcons({ closeCircle, chevronDownOutline, chevronUpOutline, trashOutline, saveOutline });
   }
@@ -292,6 +294,7 @@ export class TransactionFormPage implements OnInit {
     this.saving = true;
     this.categoryManuallySelected = false;
     try {
+      const mode = this.isEditMode ? 'update' : 'create';
       const baseInput = {
         accountId: this.form.accountId,
         amount: Number(this.form.amount),
@@ -313,6 +316,13 @@ export class TransactionFormPage implements OnInit {
         transaction = await this.transactionRepository.createTransaction(input);
         this.persistLastUsedAccountId(this.form.accountId);
       }
+
+      this.analyticsService.trackEvent('transaction_saved', {
+        mode,
+        transaction_type: this.form.type,
+        has_notes: !!baseInput.notes,
+        tag_count: this.form.tags.length,
+      });
 
       // Navigate back to transactions list after save
       await this.navController.back();
@@ -382,6 +392,10 @@ export class TransactionFormPage implements OnInit {
     try {
       this.saving = true;
       await this.transactionRepository.archiveTransaction(this.transactionToEdit.id);
+      this.analyticsService.trackEvent('transaction_deleted', {
+        source: 'transaction_form',
+        transaction_type: this.transactionToEdit.type,
+      });
       await this.router.navigate(['/tabs/transactions']);
     } catch (error) {
       console.error('Error deleting transaction:', error);

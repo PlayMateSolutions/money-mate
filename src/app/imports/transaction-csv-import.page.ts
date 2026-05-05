@@ -36,6 +36,7 @@ import {
   CsvImportService,
   CsvImportTransactionPreview,
 } from '../core/services/csv-import.service';
+import { AnalyticsService } from '../core/services';
 
 @Component({
   selector: 'app-transaction-csv-import',
@@ -76,6 +77,7 @@ export class TransactionCsvImportPage implements OnInit {
   importResult: CsvImportCommitResult | null = null;
 
   constructor(
+    private readonly analyticsService: AnalyticsService,
     private readonly csvImportService: CsvImportService,
     private readonly toastController: ToastController,
     private readonly cdr: ChangeDetectorRef,
@@ -136,6 +138,11 @@ export class TransactionCsvImportPage implements OnInit {
       const csvText = await file.text();
       console.log('CSV file content:', csvText);
       this.preview = await this.csvImportService.buildPreview(csvText);
+      this.analyticsService.trackEvent('csv_preview_built', {
+        file_name: file.name,
+        preview_count: this.preview.transactionsToImport.length,
+        invalid_row_count: this.preview.invalidRows.length,
+      });
       this.processing = false;
       this.cdr.markForCheck();
       await this.presentToast('CSV processed successfully', 'success');
@@ -166,6 +173,9 @@ export class TransactionCsvImportPage implements OnInit {
 
     try {
       this.importResult = await this.csvImportService.importPreview(this.preview);
+      this.analyticsService.trackEvent('csv_import_completed', {
+        imported_count: this.importResult.importedCount,
+      });
       this.importing = false;
       this.cdr.markForCheck();
       await this.presentToast(`Imported ${this.importResult.importedCount} transactions`, 'success');

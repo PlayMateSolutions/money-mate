@@ -32,6 +32,7 @@ import { syncOutline, pricetagOutline, swapHorizontalOutline, filterOutline, fun
 import { Account, Category, Transaction, TransactionType } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
 import {
+  AnalyticsService,
   buildTransactionDisplayItem,
   GoogleSheetService,
   registerCategoryIcons,
@@ -110,6 +111,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private accountRepository: AccountRepository,
     private categoryRepository: CategoryRepository,
     private readonly sessionService: SessionService,
+    private readonly analyticsService: AnalyticsService,
     private readonly googleSheetService: GoogleSheetService,
     private readonly toastController: ToastController,
     private readonly alertController: AlertController,
@@ -267,6 +269,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
   async deleteTransaction(item: TransactionListItem): Promise<void> {
     try {
       await this.transactionRepository.archiveTransaction(item.id);
+      this.analyticsService.trackEvent('transaction_deleted', {
+        source: 'transactions_list',
+        transaction_type: item.transaction.type,
+      });
       await this.presentToast('Transaction deleted', 'success');
     } catch (error) {
       console.error('Error deleting transaction:', error);
@@ -275,6 +281,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   async openFilterModal(): Promise<void> {
+    this.analyticsService.trackEvent('transactions_filter_opened', {
+      active_filter_count: this.activeFilterCount,
+    });
+
     const modal = await this.modalController.create({
       component: TransactionFilterModalComponent,
       componentProps: {
@@ -321,6 +331,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
     }
 
     this.buildGroupedItems(this.applyFilters(this.allTransactions));
+    this.analyticsService.trackEvent('transactions_filters_applied', {
+      active_filter_count: this.activeFilterCount,
+    });
     }
 
   async syncTransactions(): Promise<void> {
@@ -335,6 +348,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
     try {
       this.syncing = true;
       this.error = null;
+      this.analyticsService.trackEvent('sync_transactions', {
+        status: 'started',
+        dirty_count: this.allTransactions.filter((transaction) => !!transaction.isDirty).length,
+      });
 
       // Sync all: accounts, categories, transactions
       await this.googleSheetService.syncAccounts();
@@ -342,10 +359,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
       await this.googleSheetService.syncTransactions();
       await this.refreshLookups();
       await this.transactionRepository.getAllTransactions();
+      this.analyticsService.trackEvent('sync_transactions', { status: 'success' });
       await this.presentToast('All data synced successfully', 'success');
     } catch (error) {
       console.error('Error syncing data:', error);
       this.error = 'Failed to sync data';
+      this.analyticsService.trackEvent('sync_transactions', { status: 'failed' });
       await this.presentToast('Failed to sync data', 'danger');
     } finally {
       this.syncing = false;

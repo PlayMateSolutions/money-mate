@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ThemeService, Theme } from '../core/services/theme.service';
+import { AnalyticsService } from '../core/services';
 import { CommonModule } from '@angular/common';
 import {
   IonHeader,
@@ -69,6 +70,7 @@ export class DashboardCustomizePage {
   private readonly layoutService = inject(DashboardLayoutService);
   private readonly router = inject(Router);
   private readonly themeService = inject(ThemeService);
+  private readonly analyticsService = inject(AnalyticsService);
 
   theme: Theme = 'light';
 
@@ -131,7 +133,17 @@ export class DashboardCustomizePage {
       order: index + 1
     }));
 
-    this.layoutService.saveLayout(layoutToSave);
+    const savedLayout = this.layoutService.saveLayout(layoutToSave);
+    const enabledWidgetIds = savedLayout
+      .filter((widget) => widget.visible)
+      .sort((a, b) => a.order - b.order)
+      .map((widget) => widget.id);
+
+    this.analyticsService.trackEvent('dashboard_widgets_updated', {
+      enabled_widget_count: enabledWidgetIds.length,
+      enabled_widget_ids: enabledWidgetIds.join('|'),
+    });
+
     await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
   }
 

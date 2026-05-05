@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, inject, ChangeDetectorRef } from '@
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Browser } from '@capacitor/browser';
+import { AnalyticsService } from '../core/services';
 
 import { App } from '@capacitor/app';
 import { OnInit } from '@angular/core';
@@ -24,6 +25,7 @@ export class AboutPage implements OnInit {
 
   version = '';
   private cdr = inject(ChangeDetectorRef);
+  private analyticsService = inject(AnalyticsService);
 
   ngOnInit() {
     addIcons({ chevronForwardOutline, mailOutline });
@@ -41,6 +43,29 @@ export class AboutPage implements OnInit {
   }
 
   async openExternal(url: string) {
+    this.analyticsService.trackEvent('external_link_opened', {
+      link_type: this.getLinkType(url),
+    });
     await Browser.open({ url });
+  }
+
+  private getLinkType(url: string): string {
+    if (url.startsWith('mailto:')) {
+      return 'support_email';
+    }
+
+    if (url === this.privacyUrl) {
+      return 'privacy_policy';
+    }
+
+    if (url === this.termsUrl) {
+      return 'terms_of_service';
+    }
+
+    if (url === this.faqUrl) {
+      return 'faq';
+    }
+
+    return 'external';
   }
 }

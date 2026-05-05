@@ -20,7 +20,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { logoGoogle, phonePortraitOutline, chevronDown, chevronUp, trash } from 'ionicons/icons';
-import { SessionService } from '../core/services';
+import { AnalyticsService, SessionService } from '../core/services';
 
 @Component({
   selector: 'app-login',
@@ -50,6 +50,7 @@ export class LoginPage {
 
   constructor(
     private readonly sessionService: SessionService,
+    private readonly analyticsService: AnalyticsService,
     private readonly router: Router,
     private readonly toastController: ToastController,
     private readonly alertController: AlertController,
@@ -63,6 +64,7 @@ export class LoginPage {
   }
 
   async continueWithGoogle(): Promise<void> {
+    this.analyticsService.trackEvent('auth_google_sign_in', { action: 'attempt' });
     this.errorMessage = null;
     this.isBusy = true;
 
@@ -70,6 +72,11 @@ export class LoginPage {
     this.isBusy = false;
 
     if (result.success) {
+      this.analyticsService.trackEvent('auth_google_sign_in', {
+        action: 'success',
+        has_linked_sheet: this.sessionService.hasLinkedSpreadsheet(),
+      });
+
       if (this.sessionService.hasLinkedSpreadsheet()) {
         await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
         return;
@@ -80,10 +87,19 @@ export class LoginPage {
     }
 
     if (result.reason === 'permission_denied') {
+      this.analyticsService.trackEvent('auth_google_sign_in', {
+        action: 'failed',
+        reason: 'permission_denied',
+      });
       this.errorMessage = 'Google Drive access is required to sync sheets.';
       await this.showPermissionAlert();
       return;
     }
+
+    this.analyticsService.trackEvent('auth_google_sign_in', {
+      action: 'failed',
+      reason: result.reason ?? 'login_failed',
+    });
 
     this.errorMessage = 'Google sign-in failed. You can retry or continue offline.';
     const toast = await this.toastController.create({
@@ -125,6 +141,7 @@ export class LoginPage {
 
   async continueOffline(): Promise<void> {
     this.sessionService.continueOffline();
+    this.analyticsService.trackEvent('auth_continue_offline');
     await this.router.navigate(['/tabs/dashboard'], { replaceUrl: true });
   }
 
@@ -149,6 +166,7 @@ export class LoginPage {
             try {
               localStorage.clear();
               sessionStorage.clear();
+              this.analyticsService.trackEvent('app_data_cleared');
 
               const toast = await this.toastController.create({
                 message: 'All data cleared. Refreshing...',

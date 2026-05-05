@@ -30,6 +30,7 @@ import { addIcons } from 'ionicons';
 import { chevronDownOutline, helpCircleOutline } from 'ionicons/icons';
 import { Account, Category } from '../core/database/models';
 import { AccountRepository, CategoryRepository } from '../core/database/repositories';
+import { AnalyticsService } from '../core/services';
 import { AutoCategorizationService } from '../core/services/auto-categorization.service';
 import {
   CsvImportCommitResult,
@@ -90,6 +91,7 @@ export class TransactionQuickAddPage implements OnInit {
   constructor(
     private readonly accountRepository: AccountRepository,
     private readonly categoryRepository: CategoryRepository,
+    private readonly analyticsService: AnalyticsService,
     private readonly csvImportService: CsvImportService,
     private readonly alertController: AlertController,
     private readonly toastController: ToastController,
@@ -226,6 +228,10 @@ export class TransactionQuickAddPage implements OnInit {
           }
         }
       }
+      this.analyticsService.trackEvent('quick_add_preview_built', {
+        preview_count: this.preview.transactionsToImport.length,
+        invalid_row_count: this.preview.invalidRows.length,
+      });
       this.processing = false;
       this.cdr.detectChanges();
     //   await this.presentToast('Entries processed successfully', 'success');
@@ -252,6 +258,9 @@ export class TransactionQuickAddPage implements OnInit {
 
     try {
       this.importResult = await this.csvImportService.importPreview(this.preview);
+      this.analyticsService.trackEvent('quick_add_import_completed', {
+        imported_count: this.importResult.importedCount,
+      });
       this.importing = false;
       this.cdr.detectChanges();
       await this.presentToast(`Imported ${this.importResult.importedCount} transactions`, 'success');
@@ -280,6 +289,7 @@ export class TransactionQuickAddPage implements OnInit {
   }
 
   async showHelp(): Promise<void> {
+    this.analyticsService.trackEvent('quick_add_help_opened');
     const alert = await this.alertController.create({
       header: 'Quick Add Help',
       message: 'Enter one transaction per line. Example:\n\n14 Milk 32\n15 Tea 12\n1 Petrol 200\n\nIf a line starts with a number, it will be treated as the day in the current month. If no day is given, today will be used. The selected account applies to every line.',
