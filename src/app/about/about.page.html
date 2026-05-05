@@ -17,29 +17,28 @@
   </p>
 
   <ion-list class="about-list">
-    <ion-item lines="none">
+    <ion-item class="about-contact-item" (click)="openExternal('mailto:' + email)">
       <ion-label>
-        <strong>Contact & Support</strong><br />
-        <a href="mailto:ramaraj.tt+moneymate@gmail.com">ramaraj.tt+moneymate@gmail.com</a>
+        <div class="about-contact-label">Contact & Support</div>
+        <div class="about-contact-email">{{ email }}</div>
       </ion-label>
+      <ion-icon name="mail-outline" slot="end"></ion-icon>
     </ion-item>
-    <ion-item lines="none">
-      <ion-label>
-        <strong>Version</strong><br />
-        {{ version }}
-      </ion-label>
+    <ion-item class="about-version-item">
+      <ion-label>Version</ion-label>
+      <div class="about-version-value">{{ version }}</div>
+    </ion-item>
+    <ion-item button (click)="openExternal(privacyUrl)">
+      <ion-label>Privacy Policy</ion-label>
+      <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item button (click)="openExternal(termsUrl)">
+      <ion-label>Terms of Service</ion-label>
+      <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item button (click)="openExternal(faqUrl)">
+      <ion-label>FAQ</ion-label>
+      <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
     </ion-item>
   </ion-list>
-
-  <div class="about-links">
-    <ion-button expand="block" fill="outline" (click)="openExternal(privacyUrl)">
-      Privacy Policy
-    </ion-button>
-    <ion-button expand="block" fill="outline" (click)="openExternal(termsUrl)">
-      Terms of Service
-    </ion-button>
-    <ion-button expand="block" fill="outline" (click)="openExternal(faqUrl)">
-      FAQ
-    </ion-button>
-  </div>
 </ion-content>

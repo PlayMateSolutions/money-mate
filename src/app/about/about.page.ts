@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { addIcons } from 'ionicons';
+import { chevronForwardOutline, mailOutline } from 'ionicons/icons';
+import { ChangeDetectionStrategy, Component, inject, ChangeDetectorRef } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { Browser } from '@capacitor/browser';
 
 import { App } from '@capacitor/app';
@@ -22,8 +23,10 @@ export class AboutPage implements OnInit {
   readonly faqUrl = 'https://jsramraj.github.io/apps/moneymate/faq.html';
 
   version = '';
+  private cdr = inject(ChangeDetectorRef);
 
   ngOnInit() {
+    addIcons({ chevronForwardOutline, mailOutline });
     this.loadVersion();
   }
 
@@ -34,6 +37,7 @@ export class AboutPage implements OnInit {
     } catch (err) {
       this.version = '1.0.1';
     }
+    this.cdr.markForCheck();
   }
 
   async openExternal(url: string) {

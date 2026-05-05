@@ -36,20 +36,45 @@
   text-align: center;
 }
 
+
 .about-list {
   width: 100%;
   max-width: 400px;
   margin: 0 auto 24px auto;
+  background: transparent;
+  box-shadow: none;
+  --background: transparent;
 }
 
-.about-links {
-  width: 100%;
-  max-width: 400px;
-  margin: 0 auto 24px auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.about-contact-item {
+  cursor: pointer;
+  --background: transparent;
+  background: transparent;
 }
+.about-contact-label {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--ion-text-color);
+}
+.about-contact-email {
+  font-size: 0.95rem;
+  color: var(--ion-color-primary);
+  word-break: break-all;
+}
+.about-version-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  --background: transparent;
+  background: transparent;
+}
+.about-version-item .about-version-value {
+  font-weight: 500;
+  color: var(--ion-text-color);
+  margin-left: auto;
+}
+
+
 
 @media (prefers-color-scheme: dark) {
   .about-logo {
