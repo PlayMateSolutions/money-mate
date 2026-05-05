@@ -22,7 +22,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { ThemeService, Theme, SessionService, AuthMode } from '../core/services';
 import { addIcons } from 'ionicons';
 import { chevronForwardOutline, logOutOutline, personCircleOutline, logoGoogle, openOutline } from 'ionicons/icons';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 
 interface CurrencyItem {
@@ -50,9 +50,9 @@ interface CurrencyItem {
     IonSelect,
     IonSelectOption,
     IonIcon,
-    IonNote,
     IonAvatar,
-    IonButton
+    IonButton,
+    RouterModule
   ]
 })
 export class SettingsPage implements OnInit, OnDestroy {

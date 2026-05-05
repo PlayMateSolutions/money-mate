@@ -1,0 +1,45 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/settings"></ion-back-button>
+    </ion-buttons>
+    <ion-title>About Money Mate</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding about-content">
+  <div class="about-logo-container">
+    <img src="assets/icon/logo.png" alt="Money Mate Logo" class="about-logo" />
+  </div>
+  <h2 class="about-title">What is Money Mate?</h2>
+  <p class="about-description">
+    Money Mate is a smart expense tracker built for real life — not too simple, not too complicated. Your data lives in your own Google account via Google Sheets. No private servers, and not even the developer can access your data.
+  </p>
+
+  <ion-list class="about-list">
+    <ion-item lines="none">
+      <ion-label>
+        <strong>Contact & Support</strong><br />
+        <a href="mailto:ramaraj.tt+moneymate@gmail.com">ramaraj.tt+moneymate@gmail.com</a>
+      </ion-label>
+    </ion-item>
+    <ion-item lines="none">
+      <ion-label>
+        <strong>Version</strong><br />
+        {{ version }}
+      </ion-label>
+    </ion-item>
+  </ion-list>
+
+  <div class="about-links">
+    <ion-button expand="block" fill="outline" (click)="openExternal(privacyUrl)">
+      Privacy Policy
+    </ion-button>
+    <ion-button expand="block" fill="outline" (click)="openExternal(termsUrl)">
+      Terms of Service
+    </ion-button>
+    <ion-button expand="block" fill="outline" (click)="openExternal(faqUrl)">
+      FAQ
+    </ion-button>
+  </div>
+</ion-content>

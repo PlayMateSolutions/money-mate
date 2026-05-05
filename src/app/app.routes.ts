@@ -32,6 +32,10 @@ export const routes: Routes = [
     loadComponent: () => import('./settings/settings.page').then((m) => m.SettingsPage),
   },
   {
+    path: 'settings/about',
+    loadComponent: () => import('./about/about.page').then((m) => m.AboutPage),
+  },
+  {
     path: 'imports/transactions/csv',
     loadComponent: () => import('./imports').then((m) => m.TransactionCsvImportPage),
   },

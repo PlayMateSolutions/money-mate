@@ -1,8 +1,8 @@
 {
   "name": "money-mate",
-  "version": "0.0.1",
-  "author": "Ionic Framework",
-  "homepage": "https://ionicframework.com/",
+  "version": "1.0.1",
+  "author": "Ramaraj T",
+  "homepage": "https://jsramraj.github.io/apps/moneymate",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -23,6 +23,7 @@
     "@angular/router": "^20.0.0",
     "@capacitor/android": "^8.2.0",
     "@capacitor/app": "8.0.1",
+    "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "8.2.0",
     "@capacitor/haptics": "8.0.1",
     "@capacitor/keyboard": "8.0.1",
@@ -70,5 +71,5 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.9.0"
   },
-  "description": "An Ionic project"
+  "description": "MoneyMate is a personal finance management app built with Angular and Ionic, designed to help users track their expenses, manage budgets, and gain insights into their financial habits. With features like transaction categorization, budget tracking, and data visualization, MoneyMate empowers users to take control of their finances and make informed decisions."
 }
