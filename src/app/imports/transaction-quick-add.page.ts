@@ -27,9 +27,9 @@ import {
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { helpCircleOutline } from 'ionicons/icons';
-import { Account } from '../core/database/models';
-import { AccountRepository } from '../core/database/repositories';
+import { chevronDownOutline, helpCircleOutline } from 'ionicons/icons';
+import { Account, Category } from '../core/database/models';
+import { AccountRepository, CategoryRepository } from '../core/database/repositories';
 import { AutoCategorizationService } from '../core/services/auto-categorization.service';
 import {
   CsvImportCommitResult,
@@ -74,7 +74,9 @@ import {
 export class TransactionQuickAddPage implements OnInit {
   private readonly currencyKey = 'money-mate-currency';
   private readonly previewDisplayLimit = 500;
+  private readonly uncategorizedOptionValue = '__uncategorized__';
   accounts: Account[] = [];
+  categories: Category[] = [];
   selectedCurrency = 'USD';
   selectedAccountId = '';
   quickEntryText = '';
@@ -87,6 +89,7 @@ export class TransactionQuickAddPage implements OnInit {
   
   constructor(
     private readonly accountRepository: AccountRepository,
+    private readonly categoryRepository: CategoryRepository,
     private readonly csvImportService: CsvImportService,
     private readonly alertController: AlertController,
     private readonly toastController: ToastController,
@@ -94,13 +97,14 @@ export class TransactionQuickAddPage implements OnInit {
     private readonly autoCategorizationService: AutoCategorizationService,
   ) {
     addIcons({
+      chevronDownOutline,
       helpCircleOutline,
     });
   }
 
   async ngOnInit(): Promise<void> {
     this.selectedCurrency = localStorage.getItem(this.currencyKey) || 'USD';
-    await this.loadAccounts();
+    await Promise.all([this.loadAccounts(), this.loadCategories()]);
     await this.autoCategorizationService.initialize();
   }
 
@@ -178,6 +182,17 @@ export class TransactionQuickAddPage implements OnInit {
       this.error = error instanceof Error ? error.message : 'Failed to load accounts.';
     } finally {
       this.loadingAccounts = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  async loadCategories(): Promise<void> {
+    try {
+      this.categories = await this.categoryRepository.getCategories();
+    } catch (error) {
+      console.error('Error loading categories for quick add:', error);
+      this.error = error instanceof Error ? error.message : 'Failed to load categories.';
+    } finally {
       this.cdr.markForCheck();
     }
   }
@@ -292,6 +307,50 @@ export class TransactionQuickAddPage implements OnInit {
 
   trackByPreviewRow(_: number, row: CsvImportTransactionPreview): number {
     return row.rowNumber;
+  }
+
+  getCategoryValueForRow(row: CsvImportTransactionPreview): string {
+    return row.categoryName || this.uncategorizedOptionValue;
+  }
+
+  async openCategoryPicker(row: CsvImportTransactionPreview): Promise<void> {
+    const alert = await this.alertController.create({
+      header: 'Select Category',
+      inputs: [
+        {
+          type: 'radio',
+          label: 'Uncategorized',
+          value: this.uncategorizedOptionValue,
+          checked: this.getCategoryValueForRow(row) === this.uncategorizedOptionValue,
+        },
+        ...this.categories.map((category) => ({
+          type: 'radio' as const,
+          label: category.name,
+          value: category.name,
+          checked: category.name === this.getCategoryValueForRow(row),
+        })),
+      ],
+      buttons: [
+        'Cancel',
+        {
+          text: 'Apply',
+          handler: (selectedValue?: string) => {
+            if (!selectedValue) {
+              return;
+            }
+
+            this.onPreviewRowCategoryChanged(row, selectedValue);
+          },
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  onPreviewRowCategoryChanged(row: CsvImportTransactionPreview, selectedValue: string): void {
+    row.categoryName = selectedValue === this.uncategorizedOptionValue ? undefined : selectedValue;
+    this.cdr.markForCheck();
   }
 
   formatInvalidRow(row: CsvImportInvalidRow): string {

@@ -73,9 +73,17 @@
           <ion-label>
             <ng-container *ngIf="!isSkippedRow(transaction.rowNumber); else invalidRowTemplate">
               <h2>{{ transaction.description }}</h2>
-              <p>{{ transaction.fromAccountName }}
-                <span *ngIf="transaction.categoryName; else uncategorized">• {{ transaction.categoryName }}</span>
-                <ng-template #uncategorized>• Uncategorized</ng-template>
+              <p>
+                {{ transaction.fromAccountName }}
+                <span
+                  class="category-picker-trigger"
+                  role="button"
+                  tabindex="0"
+                  (click)="openCategoryPicker(transaction)"
+                  (keydown.enter)="openCategoryPicker(transaction)"
+                  (keydown.space)="openCategoryPicker(transaction); $event.preventDefault()"
+                  aria-label="Change category"
+                >• {{ transaction.categoryName || 'Uncategorized' }}<ion-icon name="chevron-down-outline" aria-hidden="true"></ion-icon></span>
               </p>
               <p *ngIf="transaction.warnings.length > 0" class="warning-text">{{ transaction.warnings.join(' ') }}</p>
             </ng-container>
