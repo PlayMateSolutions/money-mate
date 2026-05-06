@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import {
   IonHeader,
   IonToolbar,
@@ -17,7 +18,6 @@ import {
   IonSpinner,
   IonFab,
   IonFabButton,
-  ModalController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -30,7 +30,6 @@ import {
 import * as ionicons from 'ionicons/icons';
 import { Category } from '../core/database/models';
 import { CategoryRepository } from '../core/database/repositories';
-import { CategoryEditModalComponent, CategoryEditModalResult } from './components/category-edit-modal.component';
 import { GoogleSheetService, SessionService } from '../core/services';
 
 @Component({
@@ -69,7 +68,7 @@ export class CategoriesPage implements OnInit {
 
   constructor(
     private categoryRepository: CategoryRepository,
-    private modalController: ModalController,
+    private router: Router,
     private cdr: ChangeDetectorRef,
     private readonly sessionService: SessionService,
     private readonly googleSheetService: GoogleSheetService,
@@ -84,6 +83,10 @@ export class CategoriesPage implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadCategories();
+  }
+
+  ionViewWillEnter(): void {
     this.loadCategories();
   }
 
@@ -153,107 +156,16 @@ export class CategoriesPage implements OnInit {
       this.cdr.markForCheck();
     }
   }
-
-
-
-  async openEditModal(category: Category): Promise<void> {
-    const modal = await this.modalController.create({
-      component: CategoryEditModalComponent,
-      componentProps: {
+  async openEditPage(category: Category): Promise<void> {
+    await this.router.navigate(['/settings/categories', category.id], {
+      state: {
         category
       }
     });
-
-    await modal.present();
-
-    const { data, role } = await modal.onDidDismiss<CategoryEditModalResult>();
-    if (role !== 'save' || !data) {
-      return;
-    }
-
-    try {
-      this.error = null;
-      this.categories = this.categories.map((currentCategory) => {
-        if (currentCategory.id !== category.id) {
-          return currentCategory;
-        }
-
-        return {
-          ...currentCategory,
-          name: data.name,
-          icon: data.icon,
-          color: data.color,
-          isDeleted: !data.isActive
-        };
-      });
-      this.registerIconsFromCategories(this.categories);
-      this.cdr.markForCheck();
-
-      const wasActive = !category.isDeleted;
-      const willBeActive = data.isActive;
-
-      await this.categoryRepository.updateCategory(category.id, {
-        name: data.name,
-        icon: data.icon,
-        color: data.color
-      });
-
-      if (wasActive !== willBeActive) {
-        await this.categoryRepository.setCategoryIsActive(category.id, willBeActive);
-      }
-
-      await this.loadCategories();
-    } catch (error) {
-      console.error('Error saving category changes:', error);
-      this.error = 'Failed to save category changes';
-      await this.loadCategories();
-      this.cdr.markForCheck();
-    }
   }
 
-  async openCreateModal(): Promise<void> {
-    const draftCategory: Partial<Category> = {
-      name: '',
-      icon: this.categoryDefaultIcon,
-      color: this.getRandomCategoryColor(),
-      isDeleted: false
-    };
-
-    const modal = await this.modalController.create({
-      component: CategoryEditModalComponent,
-      componentProps: {
-        category: draftCategory
-      }
-    });
-
-    await modal.present();
-
-    const { data, role } = await modal.onDidDismiss<CategoryEditModalResult>();
-    if (role !== 'save' || !data) {
-      return;
-    }
-
-    try {
-      this.error = null;
-      const icon = data.icon || this.categoryDefaultIcon;
-      const color = data.color || draftCategory.color || this.getRandomCategoryColor();
-
-      const newCategory = await this.categoryRepository.createCategory({
-        name: data.name,
-        icon,
-        color
-      });
-
-      this.categories = [...this.categories, newCategory];
-      this.registerIconsFromCategories([newCategory]);
-      this.cdr.markForCheck();
-
-      await this.loadCategories();
-    } catch (error) {
-      console.error('Error creating category:', error);
-      this.error = 'Failed to create category';
-      this.cdr.markForCheck();
-    }
+  async openCreatePage(): Promise<void> {
+    await this.router.navigate(['/settings/categories/new']);
   }
 
   private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {

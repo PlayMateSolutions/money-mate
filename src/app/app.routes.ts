@@ -20,6 +20,14 @@ export const routes: Routes = [
     loadChildren: () => import('./tabs/tabs.routes').then((m) => m.routes),
   },
   {
+    path: 'settings/categories/new',
+    loadComponent: () => import('./categories/category-form.page').then((m) => m.CategoryFormPage),
+  },
+  {
+    path: 'settings/categories/:id',
+    loadComponent: () => import('./categories/category-form.page').then((m) => m.CategoryFormPage),
+  },
+  {
     path: 'settings/categories',
     loadComponent: () => import('./categories').then((m) => m.CategoriesPage),
   },

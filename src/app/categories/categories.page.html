@@ -34,7 +34,7 @@
           <h2>{{ category.name }}</h2>
           <p>{{ category.color }}</p>
         </ion-label>
-        <ion-button fill="clear" slot="end" (click)="openEditModal(category)">
+        <ion-button fill="clear" slot="end" (click)="openEditPage(category)">
           <ion-icon slot="icon-only" name="create-outline"></ion-icon>
         </ion-button>
       </ion-item>
@@ -49,7 +49,7 @@
           <p>{{ category.color }}</p>
         </ion-label>
         <ion-badge color="medium" slot="end">Inactive</ion-badge>
-        <ion-button fill="clear" slot="end" (click)="openEditModal(category)">
+        <ion-button fill="clear" slot="end" (click)="openEditPage(category)">
           <ion-icon slot="icon-only" name="create-outline"></ion-icon>
         </ion-button>
       </ion-item>
@@ -57,7 +57,7 @@
   </div>
 
   <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button (click)="openCreateModal()">
+    <ion-fab-button (click)="openCreatePage()">
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>

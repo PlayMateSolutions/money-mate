@@ -1,0 +1,71 @@
+.state-container {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+.state-container.error {
+  color: var(--ion-color-danger);
+}
+
+.name-item {
+  --inner-padding-end: 0;
+  --inner-padding-start: 0;
+}
+
+.name-field-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 64px;
+}
+
+.icon-edit-button {
+  --background: transparent;
+  --border-width: 0;
+  --box-shadow: none;
+  --padding-start: 0;
+  --padding-end: 0;
+  margin: 0;
+  min-height: 64px;
+  min-width: 72px;
+  width: 72px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.icon-edit-button ion-icon:not(.edit-indicator) {
+  font-size: 36px;
+}
+
+.edit-indicator {
+  font-size: 12px !important;
+  margin-left: 4px;
+  color: var(--ion-color-medium);
+}
+
+.name-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ion-text-color);
+}
+
+.name-field-block ion-input {
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  min-height: 28px;
+  width: 100%;
+}

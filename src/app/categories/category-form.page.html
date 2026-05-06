@@ -1,0 +1,50 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/settings/categories"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ pageTitle }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button [disabled]="!canSave" (click)="save()">
+        {{ saving ? 'Saving...' : 'Save' }}
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">{{ pageTitle }}</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="state-container" *ngIf="loading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading category...</p>
+  </div>
+
+  <div class="state-container error" *ngIf="!loading && error">
+    <p>{{ error }}</p>
+    <ion-button fill="outline" (click)="cancel()">Back</ion-button>
+  </div>
+
+  <ion-list *ngIf="!loading && !error">
+    <ion-item class="name-item">
+      <ion-button class="icon-edit-button" fill="clear" (click)="openIconPicker()">
+        <ion-icon [name]="form.icon || 'pricetag-outline'" [style.color]="form.color || '#2196F3'"></ion-icon>
+        <ion-icon class="edit-indicator" name="create-outline"></ion-icon>
+      </ion-button>
+
+      <div class="name-field-block">
+        <ion-label class="name-label">Name *</ion-label>
+        <ion-input [(ngModel)]="form.name" placeholder="Category name"></ion-input>
+      </div>
+    </ion-item>
+
+    <ion-item>
+      <ion-label>Active</ion-label>
+      <ion-toggle [(ngModel)]="form.isActive" slot="end"></ion-toggle>
+    </ion-item>
+  </ion-list>
+</ion-content>
