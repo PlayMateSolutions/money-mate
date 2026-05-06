@@ -12,13 +12,15 @@
 <ion-content>
   <app-category-grid-selector
     [categories]="categories"
-    [(selectedCategoryIds)]="localSelectedCategoryIds"
-    [includeUncategorized]="includeUncategorized"
+    [selectedCategoryIds]="localSelectedCategoryIds"
+    (selectedCategoryIdsChange)="onSelectedCategoryIdsChange($event)"
+    [includeUncategorized]="effectiveIncludeUncategorized"
+    [singleSelect]="singleSelect"
     uncategorizedLabel="Uncategorized"
   ></app-category-grid-selector>
 </ion-content>
 
-<ion-footer>
+<ion-footer *ngIf="!singleSelect">
   <ion-toolbar>
     <ion-buttons slot="start" style="width: 50%;">
       <ion-button expand="block" (click)="clearAll()" aria-label="Clear category filters">

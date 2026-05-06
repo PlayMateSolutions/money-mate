@@ -39,8 +39,13 @@ export class CategoryGridModalComponent {
   @Input() categories: Category[] = [];
   @Input() selectedCategoryIds: string[] = [];
   @Input() includeUncategorized = true;
+  @Input() singleSelect = false;
 
   localSelectedCategoryIds: string[] = [];
+
+  get effectiveIncludeUncategorized(): boolean {
+    return this.singleSelect ? false : this.includeUncategorized;
+  }
 
   constructor(private readonly modalController: ModalController) {
     addIcons({ close, checkmark, trash });
@@ -48,6 +53,16 @@ export class CategoryGridModalComponent {
 
   ngOnInit(): void {
     this.localSelectedCategoryIds = [...this.selectedCategoryIds];
+  }
+
+  async onSelectedCategoryIdsChange(categoryIds: string[]): Promise<void> {
+    this.localSelectedCategoryIds = [...categoryIds];
+
+    if (!this.singleSelect) {
+      return;
+    }
+
+    await this.apply();
   }
 
   clearAll(): void {
@@ -59,6 +74,10 @@ export class CategoryGridModalComponent {
   }
 
   async apply(): Promise<void> {
-    await this.modalController.dismiss([...this.localSelectedCategoryIds], 'apply');
+    if (this.singleSelect) {
+      await this.modalController.dismiss(this.localSelectedCategoryIds[0] || '', 'apply');
+    } else {
+      await this.modalController.dismiss([...this.localSelectedCategoryIds], 'apply');
+    }
   }
 }

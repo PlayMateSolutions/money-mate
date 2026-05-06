@@ -19,6 +19,7 @@ export class CategoryGridSelectorComponent implements OnChanges {
   @Input() selectedCategoryIds: string[] = [];
   @Input() includeUncategorized = true;
   @Input() uncategorizedLabel = 'Uncategorized';
+  @Input() singleSelect = false;
 
   @Output() selectedCategoryIdsChange = new EventEmitter<string[]>();
 
@@ -45,12 +46,22 @@ export class CategoryGridSelectorComponent implements OnChanges {
   }
 
   toggleCategory(categoryId: string): void {
+    if (this.singleSelect) {
+      if (this.isSelected(categoryId)) {
+        this.selectedCategoryIdSet.clear();
+        this.selectedCategoryIdsChange.emit([]);
+      } else {
+        this.selectedCategoryIdSet.clear();
+        this.selectedCategoryIdSet.add(categoryId);
+        this.selectedCategoryIdsChange.emit([categoryId]);
+      }
+      return;
+    }
     if (this.isSelected(categoryId)) {
       this.selectedCategoryIdSet.delete(categoryId);
       this.selectedCategoryIdsChange.emit([...this.selectedCategoryIdSet]);
       return;
     }
-
     this.selectedCategoryIdSet.add(categoryId);
     this.selectedCategoryIdsChange.emit([...this.selectedCategoryIdSet]);
   }

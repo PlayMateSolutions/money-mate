@@ -1,4 +1,5 @@
 
+
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -27,6 +28,7 @@ import {
   IonNote,
   IonBackButton,
   IonCheckbox,
+  ModalController,
 } from '@ionic/angular/standalone';
 import { AlertController, ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
@@ -36,6 +38,7 @@ import { AccountRepository, CategoryRepository, TransactionRepository, CreateTra
 import { AnalyticsService } from '../core/services';
 import { AutoCategorizationService } from '../core/services/auto-categorization.service';
 import { NavController } from '@ionic/angular';
+import { CategoryGridModalComponent } from '../shared/category-grid-selector/category-grid-modal.component';
 
 @Component({
   selector: 'app-transaction-form',
@@ -71,6 +74,7 @@ import { NavController } from '@ionic/angular';
   styleUrls: ['./transaction-form.page.scss']
 })
 export class TransactionFormPage implements OnInit {
+
   addMore = false;
   private readonly lastUsedAccountStorageKey = 'money-mate-last-used-account-id';
   transactionToEdit?: Transaction;
@@ -80,9 +84,6 @@ export class TransactionFormPage implements OnInit {
   showMoreOptions = false;
   tagInput = '';
 
-  /**
-   * Used to avoid overriding manual category selection after auto-selection.
-   */
   private categoryManuallySelected = false;
 
 
@@ -123,6 +124,7 @@ export class TransactionFormPage implements OnInit {
     private autoCategorizationService: AutoCategorizationService,
     private analyticsService: AnalyticsService,
     private toastController: ToastController,
+    private modalController: ModalController,
   ) {
     addIcons({ closeCircle, chevronDownOutline, chevronUpOutline, trashOutline, saveOutline });
   }
@@ -186,7 +188,35 @@ export class TransactionFormPage implements OnInit {
       this.tagInput = '';
     }
   }
-  
+  async openCategoryModal(): Promise<void> {
+    if (this.saving) return;
+
+    const modal = await this.modalController.create({
+      component: CategoryGridModalComponent,
+      componentProps: {
+        title: 'Select Category',
+        categories: this.categories,
+        selectedCategoryIds: this.form.categoryId ? [this.form.categoryId] : [],
+        includeUncategorized: true,
+        singleSelect: true,
+      },
+    });
+
+    await modal.present();
+    const { data, role } = await modal.onWillDismiss<string>();
+
+    if (role !== 'apply') {
+      return;
+    }
+
+    this.form.categoryId = data || '';
+    this.categoryManuallySelected = true;
+  }
+
+  categoryById(id: string): Category | undefined {
+    return this.categories.find(c => c.id === id);
+  }
+
   /**
    * Set up auto-categorization: listen for description changes and auto-select category if exact match found.
    */

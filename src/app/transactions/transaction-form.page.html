@@ -68,16 +68,22 @@
       </ion-select>
     </ion-item>
 
-    <ion-item *ngIf="form.type !== 'transfer'">
+    <ion-item *ngIf="form.type !== 'transfer'" button detail="false" (click)="openCategoryModal()">
       <ion-label position="stacked">Category</ion-label>
-      <ion-select [(ngModel)]="form.categoryId" placeholder="Select category" interface="action-sheet" (ionChange)="onCategorySelected()">
-        <ion-select-option value="">None</ion-select-option>
-        <ion-select-option *ngFor="let category of categories" [value]="category.id">
-          {{ category.name }}
-        </ion-select-option>
-      </ion-select>
+      <div style="display: flex; align-items: center; gap: 8px; min-height: 32px;">
+        <ng-container *ngIf="form.categoryId; else noCategory">
+          <ion-chip color="primary" style="margin:0;">
+            <ng-container *ngIf="categoryById(form.categoryId) as cat">
+              <ion-icon [name]="cat.icon || 'pricetag-outline'" style="margin-right:4px;" [style.color]="cat.color || 'var(--ion-color-medium)'" slot="start"></ion-icon>
+              {{ cat.name }}
+            </ng-container>
+          </ion-chip>
+        </ng-container>
+        <ng-template #noCategory>
+          <ion-note color="medium">Select category</ion-note>
+        </ng-template>
+      </div>
     </ion-item>
-
     <ion-item>
       <ion-label position="stacked">Date *</ion-label>
       <ion-datetime-button style="margin-top: 6px;" datetime="transaction-date"></ion-datetime-button>
