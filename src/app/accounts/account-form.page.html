@@ -1,17 +1,35 @@
-<ion-header>
+<ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>{{ account?.id ? 'Edit Account' : 'Create Account' }}</ion-title>
     <ion-buttons slot="start">
-      <ion-button (click)="cancel()">Cancel</ion-button>
+      <ion-back-button defaultHref="/settings/accounts"></ion-back-button>
     </ion-buttons>
+    <ion-title>{{ pageTitle }}</ion-title>
     <ion-buttons slot="end">
-      <ion-button [disabled]="!canSave" (click)="save()">Save</ion-button>
+      <ion-button [disabled]="!canSave" (click)="save()">
+        {{ saving ? 'Saving...' : 'Save' }}
+      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <ion-list>
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">{{ pageTitle }}</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="state-container" *ngIf="loading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading account...</p>
+  </div>
+
+  <div class="state-container error" *ngIf="!loading && error">
+    <p>{{ error }}</p>
+    <ion-button fill="outline" (click)="cancel()">Back</ion-button>
+  </div>
+
+  <ion-list *ngIf="!loading && !error">
     <ion-item class="name-item">
       <ion-button class="icon-edit-button" fill="clear" (click)="openIconPicker()">
         <ion-icon [name]="form.icon || 'wallet-outline'" [style.color]="form.color || '#2196F3'"></ion-icon>
@@ -51,7 +69,7 @@
     </ion-item>
 
     <ion-item>
-      <ion-label>IsActive</ion-label>
+      <ion-label>Active</ion-label>
       <ion-toggle [(ngModel)]="form.isActive" slot="end"></ion-toggle>
     </ion-item>
   </ion-list>

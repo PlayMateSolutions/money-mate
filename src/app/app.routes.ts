@@ -32,6 +32,14 @@ export const routes: Routes = [
     loadComponent: () => import('./categories').then((m) => m.CategoriesPage),
   },
   {
+    path: 'settings/accounts/new',
+    loadComponent: () => import('./accounts/account-form.page').then((m) => m.AccountFormPage),
+  },
+  {
+    path: 'settings/accounts/:id',
+    loadComponent: () => import('./accounts/account-form.page').then((m) => m.AccountFormPage),
+  },
+  {
     path: 'settings/accounts',
     loadComponent: () => import('./accounts').then((m) => m.AccountsPage),
   },

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import {
   IonHeader,
   IonToolbar,
@@ -17,7 +18,6 @@ import {
   IonSpinner,
   IonFab,
   IonFabButton,
-  ModalController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -30,7 +30,6 @@ import {
 import * as ionicons from 'ionicons/icons';
 import { Account } from '../core/database/models';
 import { AccountRepository } from '../core/database/repositories';
-import { AccountEditModalComponent, AccountEditModalResult } from './components/account-edit-modal.component';
 import { GoogleSheetService, SessionService } from '../core/services';
 
 @Component({
@@ -77,7 +76,7 @@ export class AccountsPage implements OnInit {
 
   constructor(
     private accountRepository: AccountRepository,
-    private modalController: ModalController,
+    private router: Router,
     private cdr: ChangeDetectorRef,
     private readonly sessionService: SessionService,
     private readonly googleSheetService: GoogleSheetService,
@@ -167,116 +166,16 @@ export class AccountsPage implements OnInit {
       this.cdr.markForCheck();
     }
   }
-
-
-
-  async openEditModal(account: Account): Promise<void> {
-    const modal = await this.modalController.create({
-      component: AccountEditModalComponent,
-      componentProps: {
+  async openEditPage(account: Account): Promise<void> {
+    await this.router.navigate(['/settings/accounts', account.id], {
+      state: {
         account
       }
     });
-
-    await modal.present();
-
-    const { data, role } = await modal.onDidDismiss<AccountEditModalResult>();
-    if (role !== 'save' || !data) {
-      return;
-    }
-
-    try {
-      this.error = null;
-      this.accounts = this.accounts.map((currentAccount) => {
-        if (currentAccount.id !== account.id) {
-          return currentAccount;
-        }
-
-        return {
-          ...currentAccount,
-          name: data.name,
-          type: data.type,
-          balance: data.balance,
-          ownerName: data.ownerName,
-          color: data.color,
-          icon: data.icon,
-          isDeleted: !data.isActive
-        };
-      });
-      this.registerIconsFromAccounts(this.accounts);
-      this.cdr.markForCheck();
-
-      const wasActive = !account.isDeleted;
-      const willBeActive = data.isActive;
-
-      await this.accountRepository.updateAccount(account.id, {
-        name: data.name,
-        type: data.type,
-        balance: data.balance,
-        ownerName: data.ownerName,
-        color: data.color,
-        icon: data.icon
-      });
-
-      if (wasActive !== willBeActive) {
-        await this.accountRepository.setAccountIsActive(account.id, willBeActive);
-      }
-
-      await this.loadAccounts();
-    } catch (error) {
-      console.error('Error saving account changes:', error);
-      this.error = 'Failed to save account changes';
-      await this.loadAccounts();
-      this.cdr.markForCheck();
-    }
   }
 
-  async openCreateModal(): Promise<void> {
-    const draftAccount: Partial<Account> = {
-      name: '',
-      type: 'savings',
-      balance: 0,
-      ownerName: '',
-      color: this.accountTypeDefaults['savings'].color,
-      icon: this.accountTypeDefaults['savings'].icon,
-      isDeleted: false
-    };
-
-    const modal = await this.modalController.create({
-      component: AccountEditModalComponent,
-      componentProps: { account: draftAccount }
-    });
-
-    await modal.present();
-
-    const { data, role } = await modal.onDidDismiss<AccountEditModalResult>();
-    if (role !== 'save' || !data) {
-      return;
-    }
-
-    try {
-      this.error = null;
-      const defaults = this.accountTypeDefaults[data.type];
-      const newAccount = await this.accountRepository.createAccount({
-        name: data.name,
-        type: data.type,
-        ownerName: data.ownerName || 'Me',
-        color: data.color || defaults.color,
-        icon: data.icon || defaults.icon,
-        balance: data.balance,
-        notes: ''
-      });
-
-      this.accounts = [...this.accounts, newAccount];
-      this.registerIconsFromAccounts([newAccount]);
-      this.cdr.markForCheck();
-
-      await this.loadAccounts();
-    } catch (error) {
-      console.error('Error creating account:', error);
-      this.error = 'Failed to create account';
-      this.cdr.markForCheck();
-    }
+  async openCreatePage(): Promise<void> {
+    await this.router.navigate(['/settings/accounts/new']);
   }
 
   private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {

@@ -1,3 +1,19 @@
+.state-container {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+.state-container.error {
+  color: var(--ion-color-danger);
+}
+
 .name-item {
   --inner-padding-end: 0;
   --inner-padding-start: 0;
