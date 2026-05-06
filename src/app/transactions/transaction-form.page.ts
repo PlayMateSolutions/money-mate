@@ -26,8 +26,9 @@ import {
   IonIcon,
   IonNote,
   IonBackButton,
+  IonCheckbox,
 } from '@ionic/angular/standalone';
-import { AlertController } from '@ionic/angular';
+import { AlertController, ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { chevronDownOutline, chevronUpOutline, closeCircle, trashOutline, saveOutline } from 'ionicons/icons';
 import { Account, Category, Transaction, TransactionType } from '../core/database/models';
@@ -63,12 +64,14 @@ import { NavController } from '@ionic/angular';
     IonChip,
     IonIcon,
     IonNote,
-    IonBackButton
+    IonBackButton,
+    IonCheckbox,
   ],
   templateUrl: './transaction-form.page.html',
   styleUrls: ['./transaction-form.page.scss']
 })
 export class TransactionFormPage implements OnInit {
+  addMore = false;
   private readonly lastUsedAccountStorageKey = 'money-mate-last-used-account-id';
   transactionToEdit?: Transaction;
   accounts: Account[] = [];
@@ -119,6 +122,7 @@ export class TransactionFormPage implements OnInit {
     private navController: NavController,
     private autoCategorizationService: AutoCategorizationService,
     private analyticsService: AnalyticsService,
+    private toastController: ToastController,
   ) {
     addIcons({ closeCircle, chevronDownOutline, chevronUpOutline, trashOutline, saveOutline });
   }
@@ -324,12 +328,46 @@ export class TransactionFormPage implements OnInit {
         tag_count: this.form.tags.length,
       });
 
+      // If addMore is checked, reset form for new entry but keep account and date
+      if (!this.isEditMode && this.addMore) {
+        const prevAccountId = this.form.accountId;
+        const prevDate = this.form.date;
+        const prevType = this.form.type;
+        this.form = {
+          type: prevType,
+          amount: null,
+          accountId: prevAccountId,
+          transferToAccountId: '',
+          categoryId: '',
+          date: prevDate,
+          description: '',
+          notes: '',
+          tags: []
+        };
+        this.tagInput = '';
+        this.showMoreOptions = false;
+        // Show a toast to confirm
+        await this.presentToast('Saved!');
+        this.saving = false;
+        return;
+  }
+
       // Navigate back to transactions list after save
       await this.navController.back();
     } catch (error) {
       console.error('Error saving transaction:', error);
       this.saving = false;
     }
+  }
+
+  private async presentToast(message: string): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 1000,
+      position: 'bottom',
+      color: 'success',
+    });
+    await toast.present();
   }
 
   /**

@@ -124,8 +124,15 @@
         ></ion-textarea>
       </ion-item>
     </ng-container>
-  </ion-list>
 
+    <ion-item *ngIf="!isEditMode">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <ion-checkbox [checked]="addMore" (ionChange)="addMore = $event.detail.checked" aria-label="Add more"></ion-checkbox>
+        <ion-label style="margin: 0;">Add more</ion-label>
+      </div>
+    </ion-item>
+  </ion-list>
+  
   <ion-modal [keepContentsMounted]="true">
     <ng-template>
       <ion-datetime
