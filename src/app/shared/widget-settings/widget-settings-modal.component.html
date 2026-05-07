@@ -63,14 +63,14 @@
       <ion-text color="medium">No options available.</ion-text>
     </ion-item>
 
-    <ion-item *ngFor="let option of options" [disabled]="option.disabled || disableCategoryList">
-      <ion-checkbox
-        slot="start"
-        [checked]="isSelected(option.id)"
-        [disabled]="option.disabled || disableCategoryList"
-        (ionChange)="setOptionSelected(option.id, $event.detail.checked)"
-      ></ion-checkbox>
-      <ion-label>{{ option.label }}</ion-label>
+    <ion-item *ngIf="options.length > 0 && !disableCategoryList" lines="none">
+      <app-category-grid-selector
+        [categories]="gridOptions"
+        [selectedCategoryIds]="selectedIdsDraftArray"
+        (selectedCategoryIdsChange)="onGridSelectionChange($event)"
+        [includeUncategorized]="false"
+        [singleSelect]="false"
+      ></app-category-grid-selector>
     </ion-item>
   </ion-list>
 

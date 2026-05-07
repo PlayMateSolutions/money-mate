@@ -428,8 +428,18 @@ export class ExpenseComparisonWidgetComponent implements OnInit, OnDestroy {
     return [
       ...Array.from(this.categoriesMap.values())
         .sort((a, b) => a.name.localeCompare(b.name))
-        .map((c) => ({ id: c.id, label: c.name })),
-      { id: ExpenseComparisonWidgetComponent.UNCATEGORIZED_ID, label: 'Uncategorized' },
+        .map((c) => ({
+          id: c.id,
+          label: c.name,
+          icon: c.icon || undefined,
+          color: c.color || undefined,
+        })),
+      {
+        id: ExpenseComparisonWidgetComponent.UNCATEGORIZED_ID,
+        label: 'Uncategorized',
+        icon: 'pricetag-outline',
+        color: 'var(--ion-color-medium)',
+      },
     ];
   }
 

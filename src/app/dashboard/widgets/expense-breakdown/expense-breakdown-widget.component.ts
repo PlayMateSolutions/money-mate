@@ -356,6 +356,8 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
       .map((category) => ({
         id: category.id,
         label: category.name,
+        icon: category.icon || undefined,
+        color: category.color || undefined,
       }));
 
     return [

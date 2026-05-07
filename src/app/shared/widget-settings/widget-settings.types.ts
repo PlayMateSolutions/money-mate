@@ -2,6 +2,8 @@ export interface WidgetSettingsOption {
   id: string;
   label: string;
   disabled?: boolean;
+  icon?: string;
+  color?: string;
 }
 
 export interface WidgetSettingsTopNConfig {

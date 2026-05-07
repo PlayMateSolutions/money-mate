@@ -17,6 +17,7 @@ import {
   IonToolbar,
   ModalController,
 } from '@ionic/angular/standalone';
+import { CategoryGridSelectorComponent } from '../category-grid-selector/category-grid-selector.component';
 import {
   WidgetSettingsOption,
   WidgetSettingsResult,
@@ -44,6 +45,7 @@ import {
     IonText,
     IonTitle,
     IonToolbar,
+    CategoryGridSelectorComponent,
   ],
 })
 export class WidgetSettingsModalComponent implements OnInit {
@@ -58,6 +60,13 @@ export class WidgetSettingsModalComponent implements OnInit {
   topNValue = '';
   groupOthersValue = true;
   private selectedIdsDraft = new Set<string>();
+  // For grid selector binding
+  get selectedIdsDraftArray(): string[] {
+    return Array.from(this.selectedIdsDraft);
+  }
+  set selectedIdsDraftArray(ids: string[]) {
+    this.selectedIdsDraft = new Set(ids);
+  }
 
   constructor(private readonly modalController: ModalController) {}
 
@@ -126,8 +135,11 @@ export class WidgetSettingsModalComponent implements OnInit {
       this.selectedIdsDraft.add(optionId);
       return;
     }
-
     this.selectedIdsDraft.delete(optionId);
+  }
+
+  onGridSelectionChange(ids: string[]): void {
+    this.selectedIdsDraftArray = ids;
   }
 
   selectAllOptions(): void {
@@ -136,6 +148,16 @@ export class WidgetSettingsModalComponent implements OnInit {
 
   clearAllOptions(): void {
     this.selectedIdsDraft = new Set<string>();
+  }
+
+  get gridOptions(): any[] {
+    // Map WidgetSettingsOption to grid selector's expected format, including icon and color
+    return this.options.filter(o => !o.disabled).map(o => ({
+      id: o.id,
+      name: o.label,
+      icon: o.icon,
+      color: o.color
+    }));
   }
 
   clearTopN(): void {
