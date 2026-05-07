@@ -15,7 +15,6 @@ import {
   IonItemDivider,
   IonItemGroup,
   IonLabel,
-  IonLoading,
   IonList,
   IonSpinner,
   IonTitle,
@@ -28,7 +27,6 @@ import { Subject, takeUntil } from 'rxjs';
 import {
   AuthMode,
   GoogleDriveFilePermission,
-  GoogleDrivePermissionRole,
   GoogleSheetsDbService,
   SessionService,
 } from '../core/services';
@@ -54,7 +52,6 @@ import {
     IonAvatar,
     IonItem,
     IonLabel,
-    IonLoading,
     IonButton,
     IonIcon,
     IonSpinner,
@@ -192,12 +189,7 @@ export class LinkedSheetPage implements OnInit, OnDestroy {
       return;
     }
 
-    const selectedRole = await this.promptRoleSelection();
-    if (!selectedRole) {
-      return;
-    }
-
-    await this.grantAccess(emailAddress, selectedRole);
+    await this.grantAccess(emailAddress);
   }
 
   async confirmRemovePermission(permission: GoogleDriveFilePermission): Promise<void> {
@@ -275,7 +267,7 @@ export class LinkedSheetPage implements OnInit, OnDestroy {
     }
   }
 
-  private async grantAccess(emailAddress: string, role: GoogleDrivePermissionRole): Promise<void> {
+  private async grantAccess(emailAddress: string): Promise<void> {
     if (!this.linkedSheetId) {
       return;
     }
@@ -284,11 +276,11 @@ export class LinkedSheetPage implements OnInit, OnDestroy {
     this.cdr.markForCheck();
 
     try {
-      await this.googleSheetsDbService.createFilePermission(emailAddress, role, {
+      await this.googleSheetsDbService.createFilePermission(emailAddress, {
         spreadsheetId: this.linkedSheetId,
         sendNotificationEmail: false,
       });
-      await this.presentToast('Access granted successfully', 'success');
+      await this.presentToast('Write access granted successfully', 'success');
       await this.loadSheetDetails(this.linkedSheetId);
     } catch (error) {
       await this.presentToast(this.getShareErrorMessage(error, 'grant'), 'danger');
@@ -316,52 +308,6 @@ export class LinkedSheetPage implements OnInit, OnDestroy {
       this.accessActionInProgress = false;
       this.cdr.markForCheck();
     }
-  }
-
-  private async promptRoleSelection(): Promise<GoogleDrivePermissionRole | null> {
-    let selectedRole: GoogleDrivePermissionRole | null = null;
-
-    const roleAlert = await this.alertController.create({
-      header: 'Select Role',
-      inputs: [
-        {
-          type: 'radio',
-          label: 'Writer',
-          value: 'writer',
-          checked: true,
-        },
-        {
-          type: 'radio',
-          label: 'Reader',
-          value: 'reader',
-        },
-      ],
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-        },
-        {
-          text: 'Grant',
-          role: 'confirm',
-          handler: (value: unknown) => {
-            if (value === 'reader' || value === 'writer') {
-              selectedRole = value;
-            }
-
-            return true;
-          },
-        },
-      ],
-    });
-
-    await roleAlert.present();
-    const roleResult = await roleAlert.onDidDismiss();
-    if (roleResult.role !== 'confirm') {
-      return null;
-    }
-
-    return selectedRole;
   }
 
   private isValidEmail(emailAddress: string): boolean {

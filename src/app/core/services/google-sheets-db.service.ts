@@ -20,8 +20,6 @@ export interface GoogleDriveFilePermission {
   type: string;
 }
 
-export type GoogleDrivePermissionRole = 'reader' | 'writer';
-
 export interface GoogleDriveFileDetails {
   name: string;
   starred: boolean;
@@ -42,7 +40,6 @@ export class GoogleSheetsDbService {
 
   async createFilePermission(
     emailAddress: string,
-    role: GoogleDrivePermissionRole,
     options?: { spreadsheetId?: string; sendNotificationEmail?: boolean },
   ): Promise<void> {
     const accessToken = await this.getAccessToken();
@@ -58,7 +55,7 @@ export class GoogleSheetsDbService {
         },
         body: JSON.stringify({
           type: 'user',
-          role,
+          role: 'writer',
           emailAddress,
         }),
       },

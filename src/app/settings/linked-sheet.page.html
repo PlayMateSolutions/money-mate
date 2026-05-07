@@ -4,16 +4,15 @@
       <ion-back-button defaultHref="/settings"></ion-back-button>
     </ion-buttons>
     <ion-title>Linked Spreadsheet</ion-title>
+    <ion-buttons slot="end" *ngIf="loadingPermissions || accessActionInProgress">
+      <ion-button fill="clear" color="medium" disabled>
+        <ion-spinner name="crescent"></ion-spinner>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
-  <ion-loading
-    [isOpen]="loadingPermissions || accessActionInProgress"
-    message="Please wait..."
-    spinner="crescent">
-  </ion-loading>
-
   <div class="container">
     <ion-list>
       <ion-item-group>
