@@ -11,6 +11,22 @@ export interface GoogleSpreadsheetCreateResult {
   title: string;
 }
 
+export interface GoogleDriveFilePermission {
+  id: string;
+  emailAddress?: string;
+  displayName?: string;
+  photoLink?: string;
+  role: string;
+  type: string;
+}
+
+export interface GoogleDriveFileDetails {
+  name: string;
+  starred: boolean;
+  shared: boolean;
+  permissions: GoogleDriveFilePermission[];
+}
+
 export interface GoogleBatchUpdateRange {
   range: string;
   values: string[][];
@@ -21,6 +37,57 @@ export interface GoogleBatchUpdateRange {
 })
 export class GoogleSheetsDbService {
   constructor(private readonly sessionService: SessionService) {}
+
+  async getSpreadsheetDetails(spreadsheetId?: string): Promise<GoogleDriveFileDetails> {
+    const accessToken = await this.getAccessToken();
+    const fileId = spreadsheetId || this.getSpreadsheetId();
+    const fields = encodeURIComponent(
+      'name,starred,shared,permissions(id,emailAddress,displayName,photoLink,role,type)',
+    );
+
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=${fields}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch spreadsheet details (${response.status})`);
+    }
+
+    const data = await response.json() as {
+      name?: string;
+      starred?: boolean;
+      shared?: boolean;
+      permissions?: Array<{
+        id?: string;
+        emailAddress?: string;
+        displayName?: string;
+        photoLink?: string;
+        role?: string;
+        type?: string;
+      }>;
+    };
+
+    return {
+      name: data.name || 'Untitled Spreadsheet',
+      starred: !!data.starred,
+      shared: !!data.shared,
+      permissions: (data.permissions || [])
+        .filter((permission) => !!permission.id)
+        .map((permission) => ({
+          id: permission.id as string,
+          emailAddress: permission.emailAddress || undefined,
+          displayName: permission.displayName || undefined,
+          photoLink: permission.photoLink || undefined,
+          role: permission.role || 'reader',
+          type: permission.type || 'unknown',
+        })),
+    };
+  }
 
   async listSpreadsheets(pageSize = 25): Promise<GoogleDriveSpreadsheetFile[]> {
     const accessToken = await this.getAccessToken();

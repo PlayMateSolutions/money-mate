@@ -1,0 +1,81 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/settings"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Linked Spreadsheet</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="container">
+    <ion-list>
+      <ion-item-group>
+        <ion-item-divider>
+          <ion-label>Sheet</ion-label>
+        </ion-item-divider>
+
+        <ion-item>
+          <ion-label>
+            <h2 *ngIf="linkedSheetName; else noSheetTitle">{{ linkedSheetName }}</h2>
+            <ng-template #noSheetTitle>
+              <h2>No sheet linked</h2>
+            </ng-template>
+            <p *ngIf="!linkedSheetId">Link a sheet to start syncing and backing up your data</p>
+            <p *ngIf="linkedSheetId && hasPermissionData">Shared: {{ isShared ? 'Yes' : 'No' }} • Starred: {{ isStarred ? 'Yes' : 'No' }}</p>
+          </ion-label>
+          <ion-button
+            slot="end"
+            fill="clear"
+            color="medium"
+            size="small"
+            [disabled]="!linkedSheetId"
+            (click)="openLinkedSheet()"
+            aria-label="Open linked spreadsheet">
+            <ion-icon slot="icon-only" name="open-outline"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </ion-item-group>
+
+      <ion-item-group *ngIf="linkedSheetId && authMode === 'google'">
+        <ion-item-divider>
+          <ion-label>Access Users</ion-label>
+        </ion-item-divider>
+
+        <ion-item *ngIf="loadingPermissions">
+          <ion-spinner name="crescent" slot="start"></ion-spinner>
+          <ion-label>Loading access users...</ion-label>
+        </ion-item>
+
+        <ion-item *ngFor="let permission of userPermissions; trackBy: trackByPermissionId">
+          <ion-avatar slot="start" *ngIf="permission.photoLink; else avatarFallback">
+            <img
+              [src]="permission.photoLink"
+              [alt]="(permission.displayName || permission.emailAddress || 'User') + ' avatar'"
+              referrerpolicy="no-referrer"
+              crossorigin="anonymous"
+              loading="lazy"
+              decoding="async"
+              (error)="onAvatarLoadError(permission.id)" />
+          </ion-avatar>
+          <ng-template #avatarFallback>
+            <div slot="start" class="avatar-placeholder">
+              <ion-icon name="person-circle-outline" color="medium"></ion-icon>
+            </div>
+          </ng-template>
+          <ion-label>
+            <h2>{{ permission.displayName || permission.emailAddress || 'Unknown User' }}</h2>
+            <p>{{ permission.emailAddress || 'No email available' }}</p>
+            <p>Role: {{ permission.role }}</p>
+          </ion-label>
+        </ion-item>
+
+        <ion-item *ngIf="!loadingPermissions && hasPermissionData && userPermissions.length === 0">
+          <ion-label>
+            <p>No user access entries found for this sheet.</p>
+          </ion-label>
+        </ion-item>
+      </ion-item-group>
+    </ion-list>
+  </div>
+</ion-content>

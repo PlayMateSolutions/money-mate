@@ -1,6 +1,5 @@
 .container {
   padding: 20px;
-  text-align: center;
 }
 
 ion-list {
@@ -20,16 +19,6 @@ ion-item-divider {
   letter-spacing: 0.2px;
 }
 
-.container p {
-  color: var(--ion-color-medium);
-  font-size: 16px;
-}
-
-.account-item {
-  --padding-top: 8px;
-  --padding-bottom: 8px;
-}
-
 .avatar-placeholder {
   width: 40px;
   height: 40px;
@@ -43,6 +32,3 @@ ion-item-divider {
   font-size: 36px;
 }
 
-ion-item[button] {
-  --detail-icon: none;
-}

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { appEntryGuard } from './core/guards/entry.guard';
+import { LinkedSheetPage } from './settings/linked-sheet.page';
 
 export const routes: Routes = [
   {
@@ -42,6 +43,10 @@ export const routes: Routes = [
   {
     path: 'settings/accounts',
     loadComponent: () => import('./accounts').then((m) => m.AccountsPage),
+  },
+  {
+    path: 'settings/linked-sheet',
+    component: LinkedSheetPage,
   },
   {
     path: 'settings',

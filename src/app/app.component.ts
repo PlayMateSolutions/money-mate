@@ -108,6 +108,7 @@ export class AppComponent {
       '/tabs/transactions/form': 'New Transaction',
       '/tabs/transactions/form/:id': 'Edit Transaction',
       '/settings': 'Settings',
+      '/settings/linked-sheet': 'Linked Spreadsheet',
       '/settings/about': 'About',
       '/settings/categories': 'Categories',
       '/settings/accounts': 'Accounts',
