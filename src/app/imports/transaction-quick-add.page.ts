@@ -24,6 +24,7 @@ import {
   IonTextarea,
   IonTitle,
   IonToolbar,
+  ModalController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -39,6 +40,7 @@ import {
   CsvImportService,
   CsvImportTransactionPreview,
 } from '../core/services/csv-import.service';
+import { CategoryGridModalComponent } from '../shared/category-grid-selector/category-grid-modal.component';
 
 @Component({
   selector: 'app-transaction-quick-add',
@@ -94,6 +96,7 @@ export class TransactionQuickAddPage implements OnInit {
     private readonly analyticsService: AnalyticsService,
     private readonly csvImportService: CsvImportService,
     private readonly alertController: AlertController,
+    private readonly modalController: ModalController,
     private readonly toastController: ToastController,
     private readonly cdr: ChangeDetectorRef,
     private readonly autoCategorizationService: AutoCategorizationService,
@@ -320,46 +323,47 @@ export class TransactionQuickAddPage implements OnInit {
   }
 
   getCategoryValueForRow(row: CsvImportTransactionPreview): string {
-    return row.categoryName || this.uncategorizedOptionValue;
+    if (!row.categoryName) {
+      return this.uncategorizedOptionValue;
+    }
+
+    const matchedCategory = this.categories.find((category) => category.name === row.categoryName);
+    return matchedCategory?.id ?? this.uncategorizedOptionValue;
   }
 
   async openCategoryPicker(row: CsvImportTransactionPreview): Promise<void> {
-    const alert = await this.alertController.create({
-      header: 'Select Category',
-      inputs: [
-        {
-          type: 'radio',
-          label: 'Uncategorized',
-          value: this.uncategorizedOptionValue,
-          checked: this.getCategoryValueForRow(row) === this.uncategorizedOptionValue,
-        },
-        ...this.categories.map((category) => ({
-          type: 'radio' as const,
-          label: category.name,
-          value: category.name,
-          checked: category.name === this.getCategoryValueForRow(row),
-        })),
-      ],
-      buttons: [
-        'Cancel',
-        {
-          text: 'Apply',
-          handler: (selectedValue?: string) => {
-            if (!selectedValue) {
-              return;
-            }
-
-            this.onPreviewRowCategoryChanged(row, selectedValue);
-          },
-        },
-      ],
+    const selectedCategoryId = this.getCategoryValueForRow(row);
+    const modal = await this.modalController.create({
+      component: CategoryGridModalComponent,
+      componentProps: {
+        title: 'Select Category',
+        categories: this.categories,
+        selectedCategoryIds:
+          selectedCategoryId === this.uncategorizedOptionValue ? [] : [selectedCategoryId],
+        includeUncategorized: true,
+        singleSelect: true,
+      },
     });
 
-    await alert.present();
+    await modal.present();
+
+    const { data, role } = await modal.onWillDismiss<string>();
+    if (role !== 'apply') {
+      return;
+    }
+
+    this.onPreviewRowCategoryChanged(row, data || this.uncategorizedOptionValue);
   }
 
   onPreviewRowCategoryChanged(row: CsvImportTransactionPreview, selectedValue: string): void {
-    row.categoryName = selectedValue === this.uncategorizedOptionValue ? undefined : selectedValue;
+    if (selectedValue === this.uncategorizedOptionValue) {
+      row.categoryName = undefined;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const selectedCategory = this.categories.find((category) => category.id === selectedValue);
+    row.categoryName = selectedCategory?.name;
     this.cdr.markForCheck();
   }
 
