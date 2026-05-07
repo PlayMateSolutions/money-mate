@@ -368,13 +368,59 @@ export class TransactionRepository {
 
   async upsertFromSheet(transaction: Transaction): Promise<void> {
     try {
-      await this.db.runWithoutDirtyTracking(async () => {
-        await this.db.transactions.put({
-          ...transaction,
-          isDirty: false,
-          createdBy: transaction.createdBy || GUEST_USER_NAME,
-          updatedBy: transaction.updatedBy || transaction.createdBy || GUEST_USER_NAME,
+      await this.db.transaction('rw', [this.db.transactions, this.db.accounts], async () => {
+        const existingTx = await this.db.transactions.get(transaction.id);
+        const now = new Date();
+
+        // Put the transaction without marking it dirty (it came from the sheet)
+        await this.db.runWithoutDirtyTracking(async () => {
+          await this.db.transactions.put({
+            ...transaction,
+            isDirty: false,
+            createdBy: transaction.createdBy || GUEST_USER_NAME,
+            updatedBy: transaction.updatedBy || transaction.createdBy || GUEST_USER_NAME,
+          });
         });
+
+        // --- Balance adjustment (accounts stay dirty so the corrected balance syncs back) ---
+
+        if (existingTx) {
+          // Reverse the old local transaction's balance effect first
+          if (existingTx.type === 'transfer' && existingTx.transferToAccountId) {
+            const oldSource = await this.db.accounts.get(existingTx.accountId);
+            if (oldSource) {
+              await this.db.accounts.update(existingTx.accountId, { balance: oldSource.balance + Math.abs(existingTx.amount), updatedAt: now });
+            }
+            const oldDest = await this.db.accounts.get(existingTx.transferToAccountId);
+            if (oldDest) {
+              await this.db.accounts.update(existingTx.transferToAccountId, { balance: oldDest.balance - Math.abs(existingTx.amount), updatedAt: now });
+            }
+          } else {
+            const oldAccount = await this.db.accounts.get(existingTx.accountId);
+            if (oldAccount) {
+              await this.db.accounts.update(existingTx.accountId, { balance: oldAccount.balance - existingTx.amount, updatedAt: now });
+            }
+          }
+        }
+
+        // Apply the incoming transaction's balance effect (skip if deleted)
+        if (!transaction.isDeleted) {
+          if (transaction.type === 'transfer' && transaction.transferToAccountId) {
+            const source = await this.db.accounts.get(transaction.accountId);
+            if (source) {
+              await this.db.accounts.update(transaction.accountId, { balance: source.balance - Math.abs(transaction.amount), updatedAt: now });
+            }
+            const dest = await this.db.accounts.get(transaction.transferToAccountId);
+            if (dest) {
+              await this.db.accounts.update(transaction.transferToAccountId, { balance: dest.balance + Math.abs(transaction.amount), updatedAt: now });
+            }
+          } else {
+            const account = await this.db.accounts.get(transaction.accountId);
+            if (account) {
+              await this.db.accounts.update(transaction.accountId, { balance: account.balance + transaction.amount, updatedAt: now });
+            }
+          }
+        }
       });
 
       await this.refreshTransactionStreams();

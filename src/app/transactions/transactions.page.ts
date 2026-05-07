@@ -353,10 +353,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
         dirty_count: this.allTransactions.filter((transaction) => !!transaction.isDirty).length,
       });
 
-      // Sync all: accounts, categories, transactions
+      // Sync transactions first so balance deltas are applied locally,
+      // then sync accounts so corrected balances are pushed to the sheet.
+      await this.googleSheetService.syncTransactions();
       await this.googleSheetService.syncAccounts();
       await this.googleSheetService.syncCategories();
-      await this.googleSheetService.syncTransactions();
       await this.refreshLookups();
       await this.transactionRepository.getAllTransactions();
       this.analyticsService.trackEvent('sync_transactions', { status: 'success' });
