@@ -20,6 +20,8 @@ export interface GoogleDriveFilePermission {
   type: string;
 }
 
+export type GoogleDrivePermissionRole = 'reader' | 'writer';
+
 export interface GoogleDriveFileDetails {
   name: string;
   starred: boolean;
@@ -37,6 +39,56 @@ export interface GoogleBatchUpdateRange {
 })
 export class GoogleSheetsDbService {
   constructor(private readonly sessionService: SessionService) {}
+
+  async createFilePermission(
+    emailAddress: string,
+    role: GoogleDrivePermissionRole,
+    options?: { spreadsheetId?: string; sendNotificationEmail?: boolean },
+  ): Promise<void> {
+    const accessToken = await this.getAccessToken();
+    const fileId = options?.spreadsheetId || this.getSpreadsheetId();
+    const sendNotificationEmail = options?.sendNotificationEmail ?? false;
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions?sendNotificationEmail=${sendNotificationEmail}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'user',
+          role,
+          emailAddress,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to create permission (${response.status})`);
+    }
+  }
+
+  async deleteFilePermission(
+    permissionId: string,
+    spreadsheetId?: string,
+  ): Promise<void> {
+    const accessToken = await this.getAccessToken();
+    const fileId = spreadsheetId || this.getSpreadsheetId();
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions/${encodeURIComponent(permissionId)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete permission (${response.status})`);
+    }
+  }
 
   async getSpreadsheetDetails(spreadsheetId?: string): Promise<GoogleDriveFileDetails> {
     const accessToken = await this.getAccessToken();

@@ -8,6 +8,12 @@
 </ion-header>
 
 <ion-content>
+  <ion-loading
+    [isOpen]="loadingPermissions || accessActionInProgress"
+    message="Please wait..."
+    spinner="crescent">
+  </ion-loading>
+
   <div class="container">
     <ion-list>
       <ion-item-group>
@@ -68,6 +74,17 @@
             <p>{{ permission.emailAddress || 'No email available' }}</p>
             <p>Role: {{ permission.role }}</p>
           </ion-label>
+          <ion-button
+            *ngIf="canRemovePermission(permission)"
+            slot="end"
+            fill="clear"
+            color="danger"
+            size="small"
+            [disabled]="accessActionInProgress"
+            (click)="confirmRemovePermission(permission)"
+            aria-label="Remove user access">
+            <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+          </ion-button>
         </ion-item>
 
         <ion-item *ngIf="!loadingPermissions && hasPermissionData && userPermissions.length === 0">
@@ -77,5 +94,15 @@
         </ion-item>
       </ion-item-group>
     </ion-list>
+
+    <ion-fab slot="fixed" vertical="bottom" horizontal="end" *ngIf="canManageAccess">
+      <ion-fab-button
+        color="primary"
+        [disabled]="loadingPermissions || accessActionInProgress"
+        (click)="openAddAccessPrompt()"
+        aria-label="Grant access">
+        <ion-icon name="add-outline"></ion-icon>
+      </ion-fab-button>
+    </ion-fab>
   </div>
 </ion-content>
