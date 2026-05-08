@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { GoogleSheetsDbService } from './google-sheets-db.service';
-import { Account, Category, GUEST_USER_NAME, Transaction } from '../database/models';
-import { AccountRepository, CategoryRepository, TransactionRepository } from '../database/repositories';
+import { Account, Budget, Category, GUEST_USER_NAME, Transaction } from '../database/models';
+import { AccountRepository, BudgetRepository, CategoryRepository, TransactionRepository } from '../database/repositories';
 import { DatabaseService } from '../database/database.service';
 
 export interface SpreadsheetSummary {
@@ -16,16 +16,18 @@ export class GoogleSheetService {
   constructor(
     private readonly googleSheetsDbService: GoogleSheetsDbService,
     private readonly accountRepository: AccountRepository,
+    private readonly budgetRepository: BudgetRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly transactionRepository: TransactionRepository,
     private readonly db: DatabaseService,
   ) {}
 
   async importAllFromSheetToLocal(): Promise<void> {
-    const [accountsRows, categoriesRows, transactionsRows] = await Promise.all([
+    const [accountsRows, categoriesRows, transactionsRows, budgetsRows] = await Promise.all([
       this.getValuesOrEmpty('accounts!A:M'),
       this.getValuesOrEmpty('categories!A:K'),
       this.getValuesOrEmpty('transactions!A:O'),
+      this.getValuesOrEmpty('budgets!A:P'),
     ]);
 
     const accounts = accountsRows
@@ -46,11 +48,18 @@ export class GoogleSheetService {
       .filter((transaction): transaction is Transaction => !!transaction)
       .map((transaction) => ({ ...transaction, isDirty: false }));
 
-    await this.db.transaction('rw', this.db.accounts, this.db.categories, this.db.transactions, async () => {
+    const budgets = budgetsRows
+      .slice(1)
+      .map((row) => this.parseSheetBudget(row))
+      .filter((budget): budget is Budget => !!budget)
+      .map((budget) => ({ ...budget, isDirty: false }));
+
+    await this.db.transaction('rw', this.db.accounts, this.db.categories, this.db.transactions, this.db.budgets, async () => {
       await this.db.runWithoutDirtyTracking(async () => {
         await this.db.transactions.clear();
         await this.db.accounts.clear();
         await this.db.categories.clear();
+        await this.db.budgets.clear();
 
         if (accounts.length > 0) {
           await this.db.accounts.bulkPut(accounts);
@@ -63,11 +72,16 @@ export class GoogleSheetService {
         if (transactions.length > 0) {
           await this.db.transactions.bulkPut(transactions);
         }
+
+        if (budgets.length > 0) {
+          await this.db.budgets.bulkPut(budgets);
+        }
       });
     });
 
     await Promise.all([
       this.accountRepository.getAccounts(),
+      this.budgetRepository.getBudgets(),
       this.categoryRepository.getCategories(),
       this.transactionRepository.getAllTransactions(),
     ]);
@@ -81,6 +95,7 @@ export class GoogleSheetService {
     const result = await this.googleSheetsDbService.createSpreadsheet(title, [
       'dashboard',
       'accounts',
+      'budgets',
       'categories',
       'transactions',
     ]);
@@ -104,6 +119,27 @@ export class GoogleSheetService {
           'color',
           'icon',
           'notes',
+          'isDeleted',
+          'createdAt',
+          'updatedAt',
+          'createdBy',
+          'updatedBy',
+        ]],
+      },
+      {
+        range: 'budgets!A1',
+        values: [[
+          'id',
+          'name',
+          'type',
+          'amount',
+          'period',
+          'startDate',
+          'endDate',
+          'categoryIds',
+          'groupId',
+          'rolloverEnabled',
+          'alertThresholds',
           'isDeleted',
           'createdAt',
           'updatedAt',
@@ -348,6 +384,76 @@ export class GoogleSheetService {
     await this.categoryRepository.clearDirtyFlags(pushedIds);
   }
 
+  async syncBudgets(): Promise<void> {
+    const sheetRows = await this.googleSheetsDbService.getValues('budgets!A:P');
+    const rowsWithoutHeader = sheetRows.slice(1);
+    const localBudgets = await this.budgetRepository.getBudgetsForSettings();
+
+    const sheetById = new Map<string, { budget: Budget; rowNumber: number }>();
+    rowsWithoutHeader.forEach((row, index) => {
+      const parsed = this.parseSheetBudget(row);
+      if (!parsed) {
+        return;
+      }
+
+      sheetById.set(parsed.id, {
+        budget: parsed,
+        rowNumber: index + 2,
+      });
+    });
+
+    const localById = new Map(localBudgets.map((budget) => [budget.id, budget]));
+
+    for (const [id, sheetRecord] of sheetById.entries()) {
+      const localRecord = localById.get(id);
+      if (!localRecord) {
+        await this.budgetRepository.upsertFromSheet(sheetRecord.budget);
+        continue;
+      }
+
+      const localUpdatedAt = new Date(localRecord.updatedAt).getTime();
+      const sheetUpdatedAt = new Date(sheetRecord.budget.updatedAt).getTime();
+
+      if (sheetUpdatedAt > localUpdatedAt && !localRecord.isDirty) {
+        await this.budgetRepository.upsertFromSheet(sheetRecord.budget);
+      }
+    }
+
+    const dirtyBudgets = await this.budgetRepository.getDirtyBudgets();
+    const pushedIds: string[] = [];
+    const updateRequests: Array<{ range: string; values: string[][] }> = [];
+    const rowsToAppend: string[][] = [];
+
+    for (const budget of dirtyBudgets) {
+      const rowValues = this.toSheetBudgetRow(budget);
+      const existing = sheetById.get(budget.id);
+
+      if (existing) {
+        updateRequests.push({
+          range: `budgets!A${existing.rowNumber}:P${existing.rowNumber}`,
+          values: [rowValues],
+        });
+      } else {
+        rowsToAppend.push(rowValues);
+      }
+
+      pushedIds.push(budget.id);
+    }
+
+    if (updateRequests.length > 0) {
+      await this.googleSheetsDbService.batchUpdateValues(updateRequests);
+    }
+
+    if (rowsToAppend.length > 0) {
+      await this.googleSheetsDbService.appendValues(
+        'budgets!A:P',
+        rowsToAppend,
+      );
+    }
+
+    await this.budgetRepository.clearDirtyFlags(pushedIds);
+  }
+
   async syncTransactions(): Promise<void> {
     const sheetRows = await this.googleSheetsDbService.getValues('transactions!A:O');
     const rowsWithoutHeader = sheetRows.slice(1);
@@ -469,6 +575,37 @@ export class GoogleSheetService {
     };
   }
 
+  private parseSheetBudget(row: string[]): Budget | null {
+    if (!row[0]) {
+      return null;
+    }
+
+    const type = this.parseBudgetType(row[2]);
+    const period = this.parseBudgetPeriod(row[4]);
+    const categoryIds = this.parseStringArray(row[7]);
+    const alertThresholds = this.parseNumberArray(row[10]);
+
+    return {
+      id: row[0],
+      name: row[1] || '',
+      type,
+      amount: Number(row[3] || 0),
+      period,
+      startDate: this.parseDate(row[5]),
+      endDate: row[6] ? this.parseDate(row[6]) : undefined,
+      categoryIds,
+      groupId: row[8] || undefined,
+      rolloverEnabled: row[9] === 'true',
+      alertThresholds: alertThresholds.length > 0 ? alertThresholds : [50, 80, 100],
+      isDeleted: row[11] === 'true',
+      createdAt: this.parseDate(row[12]),
+      updatedAt: this.parseDate(row[13]),
+      createdBy: row[14] || GUEST_USER_NAME,
+      updatedBy: row[15] || row[14] || GUEST_USER_NAME,
+      isDirty: false,
+    };
+  }
+
   private parseSheetAccount(row: string[]): Account | null {
     if (!row[0]) {
       return null;
@@ -549,6 +686,27 @@ export class GoogleSheetService {
     ];
   }
 
+  private toSheetBudgetRow(budget: Budget): string[] {
+    return [
+      budget.id,
+      budget.name,
+      budget.type,
+      String(budget.amount),
+      budget.period,
+      this.toIso(budget.startDate),
+      budget.endDate ? this.toIso(budget.endDate) : '',
+      JSON.stringify(budget.categoryIds || []),
+      budget.groupId || '',
+      String(!!budget.rolloverEnabled),
+      JSON.stringify(budget.alertThresholds || []),
+      String(!!budget.isDeleted),
+      this.toIso(budget.createdAt),
+      this.toIso(budget.updatedAt),
+      budget.createdBy || GUEST_USER_NAME,
+      budget.updatedBy || budget.createdBy || GUEST_USER_NAME,
+    ];
+  }
+
   private parseAccountType(value: string | undefined): Account['type'] {
     switch (value) {
       case 'checking':
@@ -570,6 +728,76 @@ export class GoogleSheetService {
       default:
         return amount < 0 ? 'expense' : 'income';
     }
+  }
+
+  private parseBudgetType(value: string | undefined): Budget['type'] {
+    switch (value) {
+      case 'category':
+      case 'overall':
+      case 'group':
+      case 'goal':
+        return value;
+      default:
+        return 'category';
+    }
+  }
+
+  private parseBudgetPeriod(value: string | undefined): Budget['period'] {
+    switch (value) {
+      case 'weekly':
+      case 'monthly':
+      case 'yearly':
+      case 'custom':
+        return value;
+      default:
+        return 'monthly';
+    }
+  }
+
+  private parseStringArray(value: string | undefined): string[] {
+    if (!value?.trim()) {
+      return [];
+    }
+
+    const trimmed = value.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed) as unknown;
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => String(item)).filter(Boolean);
+        }
+      } catch {
+      }
+    }
+
+    return trimmed
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  private parseNumberArray(value: string | undefined): number[] {
+    if (!value?.trim()) {
+      return [];
+    }
+
+    const trimmed = value.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed) as unknown;
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((item) => Number(item))
+            .filter((num) => Number.isFinite(num));
+        }
+      } catch {
+      }
+    }
+
+    return trimmed
+      .split(',')
+      .map((item) => Number(item.trim()))
+      .filter((num) => Number.isFinite(num));
   }
 
   private parseTags(value: string | undefined): string[] {

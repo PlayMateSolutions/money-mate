@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import Dexie, { Table } from 'dexie';
-import { Account, Category, GUEST_USER_NAME, Transaction } from './models';
+import { Account, Budget, Category, GUEST_USER_NAME, Transaction } from './models';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +10,7 @@ export class DatabaseService extends Dexie {
   accounts!: Table<Account>;
   categories!: Table<Category>;
   transactions!: Table<Transaction>;
+  budgets!: Table<Budget>;
   private dirtyTrackingBypassCount = 0;
 
   constructor() {
@@ -22,9 +23,17 @@ export class DatabaseService extends Dexie {
       transactions: '++id, accountId, categoryId, date, type, amount, createdAt, createdBy, isDirty'
     });
 
+    this.version(2).stores({
+      accounts: '++id, name, type, ownerName, createdAt, isDirty',
+      categories: '++id, name, sortOrder, createdAt, isDirty',
+      transactions: '++id, accountId, categoryId, date, type, amount, createdAt, createdBy, isDirty',
+      budgets: '++id, name, type, period, startDate, createdAt, isDirty'
+    });
+
     this.registerAccountHooks();
     this.registerCategoryHooks();
     this.registerTransactionHooks();
+    this.registerBudgetHooks();
 
     // Initialize default categories on first run - using transaction approach like React example
     this.on('ready', async () => {
@@ -138,6 +147,36 @@ export class DatabaseService extends Dexie {
     });
   }
 
+  private registerBudgetHooks(): void {
+    this.budgets.hook('creating', (_primKey, obj: Budget) => {
+      if (this.dirtyTrackingBypassCount > 0) {
+        return;
+      }
+
+      const now = new Date();
+      const actor = this.getCurrentActorName();
+      obj.createdAt = obj.createdAt ?? now;
+      obj.updatedAt = now;
+      obj.createdBy = obj.createdBy ?? actor;
+      obj.updatedBy = actor;
+      obj.isDirty = true;
+    });
+
+    this.budgets.hook('updating', (mods: Partial<Budget>) => {
+      if (this.dirtyTrackingBypassCount > 0) {
+        return mods;
+      }
+
+      const actor = this.getCurrentActorName();
+      return {
+        ...mods,
+        updatedAt: new Date(),
+        updatedBy: actor,
+        isDirty: true,
+      };
+    });
+  }
+
   private getCurrentActorName(): string {
     try {
       const rawSession = localStorage.getItem('money-mate-user-session');
@@ -206,23 +245,25 @@ export class DatabaseService extends Dexie {
    * Clear all data (useful for development/testing)
    */
   async clearAllData(): Promise<void> {
-    await this.transaction('rw', this.accounts, this.categories, this.transactions, async () => {
+    await this.transaction('rw', this.accounts, this.categories, this.transactions, this.budgets, async () => {
       await this.accounts.clear();
       await this.categories.clear(); 
       await this.transactions.clear();
+      await this.budgets.clear();
     });
   }
 
   /**
    * Get database statistics
    */
-  async getStats(): Promise<{ accounts: number; categories: number; transactions: number }> {
-    const [accounts, categories, transactions] = await Promise.all([
+  async getStats(): Promise<{ accounts: number; categories: number; transactions: number; budgets: number }> {
+    const [accounts, categories, transactions, budgets] = await Promise.all([
       this.accounts.filter(account => !account.isDeleted).count(),
       this.categories.filter(category => !category.isDeleted).count(),
-      this.transactions.filter(transaction => !transaction.isDeleted).count()
+      this.transactions.filter(transaction => !transaction.isDeleted).count(),
+      this.budgets.filter(budget => !budget.isDeleted).count()
     ]);
 
-    return { accounts, categories, transactions };
+    return { accounts, categories, transactions, budgets };
   }
 }
