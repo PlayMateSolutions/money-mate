@@ -1,0 +1,43 @@
+<ion-card>
+  <ion-card-header>
+    <ion-card-title>Budget vs Actual</ion-card-title>
+    <ion-card-subtitle>Selected date range comparison</ion-card-subtitle>
+  </ion-card-header>
+
+  <ion-card-content>
+    <ion-text color="medium" *ngIf="loading">
+      <p class="state-text">Loading budget comparison...</p>
+    </ion-text>
+
+    <ion-text color="danger" *ngIf="!loading && error">
+      <p class="state-text">{{ error }}</p>
+    </ion-text>
+
+    <ion-text color="medium" *ngIf="!loading && !error && !hasItems">
+      <p class="state-text">No active budgets found.</p>
+    </ion-text>
+
+    <div class="budget-list" *ngIf="!loading && !error && hasItems">
+      <div class="budget-row" *ngFor="let item of items; trackBy: trackByBudgetId">
+        <div class="budget-row__header">
+          <ion-icon [name]="getBudgetIcon(item)" [style.color]="getBudgetIconColor(item)"></ion-icon>
+          <div class="budget-row__title">
+            <h3>{{ item.categoryName }}</h3>
+            <p>{{ item.budget.amount | currency }} / {{ item.budget.period }}</p>
+          </div>
+          <ion-text [color]="item.remaining >= 0 ? 'success' : 'danger'" class="budget-row__status">
+            {{ item.statusLabel }}
+          </ion-text>
+        </div>
+
+        <ion-progress-bar [value]="item.progressBarValue"></ion-progress-bar>
+
+        <div class="budget-row__stats">
+          <span>Actual: {{ item.actualSpent | currency }}</span>
+          <span>Remaining: {{ item.remaining | currency }}</span>
+          <span>{{ item.progressPercent | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+    </div>
+  </ion-card-content>
+</ion-card>

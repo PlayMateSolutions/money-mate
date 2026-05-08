@@ -83,7 +83,16 @@ export class DashboardCustomizePage {
   }
   getWidgetIconPath(widgetId: string): string {
     const themeFolder = this.theme === 'dark' ? 'dark-theme' : 'light-theme';
-    return `assets/widget-icons/${themeFolder}/${widgetId}.png`;
+    const supportedWidgetIds = new Set([
+      'top-summary',
+      'daily-expenses',
+      'expense-breakdown',
+      'expense-comparison',
+      'recent-transactions',
+    ]);
+
+    const resolvedWidgetId = supportedWidgetIds.has(widgetId) ? widgetId : 'top-summary';
+    return `assets/widget-icons/${themeFolder}/${resolvedWidgetId}.png`;
   }
 
   ionViewWillEnter(): void {
