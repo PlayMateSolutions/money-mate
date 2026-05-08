@@ -1,7 +1,21 @@
 <ion-card>
   <ion-card-header>
-    <ion-card-title>Budget vs Actual</ion-card-title>
-    <ion-card-subtitle>Selected date range comparison</ion-card-subtitle>
+    <div class="header-row">
+      <div>
+        <ion-card-title>Budget vs Actual</ion-card-title>
+        <ion-card-subtitle>Selected date range comparison</ion-card-subtitle>
+      </div>
+
+      <ion-button
+        fill="clear"
+        class="settings-button"
+        [class.has-saved-selection]="hasSavedSettings"
+        [attr.aria-label]="hasSavedSettings ? 'Edit widget settings' : 'Open widget settings'"
+        (click)="openCategorySettings()"
+      >
+        <ion-icon slot="icon-only" [name]="settingsIconName"></ion-icon>
+      </ion-button>
+    </div>
   </ion-card-header>
 
   <ion-card-content>

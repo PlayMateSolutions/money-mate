@@ -6,6 +6,21 @@
   text-align: center;
 }
 
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-button {
+  flex: 0 0 auto;
+}
+
+.settings-button.has-saved-selection {
+  color: var(--ion-color-primary);
+}
+
 .budget-list {
   display: flex;
   flex-direction: column;

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { CommonModule } from '@angular/common';
 import { Subscription, combineLatest } from 'rxjs';
 import {
+  IonButton,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -10,13 +11,15 @@ import {
   IonIcon,
   IonProgressBar,
   IonText,
+  ModalController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { walletOutline, pricetagOutline } from 'ionicons/icons';
+import { settings, settingsOutline, walletOutline, pricetagOutline } from 'ionicons/icons';
 import * as ionicons from 'ionicons/icons';
 import { Budget, Category, Transaction } from '../../../core/database/models';
 import { BudgetRepository, CategoryRepository, TransactionRepository } from '../../../core/database/repositories';
 import { DashboardDateRange, DashboardDateRangeService } from '../../services/dashboard-date-range.service';
+import { WidgetSettingsModalComponent, WidgetSettingsOption, WidgetSettingsResult } from '../../../shared/widget-settings';
 
 interface BudgetVsActualItem {
   budget: Budget;
@@ -35,6 +38,7 @@ interface BudgetVsActualItem {
   standalone: true,
   imports: [
     CommonModule,
+    IonButton,
     IonCard,
     IonCardContent,
     IonCardHeader,
@@ -49,16 +53,20 @@ interface BudgetVsActualItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
+  private static readonly STORAGE_KEY = 'dashboard.budgetVsActual.visibleCategoryIds';
+
   loading = true;
   error: string | null = null;
   hasChartData = false;
+  hasSavedCategorySelection = false;
 
   items: BudgetVsActualItem[] = [];
 
   private readonly defaultIcon = 'pricetag-outline';
-  private readonly registeredIconNames = new Set<string>([this.defaultIcon]);
+  private readonly registeredIconNames = new Set<string>(['settings-outline', this.defaultIcon]);
   private subscription?: Subscription;
   private categoriesById = new Map<string, Category>();
+  private selectedCategoryIds: Set<string> | null = null;
   private latestTransactions: Transaction[] = [];
   private latestBudgets: Budget[] = [];
   private selectedDateRange: DashboardDateRange | null = null;
@@ -68,9 +76,10 @@ export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
     private readonly categoryRepository: CategoryRepository,
     private readonly transactionRepository: TransactionRepository,
     private readonly dateRangeService: DashboardDateRangeService,
+    private readonly modalController: ModalController,
     private readonly cdr: ChangeDetectorRef,
   ) {
-    addIcons({ walletOutline, pricetagOutline });
+    addIcons({ settings, settingsOutline, walletOutline, pricetagOutline });
   }
 
   ngOnInit(): void {
@@ -104,8 +113,48 @@ export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
     return this.items.length > 0;
   }
 
+  get settingsIconName(): string {
+    return this.hasSavedCategorySelection ? 'settings' : 'settings-outline';
+  }
+
+  get hasSavedSettings(): boolean {
+    return this.hasSavedCategorySelection;
+  }
+
   trackByBudgetId(_: number, item: BudgetVsActualItem): string {
     return item.budget.id;
+  }
+
+  async openCategorySettings(): Promise<void> {
+    const options = this.getCategorySelectionOptions();
+    const availableCategoryIds = new Set(options.map((option) => option.id));
+    const selectedIds = this.selectedCategoryIds
+      ? Array.from(this.selectedCategoryIds).filter((id) => availableCategoryIds.has(id))
+      : null;
+
+    const modal = await this.modalController.create({
+      component: WidgetSettingsModalComponent,
+      componentProps: {
+        title: 'Budget vs Actual settings',
+        selectionTitle: 'Visible categories',
+        selectionDescription: 'Choose which budget categories should appear in this widget.',
+        options,
+        selectedIds,
+      },
+      breakpoints: [0, 0.72, 0.95],
+      initialBreakpoint: 0.72,
+    });
+
+    await modal.present();
+
+    const { data, role } = await modal.onDidDismiss<WidgetSettingsResult>();
+    if (role !== 'apply' || !data) {
+      return;
+    }
+
+    this.selectedCategoryIds = data.selectedIds ? new Set<string>(data.selectedIds) : null;
+    this.persistCategorySelection(this.selectedCategoryIds);
+    this.rebuildItems();
   }
 
   getBudgetIcon(item: BudgetVsActualItem): string {
@@ -125,6 +174,7 @@ export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
     const categories = await this.categoryRepository.getCategoriesForSettings();
     this.categoriesById = new Map(categories.map((category) => [category.id, category]));
     this.registerIconsFromCategories(categories);
+    this.loadSavedCategorySelection();
     this.cdr.markForCheck();
   }
 
@@ -137,15 +187,7 @@ export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
         await this.loadCategories();
       }
 
-      const range = this.selectedDateRange ?? this.getFallbackDateRange();
-      const activeBudgets = this.latestBudgets.filter((budget) => !budget.isDeleted && budget.amount > 0);
-
-      this.items = activeBudgets
-        .map((budget) => this.buildBudgetItem(budget, range))
-        .filter((item): item is BudgetVsActualItem => !!item)
-        .sort((a, b) => b.progressPercent - a.progressPercent || b.actualSpent - a.actualSpent);
-
-      this.hasChartData = this.items.length > 0;
+      this.rebuildItems();
     } catch (error) {
       console.error('Error building budget vs actual widget:', error);
       this.error = 'Failed to load budget comparison';
@@ -155,6 +197,31 @@ export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
       this.loading = false;
       this.cdr.markForCheck();
     }
+  }
+
+  private rebuildItems(): void {
+    const range = this.selectedDateRange ?? this.getFallbackDateRange();
+    const selectedCategorySet = this.selectedCategoryIds;
+    const activeBudgets = this.latestBudgets.filter((budget) => {
+      if (budget.isDeleted || budget.amount <= 0) {
+        return false;
+      }
+
+      const categoryId = budget.categoryIds?.[0];
+      if (!categoryId) {
+        return false;
+      }
+
+      return !selectedCategorySet || selectedCategorySet.has(categoryId);
+    });
+
+    this.items = activeBudgets
+      .map((budget) => this.buildBudgetItem(budget, range))
+      .filter((item): item is BudgetVsActualItem => !!item)
+      .sort((a, b) => b.progressPercent - a.progressPercent || b.actualSpent - a.actualSpent);
+
+    this.hasChartData = this.items.length > 0;
+    this.cdr.markForCheck();
   }
 
   private buildBudgetItem(budget: Budget, range: DashboardDateRange): BudgetVsActualItem | null {
@@ -203,6 +270,58 @@ export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
         return transactionDate >= start && transactionDate <= end;
       })
       .reduce((total, transaction) => total + Math.abs(transaction.amount), 0);
+  }
+
+  private getCategorySelectionOptions(): WidgetSettingsOption[] {
+    const budgetCategoryIds = new Set(
+      this.latestBudgets
+        .filter((budget) => !budget.isDeleted)
+        .flatMap((budget) => budget.categoryIds ?? [])
+        .filter(Boolean)
+    );
+
+    return Array.from(this.categoriesById.values())
+      .filter((category) => !category.isDeleted && budgetCategoryIds.has(category.id))
+      .map((category) => ({
+        id: category.id,
+        label: category.name,
+        icon: category.icon,
+        color: category.color,
+      }));
+  }
+
+  private loadSavedCategorySelection(): void {
+    try {
+      const rawValue = localStorage.getItem(BudgetVsActualWidgetComponent.STORAGE_KEY);
+      if (!rawValue) {
+        this.selectedCategoryIds = null;
+        this.hasSavedCategorySelection = false;
+        return;
+      }
+
+      const parsed = JSON.parse(rawValue) as string[];
+      const availableCategoryIds = new Set(this.getCategorySelectionOptions().map((option) => option.id));
+      const filteredParsed = Array.isArray(parsed)
+        ? parsed.filter((id) => availableCategoryIds.has(id))
+        : [];
+
+      this.selectedCategoryIds = filteredParsed.length > 0 ? new Set(filteredParsed) : null;
+      this.hasSavedCategorySelection = !!this.selectedCategoryIds;
+    } catch {
+      this.selectedCategoryIds = null;
+      this.hasSavedCategorySelection = false;
+    }
+  }
+
+  private persistCategorySelection(categoryIds: Set<string> | null): void {
+    if (!categoryIds || categoryIds.size === 0) {
+      localStorage.removeItem(BudgetVsActualWidgetComponent.STORAGE_KEY);
+      this.hasSavedCategorySelection = false;
+      return;
+    }
+
+    localStorage.setItem(BudgetVsActualWidgetComponent.STORAGE_KEY, JSON.stringify(Array.from(categoryIds)));
+    this.hasSavedCategorySelection = true;
   }
 
   private registerIconsFromCategories(categories: Category[]): void {
