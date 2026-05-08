@@ -1,0 +1,64 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/settings"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Manage Budgets</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Manage Budgets</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="container">
+    <div class="loading-state" *ngIf="loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading budgets...</p>
+    </div>
+
+    <div class="error-state" *ngIf="!loading && error">
+      <p>{{ error }}</p>
+    </div>
+
+    <ion-list *ngIf="!loading && !error">
+      <ion-item-divider>
+        <ion-label>Active</ion-label>
+      </ion-item-divider>
+      <ion-item *ngFor="let budget of activeBudgets; trackBy: trackByBudgetId">
+        <ion-icon [name]="getBudgetIcon(budget)" [style.color]="getBudgetIconColor(budget)" slot="start"></ion-icon>
+        <ion-label>
+          <h2>{{ getBudgetDisplayName(budget) }}</h2>
+          <p>{{ getPrimaryCategoryName(budget) }} • {{ budget.amount | currency:selectedCurrency }}/{{ budget.period || 'monthly' }}</p>
+        </ion-label>
+        <ion-button fill="clear" slot="end" (click)="openEditPage(budget)">
+          <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+
+      <ion-item-divider *ngIf="inactiveBudgets.length > 0">
+        <ion-label>Inactive</ion-label>
+      </ion-item-divider>
+      <ion-item *ngFor="let budget of inactiveBudgets; trackBy: trackByBudgetId">
+        <ion-icon [name]="getBudgetIcon(budget)" [style.color]="getBudgetIconColor(budget)" slot="start"></ion-icon>
+        <ion-label>
+          <h2>{{ getBudgetDisplayName(budget) }}</h2>
+          <p>{{ getPrimaryCategoryName(budget) }} • {{ budget.amount | currency:selectedCurrency }}/{{ budget.period || 'monthly' }}</p>
+        </ion-label>
+        <ion-badge color="medium" slot="end">Inactive</ion-badge>
+        <ion-button fill="clear" slot="end" (click)="openEditPage(budget)">
+          <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+    </ion-list>
+  </div>
+
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="openCreatePage()">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+</ion-content>

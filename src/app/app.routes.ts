@@ -45,6 +45,18 @@ export const routes: Routes = [
     loadComponent: () => import('./accounts').then((m) => m.AccountsPage),
   },
   {
+    path: 'settings/budgets/new',
+    loadComponent: () => import('./budgets/budget-form.page').then((m) => m.BudgetFormPage),
+  },
+  {
+    path: 'settings/budgets/:id',
+    loadComponent: () => import('./budgets/budget-form.page').then((m) => m.BudgetFormPage),
+  },
+  {
+    path: 'settings/budgets',
+    loadComponent: () => import('./budgets/budgets.page').then((m) => m.BudgetsPage),
+  },
+  {
     path: 'settings/linked-sheet',
     component: LinkedSheetPage,
   },

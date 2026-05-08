@@ -135,6 +135,10 @@ export class SettingsPage implements OnInit, OnDestroy {
     await this.router.navigate(['/settings/accounts']);
   }
 
+  async openBudgetManagement(): Promise<void> {
+    await this.router.navigate(['/settings/budgets']);
+  }
+
   async openLinkedSheetSettings(): Promise<void> {
     await this.router.navigate(['/settings/linked-sheet']);
   }

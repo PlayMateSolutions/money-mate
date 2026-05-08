@@ -1,0 +1,62 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/settings/budgets"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ pageTitle }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button [disabled]="!canSave" (click)="save()">
+        {{ saving ? 'Saving...' : 'Save' }}
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">{{ pageTitle }}</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="state-container" *ngIf="loading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading budget...</p>
+  </div>
+
+  <div class="state-container error" *ngIf="!loading && error">
+    <p>{{ error }}</p>
+    <ion-button fill="outline" (click)="cancel()">Back</ion-button>
+  </div>
+
+  <ion-list *ngIf="!loading && !error">
+    <ion-item>
+      <ion-label position="stacked">Amount *</ion-label>
+      <ion-input
+        type="number"
+        inputmode="decimal"
+        [(ngModel)]="form.amount"
+        placeholder="0"
+      ></ion-input>
+    </ion-item>
+
+    <ion-item button detail="false" (click)="openCategoryModal()">
+      <ion-label position="stacked">Category *</ion-label>
+      <div style="display: flex; align-items: center; gap: 8px; min-height: 32px; margin-top: 6px;">
+        <ng-container *ngIf="form.categoryId; else noCategory">
+          <ion-chip color="primary" style="margin:0;">
+            {{ categoryById(form.categoryId)?.name || 'Category' }}
+          </ion-chip>
+        </ng-container>
+        <ng-template #noCategory>
+          <ion-note color="medium">Select category</ion-note>
+        </ng-template>
+      </div>
+    </ion-item>
+
+    <ion-item *ngIf="isEditMode">
+      <ion-label>Active</ion-label>
+      <ion-toggle [(ngModel)]="form.isActive" slot="end"></ion-toggle>
+    </ion-item>
+  </ion-list>
+</ion-content>
