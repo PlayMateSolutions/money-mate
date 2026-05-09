@@ -280,6 +280,7 @@ export class ExpenseBreakdownWidgetComponent implements OnInit, OnDestroy {
       pieSliceText: 'percentage',
       tooltip: { text: 'value' },
       colors: slices.map((slice) => slice.color),
+      pieHole: 0.4,
     };
   }
 
