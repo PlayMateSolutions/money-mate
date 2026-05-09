@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
   plugins: {
     SocialLogin: {
       google: {
-        androidClientId: "102904530835-dt70ccodl3smiula3frcbrt5ubf8out6.apps.googleusercontent.com"
+        androidClientId: "102904530835-vrtlhimba7aqdaqcm56orbvj19n3ilhi.apps.googleusercontent.com"
       }
     },
     SplashScreen: {
