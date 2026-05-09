@@ -80,7 +80,23 @@
 }
 
 ion-progress-bar {
-  --progress-background: var(--ion-color-step-200, rgba(0, 0, 0, 0.12));
+  --background: var(--ion-color-step-200, rgba(0, 0, 0, 0.12));
   height: 8px;
   border-radius: 999px;
+}
+
+ion-progress-bar.progress-safe {
+  --progress-background: var(--ion-color-success);
+}
+
+ion-progress-bar.progress-warning {
+  --progress-background: var(--ion-color-warning);
+}
+
+ion-progress-bar.progress-near-limit {
+  --progress-background: var(--ion-color-warning-shade);
+}
+
+ion-progress-bar.progress-exceeded {
+  --progress-background: var(--ion-color-danger);
 }

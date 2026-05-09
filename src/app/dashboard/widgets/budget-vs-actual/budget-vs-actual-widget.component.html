@@ -37,18 +37,18 @@
           <ion-icon [name]="getBudgetIcon(item)" [style.color]="getBudgetIconColor(item)"></ion-icon>
           <div class="budget-row__title">
             <h3>{{ item.categoryName }}</h3>
-            <p>{{ item.budget.amount | currency }} / {{ item.budget.period }}</p>
+            <p>{{ item.budget.amount | currency:selectedCurrency }} / {{ item.budget.period }}</p>
           </div>
           <ion-text [color]="item.remaining >= 0 ? 'success' : 'danger'" class="budget-row__status">
             {{ item.statusLabel }}
           </ion-text>
         </div>
 
-        <ion-progress-bar [value]="item.progressBarValue"></ion-progress-bar>
+        <ion-progress-bar [value]="item.progressBarValue" [ngClass]="item.progressClass"></ion-progress-bar>
 
         <div class="budget-row__stats">
-          <span>Actual: {{ item.actualSpent | currency }}</span>
-          <span>Remaining: {{ item.remaining | currency }}</span>
+          <span>Actual: {{ item.actualSpent | currency:selectedCurrency }}</span>
+          <span>Remaining: {{ item.remaining | currency:selectedCurrency }}</span>
           <span>{{ item.progressPercent | number:'1.0-0' }}%</span>
         </div>
       </div>

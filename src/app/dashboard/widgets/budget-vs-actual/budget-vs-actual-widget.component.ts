@@ -31,6 +31,12 @@ interface BudgetVsActualItem {
   progressPercent: number;
   progressBarValue: number;
   statusLabel: string;
+  progressClass: 'progress-safe' | 'progress-warning' | 'progress-near-limit' | 'progress-exceeded';
+}
+
+interface BudgetProgressState {
+  label: 'Safe' | 'Warning' | 'Near limit' | 'Exceeded';
+  className: 'progress-safe' | 'progress-warning' | 'progress-near-limit' | 'progress-exceeded';
 }
 
 @Component({
@@ -54,11 +60,13 @@ interface BudgetVsActualItem {
 })
 export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
   private static readonly STORAGE_KEY = 'dashboard.budgetVsActual.visibleCategoryIds';
+  private static readonly CURRENCY_KEY = 'money-mate-currency';
 
   loading = true;
   error: string | null = null;
   hasChartData = false;
   hasSavedCategorySelection = false;
+  selectedCurrency = 'USD';
 
   items: BudgetVsActualItem[] = [];
 
@@ -83,6 +91,8 @@ export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.selectedCurrency = localStorage.getItem(BudgetVsActualWidgetComponent.CURRENCY_KEY) || 'USD';
+
     this.subscription = combineLatest([
       this.dateRangeService.getDateRange$(),
       this.budgetRepository.getBudgets$(),
@@ -236,6 +246,7 @@ export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
     const remaining = budget.amount - actualSpent;
     const progressPercent = budget.amount > 0 ? Math.max(0, (actualSpent / budget.amount) * 100) : 0;
     const progressBarValue = Math.min(1, progressPercent / 100);
+    const progressState = this.getProgressState(progressPercent, budget.alertThresholds);
 
     return {
       budget,
@@ -246,8 +257,45 @@ export class BudgetVsActualWidgetComponent implements OnInit, OnDestroy {
       remaining,
       progressPercent,
       progressBarValue,
-      statusLabel: remaining >= 0 ? 'On track' : 'Over budget',
+      statusLabel: progressState.label,
+      progressClass: progressState.className,
     };
+  }
+
+  private getProgressState(progressPercent: number, thresholds?: number[]): BudgetProgressState {
+    const [safeThreshold, warningThreshold, limitThreshold] = this.getThresholdTriplet(thresholds);
+
+    if (progressPercent <= safeThreshold) {
+      return { label: 'Safe', className: 'progress-safe' };
+    }
+
+    if (progressPercent <= warningThreshold) {
+      return { label: 'Warning', className: 'progress-warning' };
+    }
+
+    if (progressPercent <= limitThreshold) {
+      return { label: 'Near limit', className: 'progress-near-limit' };
+    }
+
+    return { label: 'Exceeded', className: 'progress-exceeded' };
+  }
+
+  private getThresholdTriplet(thresholds?: number[]): [number, number, number] {
+    const defaults: [number, number, number] = [50, 80, 100];
+    if (!thresholds || thresholds.length === 0) {
+      return defaults;
+    }
+
+    const normalized = thresholds
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .map((value) => Math.round(value))
+      .sort((a, b) => a - b);
+
+    if (normalized.length < 3) {
+      return defaults;
+    }
+
+    return [normalized[0], normalized[1], normalized[2]];
   }
 
   private calculateActualSpent(categoryIds: string[], range: DashboardDateRange): number {
