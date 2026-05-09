@@ -4,7 +4,13 @@ Money Mate is a personal finance management app built with Angular, Ionic, and C
 
 ## Live Demo
 
-https://jsramraj.github.io/apps/moneymate/
+[![Open Live Demo](https://img.shields.io/badge/Open-Live%20Demo-2ea44f?style=for-the-badge)](https://jsramraj.github.io/apps/moneymate/)
+
+Try it here: [Money Mate Live Demo](https://jsramraj.github.io/apps/moneymate/)
+
+## Get it on Play Store
+
+<img src="src/assets/assets/get-it-on-playstore.png" alt="Get it on Google Play" style="height:48px;width:auto;vertical-align:middle;border-radius:8px;box-shadow:0 2px 8px #0002;" />
 
 ## Overview
 
