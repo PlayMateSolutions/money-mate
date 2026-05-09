@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -23,12 +23,13 @@ import {
   IonBadge,
   IonFab,
   IonFabButton,
+  IonSearchbar,
   AlertController,
   ModalController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { syncOutline, pricetagOutline, swapHorizontalOutline, filterOutline, funnelOutline, flashOutline, trashOutline } from 'ionicons/icons';
+import { syncOutline, pricetagOutline, swapHorizontalOutline, filterOutline, funnelOutline, flashOutline, trashOutline, searchOutline, closeOutline } from 'ionicons/icons';
 import { Account, Category, Transaction, TransactionType } from '../core/database/models';
 import { AccountRepository, CategoryRepository, TransactionRepository } from '../core/database/repositories';
 import {
@@ -79,6 +80,7 @@ interface TransactionDateGroup {
     IonBadge,
     IonFab,
     IonFabButton,
+    IonSearchbar,
     RouterLink,
     DateRangeFilterComponent,
   ]
@@ -105,6 +107,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
   ]);
   filters: TransactionFilterState = this.getDefaultFilters();
   selectedDateRange: DateRange = this.getDefaultDateRange();
+  searchVisible = false;
+  searchText = '';
+  @ViewChild('transactionSearchbar') private searchbar?: IonSearchbar;
+  private _writingSearchParam = false;
+  private _searchDebounce?: ReturnType<typeof setTimeout>;
 
   constructor(
     private transactionRepository: TransactionRepository,
@@ -127,12 +134,28 @@ export class TransactionsPage implements OnInit, OnDestroy {
       funnelOutline,
       flashOutline,
       trashOutline,
+      searchOutline,
+      closeOutline,
     });
   }
 
   ngOnInit(): void {
     this.loadSelectedCurrency();
+
+    // Restore search state from the initial URL snapshot (no re-init triggered).
+    const initialQ = this.route.snapshot.queryParams['q'] as string | undefined;
+    if (initialQ) {
+      this.searchText = initialQ;
+      this.searchVisible = true;
+    }
+
     this.route.queryParams.subscribe(params => {
+      // Skip the cycle caused by our own search-param writes to avoid re-init.
+      if (this._writingSearchParam) {
+        this._writingSearchParam = false;
+        return;
+      }
+
       let accountNames: string[] = [];
       const param = params['accountName'];
       if (Array.isArray(param)) {
@@ -159,6 +182,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.transactionsSub?.unsubscribe();
+    clearTimeout(this._searchDebounce);
   }
 
   async ionViewWillEnter(): Promise<void> {
@@ -194,6 +218,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
       count += 1;
     }
 
+    if (this.searchText.trim()) {
+      count += 1;
+    }
+
     return count;
   }
 
@@ -203,7 +231,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   get emptyStateMessage(): string {
     if (this.hasActiveFilters && this.totalTransactions > 0) {
-      return 'No transactions match your filters';
+      return 'No transactions match your filters or search';
     }
 
     return 'No transactions yet';
@@ -240,6 +268,48 @@ export class TransactionsPage implements OnInit, OnDestroy {
   onDateRangeChange(dateRange: DateRange): void {
     this.selectedDateRange = dateRange;
     this.buildGroupedItems(this.applyFilters(this.allTransactions));
+  }
+
+  toggleSearch(): void {
+    this.searchVisible = !this.searchVisible;
+    if (this.searchVisible) {
+      this.focusSearchbar();
+      return;
+    }
+
+    if (!this.searchVisible && this.searchText) {
+      this.searchText = '';
+      this.buildGroupedItems(this.applyFilters(this.allTransactions));
+      this._writingSearchParam = true;
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { q: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
+  }
+
+  private focusSearchbar(): void {
+    setTimeout(() => {
+      void this.searchbar?.setFocus();
+    }, 50);
+  }
+
+  onSearchChange(event: CustomEvent): void {
+    this.searchText = (event.detail.value as string | undefined) ?? '';
+    this.buildGroupedItems(this.applyFilters(this.allTransactions));
+
+    clearTimeout(this._searchDebounce);
+    this._searchDebounce = setTimeout(() => {
+      this._writingSearchParam = true;
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { q: this.searchText.trim() || null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }, 400);
   }
 
   async openEditModal(item: TransactionListItem): Promise<void> {
@@ -482,7 +552,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
     const hasTagFilter = selectedTags.size > 0;
     const hasDateFilter = true; // Always apply date range filtering
 
-    if (!hasTypeFilter && !hasCategoryFilter && !hasAccountFilter && !hasTagFilter) {
+    const q = this.searchText.trim().toLowerCase();
+    const hasSearchFilter = q.length > 0;
+
+    if (!hasTypeFilter && !hasCategoryFilter && !hasAccountFilter && !hasTagFilter && !hasSearchFilter) {
       // Even if no other filters, still apply date range
       return transactions.filter((transaction) =>
         this.isTransactionInDateRange(transaction)
@@ -521,6 +594,16 @@ export class TransactionsPage implements OnInit, OnDestroy {
         const matchesAnyTag = transactionTags.some((tag) => selectedTags.has(tag));
 
         if (!matchesAnyTag) {
+          return false;
+        }
+      }
+
+      // SEARCH FILTER: match description, notes, tags
+      if (q) {
+        const descMatch = (transaction.description ?? '').toLowerCase().includes(q);
+        const notesMatch = (transaction.notes ?? '').toLowerCase().includes(q);
+        const tagsMatch = (transaction.tags ?? []).some(t => t.toLowerCase().includes(q));
+        if (!descMatch && !notesMatch && !tagsMatch) {
           return false;
         }
       }

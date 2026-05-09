@@ -6,8 +6,11 @@
     </ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="openFilterModal()" aria-label="Filter transactions">
-        <ion-icon name="funnel-outline" slot="start"></ion-icon>
-        <ion-badge *ngIf="activeFilterCount > 0" color="primary" slot="start">{{ activeFilterCount }}</ion-badge>
+        <ion-icon name="funnel-outline" slot="icon-only"></ion-icon>
+        <ion-badge *ngIf="activeFilterCount > 0" color="primary" slot="end">{{ activeFilterCount }}</ion-badge>
+      </ion-button>
+      <ion-button (click)="toggleSearch()" [attr.aria-label]="searchVisible ? 'Close search' : 'Search transactions'" [color]="searchVisible ? 'primary' : ''">
+        <ion-icon [name]="searchVisible ? 'close-outline' : 'search-outline'" slot="icon-only"></ion-icon>
       </ion-button>
     </ion-buttons>
     <ion-buttons slot="end" *ngIf="canSync">
@@ -24,6 +27,17 @@
     [availablePeriods]="['weekly', 'monthly', 'yearly', 'custom']"
     (dateRangeChange)="onDateRangeChange($event)">
   </app-date-range-filter>
+    <ion-toolbar *ngIf="searchVisible" class="search-toolbar">
+      <ion-searchbar
+        #transactionSearchbar
+        [value]="searchText"
+        (ionInput)="onSearchChange($event)"
+        placeholder="Search description, notes, tags…"
+        [debounce]="0"
+        animated="true"
+        showClearButton="focus"
+      ></ion-searchbar>
+    </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
