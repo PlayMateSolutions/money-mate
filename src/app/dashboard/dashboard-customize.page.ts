@@ -89,6 +89,7 @@ export class DashboardCustomizePage {
       'expense-breakdown',
       'expense-comparison',
       'recent-transactions',
+      'budget-vs-actual',
     ]);
 
     const resolvedWidgetId = supportedWidgetIds.has(widgetId) ? widgetId : 'top-summary';

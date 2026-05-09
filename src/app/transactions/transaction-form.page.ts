@@ -1,7 +1,7 @@
 
 
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
@@ -83,6 +83,7 @@ export class TransactionFormPage implements OnInit {
   saving = false;
   showMoreOptions = false;
   tagInput = '';
+  @ViewChild('amountInput') private amountInput?: IonInput;
 
   private categoryManuallySelected = false;
 
@@ -168,6 +169,16 @@ export class TransactionFormPage implements OnInit {
     if (this.accounts.length > 0) {
       this.form.accountId = this.accounts[0].id;
     }
+  }
+
+  ionViewDidEnter(): void {
+    this.focusAmountInput();
+  }
+
+  private focusAmountInput(): void {
+    setTimeout(() => {
+      void this.amountInput?.setFocus();
+    }, 50);
   }
 
   onTagBlur(): void {
